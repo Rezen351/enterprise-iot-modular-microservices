@@ -1,0 +1,34 @@
+{
+  "device": {
+    "node_id": "node-01",
+    "fw_version": "1.0.0",
+    "description": "Node SmartFarm Aeroponik"
+  },
+  "security": {
+    "admin_user": "admin",
+    "admin_pass": "admin123"
+  },
+  "protocols": {
+    "wifi": {
+      "ssid": "Aeroponik 1",
+      "password": "12345678",
+      "auto_reconnect": true,
+      "eap_identity": "",
+      "eap_password": ""
+    },
+    "mqtt": {
+      "server": "192.168.1.103",
+      "port": 1884,
+      "topic_prefix": "smartfarm",
+      "user": "",
+      "pass": "",
+      "use_tls": false,
+      "telemetry_interval_ms": 5000
+    }
+  },
+  "hardware": {
+    "inputs": [],
+    "outputs": [],
+    "modbus": []
+  }
+}

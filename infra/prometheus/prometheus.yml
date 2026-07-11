@@ -1,0 +1,70 @@
+# =============================================================================
+# Prometheus Configuration — IOT-Modular-Microservice
+# Scrape interval: 15s (default)
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    project: "iot-modular-microservice"
+    env: "development"
+
+# ─── Alertmanager (optional, configure when needed) ──────────────────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# ─── Scrape configs ───────────────────────────────────────────────────────────
+scrape_configs:
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Auth Service — scrape via internal Docker network (direct, no Kong)
+  - job_name: "auth-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["auth:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "auth-service"
+
+  # Module Service — onboarding (module/node) metrics
+  - job_name: "module-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["module:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "module-service"
+
+  # WS-Gateway — NATS → WebSocket bridge metrics
+  - job_name: "wsgateway-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["wsgateway:8090"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "wsgateway-service"
+
+  # Kong API Gateway — exposes metrics on port 8001 (admin API)
+  - job_name: "kong"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["kong:8001"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "kong-gateway"

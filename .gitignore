@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+# Runtime data / persistent volumes (databases, message queues, metrics)
+volumes/
+
+# Build artifacts
+dashboard/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.log

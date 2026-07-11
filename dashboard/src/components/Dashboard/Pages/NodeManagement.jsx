@@ -1,0 +1,286 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Cpu, Activity } from 'lucide-react';
+import { moduleApi } from '../../../api/module';
+import NodeMonitorModal from '../NodeMonitorModal';
+
+function timeAgo(iso) {
+  if (!iso) return 'Never';
+  const d = new Date(iso);
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return d.toLocaleString();
+}
+
+function StatusPill({ status }) {
+  const online = status === 'online';
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider ${
+      online ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+    }`}>
+      {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+      {status || 'unknown'}
+    </span>
+  );
+}
+
+function NodeManagement({ selectedModule, onBack }) {
+  const [pairedNodes, setPairedNodes] = useState([]);
+  const [discoveredNodes, setDiscoveredNodes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState('');
+  const [monitorNode, setMonitorNode] = useState(null);
+
+  const isNodeLive = (node) => {
+    if (!node?.last_seen_at) return false;
+    const diff = Date.now() - new Date(node.last_seen_at).getTime();
+    return diff < 10000;
+  };
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [pairedRes, discoveredRes] = await Promise.all([
+        moduleApi.listNodes({ module_id: selectedModule.id, paired: true }),
+        moduleApi.listDiscovered(),
+      ]);
+      setPairedNodes(pairedRes?.nodes || []);
+      setDiscoveredNodes(discoveredRes?.nodes || []);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Failed to load nodes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedModule.id]);
+
+  // Initial load + poll every 4s so newly-discovered devices appear automatically.
+  useEffect(() => {
+    fetchData();
+    const t = setInterval(fetchData, 4000);
+    return () => clearInterval(t);
+  }, [fetchData]);
+
+  const handlePair = async (node) => {
+    setBusyId(node.node_id);
+    setError('');
+    try {
+      await moduleApi.pairNode(node.node_id, { module_id: selectedModule.id, name: node.name || node.node_id });
+      await fetchData();
+    } catch (err) {
+      setError(err.message || 'Failed to pair node');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleUnpair = async (node) => {
+    if (!window.confirm(`Unpair node ${node.node_id} dari module ini?`)) return;
+    setBusyId(node.node_id);
+    setError('');
+    try {
+      await moduleApi.unpairNode(node.node_id);
+      await fetchData();
+    } catch (err) {
+      setError(err.message || 'Failed to unpair node');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (node) => {
+    if (!window.confirm(`Hapus catatan node ${node.node_id}? Node akan muncul lagi jika perangkat mengirim discovery.`)) return;
+    setBusyId(node.node_id);
+    setError('');
+    try {
+      await moduleApi.deleteNode(node.node_id);
+      await fetchData();
+    } catch (err) {
+      setError(err.message || 'Failed to delete node');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md overflow-hidden animate-fadeIn">
+      {/* Header */}
+      <div className="p-3 sm:p-6 border-b border-white/5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={onBack}
+            className="p-2 bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <div className="min-w-0">
+            <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-white truncate">
+              Nodes: <span className="text-emerald-400">{selectedModule.name}</span>
+            </h3>
+            <p className="hidden sm:block text-[11px] text-slate-400 font-black uppercase tracking-wider mt-0.5">
+              Pair discovered devices to this module.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-1.5 px-3 py-2 text-[10px] sm:text-xs font-black bg-slate-800 border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
+          title="Refresh"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
+      </div>
+
+      <div className="p-4 sm:p-6">
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm font-black flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+
+        {/* SECTION: AUTO-DISCOVERY (unpaired devices) */}
+        <div className="mb-6 p-4 border border-amber-500/25 bg-amber-500/5">
+          <div className="flex items-center gap-2 mb-3">
+            <Radio className="w-4 h-4 text-amber-500 animate-pulse" />
+            <span className="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-widest">
+              Auto-Discovery — Unpaired ({discoveredNodes.length})
+            </span>
+          </div>
+
+          {discoveredNodes.length === 0 ? (
+            <p className="text-[11px] sm:text-xs text-slate-500 italic p-4 border border-dashed border-amber-500/20 text-center">
+              No new devices. Power on ESP32 or send discovery.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {discoveredNodes.map(node => (
+                <div key={node.node_id} className="p-3.5 bg-slate-950/70 border border-amber-500/20 hover:border-amber-500/50 flex flex-col justify-between transition-all">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-amber-400" /> Found
+                      </span>
+                      <StatusPill status={node.status} />
+                    </div>
+                    <div className="space-y-1 text-xs font-black text-slate-400 font-mono">
+                      <div className="flex justify-between gap-2">
+                        <span>Node ID:</span>
+                        <span className="text-white truncate">{node.node_id}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>MAC:</span>
+                        <span className="text-white truncate">{node.mac || '-'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>IP:</span>
+                        <span className="text-white">{node.ip || 'DHCP'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>FW:</span>
+                        <span className="text-white">{node.fw_version || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busyId === node.node_id}
+                    onClick={() => handlePair(node)}
+                    className="mt-3 w-full h-11 text-xs font-black uppercase tracking-wider text-black bg-amber-500 hover:bg-amber-400 disabled:opacity-50 rounded transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    {busyId === node.node_id ? 'Pairing...' : 'Pair'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SECTION: PAIRED NODES */}
+        <h4 className="text-xs sm:text-sm font-black text-emerald-400 uppercase tracking-widest mb-4">
+          Paired ({pairedNodes.length})
+        </h4>
+        {isLoading ? (
+          <div className="py-8 text-center text-slate-500 text-sm">Loading nodes...</div>
+        ) : pairedNodes.length === 0 ? (
+          <div className="py-8 text-center text-slate-500 text-sm bg-slate-900/50 border border-slate-800">
+            No paired nodes yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {pairedNodes.map(node => (
+              <div key={node.node_id} className="p-4 bg-slate-900/80 border border-slate-700 hover:border-emerald-500/50 transition-all duration-200 group relative">
+                <div className="flex justify-between items-center mb-3.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Network className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span className="text-sm font-black uppercase text-white truncate">{node.name || node.node_id}</span>
+                  </div>
+                  <StatusPill status={node.status} />
+                </div>
+
+                <div className="space-y-1.5 text-xs sm:text-sm text-slate-400 font-mono">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 font-black">Node ID</span>
+                    <span className="text-white font-black truncate">{node.node_id}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 font-black">IP</span>
+                    <span className="text-white font-black">{node.ip || 'DHCP'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 font-black">FW</span>
+                    <span className="text-white font-black">{node.fw_version || '-'}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 font-black">Last Seen</span>
+                    <span className="text-white font-black flex items-center gap-1.5">
+                      {isNodeLive(node) && <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>}
+                      {timeAgo(node.last_seen_at)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2.5 border-t border-white/5 flex justify-end gap-2">
+                  <button
+                    onClick={() => setMonitorNode(node)}
+                    disabled={busyId === node.node_id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 hover:border-emerald-500/50 hover:text-emerald-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Activity className="w-3.5 h-3.5" /> Monitor
+                  </button>
+                  <button
+                    onClick={() => handleUnpair(node)}
+                    disabled={busyId === node.node_id}
+                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Unpair
+                  </button>
+                  <button
+                    onClick={() => handleDelete(node)}
+                    disabled={busyId === node.node_id}
+                    className="p-1.5 bg-slate-800 border border-slate-700 hover:border-red-500/50 hover:text-red-400 text-slate-400 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Delete node record"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {monitorNode && (
+        <NodeMonitorModal node={monitorNode} onClose={() => setMonitorNode(null)} />
+      )}
+    </div>
+  );
+}
+
+export default NodeManagement;

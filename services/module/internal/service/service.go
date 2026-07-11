@@ -1,0 +1,384 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/almuzky/iot/services/module/internal/cache"
+	"github.com/almuzky/iot/services/module/internal/model"
+	"github.com/almuzky/iot/services/module/internal/repository"
+	"github.com/almuzky/iot/services/module/internal/tsdb"
+)
+
+var (
+	ErrModuleNotFound = errors.New("module not found")
+	ErrNodeNotFound   = errors.New("node not found")
+	ErrNameRequired   = errors.New("name is required")
+)
+
+// NATSPublisher is a minimal interface for publishing audit/events.
+type NATSPublisher interface {
+	Publish(subject string, data []byte) error
+}
+
+// statusTTL: nodes not seen within this window are considered stale in Redis.
+const statusTTL = 90 * time.Second
+
+// latestTTL: how long the most-recent telemetry payload is kept in Redis.
+const latestTTL = 5 * time.Minute
+
+type ModuleService struct {
+	repo  *repository.Repository
+	cache *cache.StatusCache
+	nats  NATSPublisher
+	ts    *tsdb.Store
+}
+
+func New(repo *repository.Repository, c *cache.StatusCache, nats NATSPublisher, ts *tsdb.Store) *ModuleService {
+	return &ModuleService{repo: repo, cache: c, nats: nats, ts: ts}
+}
+
+// ─── Modules ─────────────────────────────────────────────────────────────────
+
+func (s *ModuleService) CreateModule(ctx context.Context, req model.CreateModuleRequest) (*model.Module, error) {
+	if req.Name == "" {
+		return nil, ErrNameRequired
+	}
+	m := &model.Module{Name: req.Name, Description: req.Description, Config: req.Config}
+	if err := s.repo.CreateModule(ctx, m); err != nil {
+		return nil, err
+	}
+	s.publishAudit("module.created", map[string]string{"module_id": m.ID, "name": m.Name})
+	return m, nil
+}
+
+func (s *ModuleService) ListModules(ctx context.Context) ([]model.Module, error) {
+	return s.repo.ListModules(ctx)
+}
+
+func (s *ModuleService) GetModule(ctx context.Context, id string) (*model.Module, error) {
+	m, err := s.repo.GetModule(ctx, id)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrModuleNotFound
+	}
+	return m, err
+}
+
+func (s *ModuleService) UpdateModule(ctx context.Context, id string, req model.UpdateModuleRequest) (*model.Module, error) {
+	m, err := s.repo.UpdateModule(ctx, id, req)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrModuleNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.publishAudit("module.updated", map[string]string{"module_id": id})
+	return m, nil
+}
+
+func (s *ModuleService) DeleteModule(ctx context.Context, id string) error {
+	err := s.repo.DeleteModule(ctx, id)
+	if errors.Is(err, repository.ErrNotFound) {
+		return ErrModuleNotFound
+	}
+	if err == nil {
+		s.publishAudit("module.deleted", map[string]string{"module_id": id})
+	}
+	return err
+}
+
+// ─── Nodes ───────────────────────────────────────────────────────────────────
+
+func (s *ModuleService) ListNodes(ctx context.Context, paired *bool, moduleID, status string) ([]model.Node, error) {
+	return s.repo.ListNodes(ctx, paired, moduleID, status)
+}
+
+// ListDiscovered returns nodes that are not yet paired (onboarding candidates).
+func (s *ModuleService) ListDiscovered(ctx context.Context) ([]model.Node, error) {
+	no := false
+	return s.repo.ListNodes(ctx, &no, "", "")
+}
+
+func (s *ModuleService) GetNode(ctx context.Context, nodeID string) (*model.Node, error) {
+	n, err := s.repo.GetNodeByNodeID(ctx, nodeID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrNodeNotFound
+	}
+	return n, err
+}
+
+func (s *ModuleService) Pair(ctx context.Context, nodeID string, req model.PairRequest) (*model.Node, error) {
+	if req.ModuleID == "" {
+		return nil, ErrModuleNotFound
+	}
+	exists, err := s.repo.ModuleExists(ctx, req.ModuleID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrModuleNotFound
+	}
+	n, err := s.repo.Pair(ctx, nodeID, req.ModuleID, req.Name)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrNodeNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.publishAudit("node.paired", map[string]string{"node_id": nodeID, "module_id": req.ModuleID})
+	return n, nil
+}
+
+func (s *ModuleService) Unpair(ctx context.Context, nodeID string) (*model.Node, error) {
+	n, err := s.repo.Unpair(ctx, nodeID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrNodeNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.publishAudit("node.unpaired", map[string]string{"node_id": nodeID})
+	return n, nil
+}
+
+func (s *ModuleService) DeleteNode(ctx context.Context, nodeID string) error {
+	err := s.repo.DeleteNode(ctx, nodeID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return ErrNodeNotFound
+	}
+	if err == nil {
+		s.publishAudit("node.deleted", map[string]string{"node_id": nodeID})
+	}
+	return err
+}
+
+// ─── MQTT ingestion (called by the subscriber) ───────────────────────────────
+
+// HandleDiscovery upserts a node seen via {prefix}/discovery.
+func (s *ModuleService) HandleDiscovery(ctx context.Context, msg model.DiscoveryMessage) error {
+	if msg.NodeID == "" {
+		return errors.New("discovery message missing node_id")
+	}
+	status := msg.Status
+	if status == "" {
+		status = model.StatusOnline
+	}
+	n := &model.Node{
+		NodeID:    msg.NodeID,
+		MAC:       msg.MAC,
+		IP:        msg.IP,
+		FWVersion: msg.FWVersion,
+		Status:    status,
+	}
+	created, err := s.repo.UpsertDiscovered(ctx, n)
+	if err != nil {
+		return err
+	}
+	s.cache.SetStatus(ctx, msg.NodeID, status, statusTTL)
+	if created {
+		s.publishAudit("node.discovered", map[string]string{
+			"node_id": msg.NodeID, "mac": msg.MAC, "fw_version": msg.FWVersion,
+		})
+	}
+	return nil
+}
+
+// HandleStatus updates connectivity from {prefix}/status/{node_id} (incl. LWT).
+func (s *ModuleService) HandleStatus(ctx context.Context, nodeID string, msg model.StatusMessage) error {
+	if nodeID == "" {
+		return errors.New("status message missing node_id")
+	}
+	status := msg.Status
+	if status == "" {
+		status = model.StatusUnknown
+	}
+	// If node unknown yet, register it from the status payload so nothing is missed.
+	if _, err := s.repo.GetNodeByNodeID(ctx, nodeID); errors.Is(err, repository.ErrNotFound) {
+		_, _ = s.repo.UpsertDiscovered(ctx, &model.Node{
+			NodeID: nodeID, MAC: msg.MAC, IP: msg.IP, FWVersion: msg.FW, Status: status,
+		})
+	} else if err != nil {
+		return err
+	} else {
+		if err := s.repo.UpdateStatus(ctx, nodeID, status, msg.IP); err != nil {
+			return err
+		}
+	}
+	s.cache.SetStatus(ctx, nodeID, status, statusTTL)
+	return nil
+}
+
+// TouchNode records that a node is alive because an MQTT payload arrived.
+// Refreshes last_seen_at and marks it online — drives the dashboard "last seen".
+func (s *ModuleService) TouchNode(nodeID string) {
+	if nodeID == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.repo.TouchNode(ctx, nodeID); err != nil {
+		log.Printf("[svc] touch node %s failed: %v", nodeID, err)
+	}
+}
+
+// ─── Telemetry tag mapping (modular acquisition) ─────────────────────────────
+
+// GetNodeTags returns the tag-mapping configuration for a node.
+func (s *ModuleService) GetNodeTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
+	return s.repo.ListNodeTags(ctx, nodeID)
+}
+
+// SaveNodeTags replaces the full tag-mapping set for a node (idempotent attach).
+// Each request row attaches an MQTT source key to a DB tag name.
+func (s *ModuleService) SaveNodeTags(ctx context.Context, nodeID string, reqs []model.NodeTagRequest) error {
+	tags := make([]*model.NodeTag, 0, len(reqs))
+	for _, r := range reqs {
+		tagName := r.TagName
+		if tagName == "" {
+			tagName = r.SourceKey // default: DB metric mirrors the telemetry key
+		}
+		tags = append(tags, &model.NodeTag{
+			ID:          r.ID,
+			NodeID:      nodeID,
+			SourceKey:   r.SourceKey,
+			TagName:     tagName,
+			DisplayName: r.DisplayName,
+			Unit:        r.Unit,
+			DataType:    r.DataType,
+			Enabled:     r.Enabled,
+		})
+	}
+	for _, t := range tags {
+		if err := s.repo.UpsertNodeTag(ctx, t); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DeleteNodeTag removes a single tag-mapping row.
+func (s *ModuleService) DeleteNodeTag(ctx context.Context, nodeID, id string) error {
+	return s.repo.DeleteNodeTag(ctx, nodeID, id)
+}
+
+// IngestTelemetry writes a telemetry payload to TimescaleDB using the node's
+// tag mapping. Only enabled, mapped numeric keys are persisted as metrics; the
+// full raw payload is always stored for audit/flexibility.
+func (s *ModuleService) IngestTelemetry(ctx context.Context, nodeID string, payload []byte) {
+	// Cache the latest raw payload regardless of mapping.
+	s.cache.SetLatest(ctx, nodeID, payload, latestTTL)
+
+	if s.ts == nil {
+		return
+	}
+
+	var data map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &data); err != nil {
+		return
+	}
+
+	tags, err := s.repo.ListNodeTags(ctx, nodeID)
+	if err != nil {
+		log.Printf("[svc] list node tags failed node=%s: %v", nodeID, err)
+		return
+	}
+	moduleID, _ := s.repo.GetModuleIDByNode(ctx, nodeID)
+
+	for _, t := range tags {
+		if !t.Enabled {
+			continue
+		}
+		raw, ok := data[t.SourceKey]
+		if !ok {
+			continue
+		}
+		val, ok := toFloat(raw, t.DataType)
+		if !ok {
+			continue // non-numeric (e.g. string) is kept only in raw
+		}
+		if err := s.ts.WriteReading(ctx, nodeID, moduleID, t.TagName, val, payload); err == nil {
+			s.publishTelemetry(nodeID, t.TagName, val)
+		}
+	}
+}
+
+// toFloat coerces a JSON value to a float64 according to the configured type.
+func toFloat(raw json.RawMessage, dt string) (float64, bool) {
+	switch dt {
+	case "int":
+		var i int64
+		if err := json.Unmarshal(raw, &i); err != nil {
+			return 0, false
+		}
+		return float64(i), true
+	case "bool":
+		var b bool
+		if err := json.Unmarshal(raw, &b); err != nil {
+			return 0, false
+		}
+		return map[bool]float64{true: 1, false: 0}[b], true
+	default: // float / numeric
+		var f float64
+		if err := json.Unmarshal(raw, &f); err == nil {
+			return f, true
+		}
+		var n json.Number
+		if err := json.Unmarshal(raw, &n); err != nil {
+			return 0, false
+		}
+		v, err := n.Float64()
+		if err != nil {
+			return 0, false
+		}
+		return v, true
+	}
+}
+
+// publishTelemetry emits a NATS event per reading (downstream: alert/analytics).
+func (s *ModuleService) publishTelemetry(nodeID, metric string, value float64) {
+	if s.nats == nil {
+		return
+	}
+	envelope := fmt.Sprintf(`{"node_id":%q,"metric":%q,"value":%v,"ts":%d}`,
+		nodeID, metric, value, time.Now().UnixMilli())
+	_ = s.nats.Publish("telemetry.ingest", []byte(envelope))
+}
+
+// ─── Audit helper ────────────────────────────────────────────────────────────
+
+// PublishLive forwards a raw MQTT payload to NATS so the WS-Gateway can stream
+// it to dashboard clients subscribed to that node. Subject: mqtt.{node_id}.
+func (s *ModuleService) PublishLive(nodeID, topic string, payload []byte) {
+	if s.nats == nil {
+		return
+	}
+	envelope := fmt.Sprintf(`{"topic":%q,"payload":%s,"ts":%d}`, topic, string(payload), time.Now().UnixMilli())
+	if err := s.nats.Publish("mqtt."+nodeID, []byte(envelope)); err != nil {
+		log.Printf("[nats] publish live failed node=%s: %v", nodeID, err)
+	}
+}
+
+func (s *ModuleService) publishAudit(event string, fields map[string]string) {
+	if s.nats == nil {
+		return
+	}
+	payload := fmt.Sprintf(`{"event":%q,"service":"module","data":%s}`, event, mapToJSON(fields))
+	_ = s.nats.Publish("audit.log", []byte(payload))
+}
+
+func mapToJSON(m map[string]string) string {
+	out := "{"
+	first := true
+	for k, v := range m {
+		if !first {
+			out += ","
+		}
+		out += fmt.Sprintf(`%q:%q`, k, v)
+		first = false
+	}
+	return out + "}"
+}

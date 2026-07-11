@@ -1,0 +1,3 @@
+-- module_db schema & data are managed entirely by the Go module service (migrate.go).
+-- Do NOT add DDL (CREATE TABLE) or DML (INSERT) here.
+-- This file exists only so the Docker volume mount does not fail.

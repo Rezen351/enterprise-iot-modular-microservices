@@ -1,0 +1,276 @@
+# =====================================================================
+# IOT-Modular-Microservice — Fase Awal
+# Fokus: Kong (routing/JWT/rate-limit/CORS), NATS (pub-sub/req-reply),
+#         Auth Service (RBAC/Refresh Token/Retention)
+# =====================================================================
+
+services:
+
+  # ──────────────────────────────────────
+  # AUTH SERVICE — database mandiri
+  # ──────────────────────────────────────
+  mariadb-auth:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_AUTH}
+      MYSQL_USER: ${MYSQL_USER_AUTH}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD_AUTH}
+    volumes:
+      - ./volumes/mariadb-auth:/var/lib/mysql
+      - ./infra/mariadb/auth/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_DSN: "${MYSQL_USER_AUTH}:${MYSQL_PASSWORD_AUTH}@tcp(mariadb-auth:3306)/${MYSQL_DATABASE_AUTH}?parseTime=true"
+      NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
+      JWT_EXPIRY: "${JWT_EXPIRY:-15m}"
+      REFRESH_EXPIRY: "${REFRESH_EXPIRY:-168h}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@smartfarm.local}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin1234}"
+      PORT: "8080"
+    depends_on:
+      mariadb-auth:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8080:8080" # exposed for local testing
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # MODULE SERVICE — database-per-service (MariaDB + TimescaleDB + Redis)
+  # Fase: Onboarding perangkat (discovery / pair / unpair)
+  # ──────────────────────────────────────
+  mariadb-module:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_MODULE:-module_db}
+      MYSQL_USER: ${MYSQL_USER_MODULE:-module_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD_MODULE:-module_pass}
+    volumes:
+      - ./volumes/mariadb-module:/var/lib/mysql
+      - ./infra/mariadb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  timescaledb-module:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${TIMESCALE_MODULE_DB:-module_ts}
+      POSTGRES_USER: ${TIMESCALE_MODULE_USER:-module_user}
+      POSTGRES_PASSWORD: ${TIMESCALE_MODULE_PASSWORD:-module_pass}
+    volumes:
+      - ./volumes/timescaledb-module:/var/lib/postgresql/data
+      - ./infra/timescaledb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${TIMESCALE_MODULE_USER:-module_user} -d ${TIMESCALE_MODULE_DB:-module_ts}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iot-net
+
+  redis-module:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - ./volumes/redis-module:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  module:
+    build:
+      context: ./services/module
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_DSN: "${MYSQL_USER_MODULE:-module_user}:${MYSQL_PASSWORD_MODULE:-module_pass}@tcp(mariadb-module:3306)/${MYSQL_DATABASE_MODULE:-module_db}?parseTime=true&charset=utf8mb4"
+      TIMESCALE_DSN: "postgres://${TIMESCALE_MODULE_USER:-module_user}:${TIMESCALE_MODULE_PASSWORD:-module_pass}@timescaledb-module:5432/${TIMESCALE_MODULE_DB:-module_ts}?sslmode=disable"
+      REDIS_ADDR: "redis-module:6379"
+      NATS_URL: "nats://nats:4222"
+      MQTT_URL: "${MQTT_URL:-tcp://mosquitto:1883}"
+      MQTT_USER: "${MQTT_USER:-}"
+      MQTT_PASS: "${MQTT_PASS:-}"
+      MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX:-smartfarm}"
+      MQTT_CLIENT_ID: "module-svc"
+      PORT: "8080"
+    depends_on:
+      mariadb-module:
+        condition: service_healthy
+      timescaledb-module:
+        condition: service_healthy
+      redis-module:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8081:8080" # exposed for local testing
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # WS-Gateway — single bridged WebSocket (NATS → dashboard)
+  # ──────────────────────────────────────
+  wsgateway:
+    build:
+      context: ./services/wsgateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NATS_URL: "nats://nats:4222"
+      PORT: "8090"
+    depends_on:
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8090/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8091:8090" # exposed for local testing
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # NATS — JetStream Event Bus
+  # ──────────────────────────────────────
+  nats:
+    image: nats:2.10-alpine # sama persis dengan scratch, + shell tools (wget untuk healthcheck)
+    command: [ "-c", "/etc/nats/nats.conf" ]
+    volumes:
+      - ./infra/nats/nats.conf:/etc/nats/nats.conf:ro
+      - ./volumes/nats:/data
+    ports:
+      - "4222:4222" # client connections
+      - "8222:8222" # monitoring HTTP
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8222/healthz" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # MOSQUITTO — MQTT Broker (ESP32 gateway)
+  # ──────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./infra/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./infra/mosquitto/config/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./volumes/mosquitto:/mosquitto/data
+    ports:
+      - "1883:1883"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # KONG — API Gateway (satu-satunya pintu masuk)
+  # ──────────────────────────────────────
+  kong:
+    image: kong:3.6
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"  # expose to internal network for Prometheus scraping
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_LOG_LEVEL: info
+    volumes:
+      - ./infra/kong/kong.yml:/etc/kong/kong.yml:ro
+    ports:
+      - "8000:8000" # HTTP proxy (eksternal)
+      - "8443:8443" # HTTPS proxy (eksternal)
+    depends_on:
+      - auth
+    healthcheck:
+      test: [ "CMD", "kong", "health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ────────────────────────────────────
+  # PROMETHEUS — Metrics Aggregator
+  # ────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"           # allows hot-reload via POST /-/reload
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./volumes/prometheus:/prometheus
+    ports:
+      - "9090:9090"   # Prometheus UI & API
+    depends_on:
+      - auth
+      - kong
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:9090/-/healthy" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+networks:
+  iot-net:
+    driver: bridge

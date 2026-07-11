@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFarm-Portal</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="alert" class="alert-box"></div>
+
+    <!-- LOGIN -->
+    <div id="login-container">
+        <div class="card" style="width: 320px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <img src="logo.svg" alt="SmartFarm Logo"
+                    style="max-width: 100%; height: auto; max-height: 80px; display:inline-block;">
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login_user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login_pass">
+            </div>
+            <button style="width:100%;" onclick="doLogin()">Sign In</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="app-container">
+        <!-- Mobile Header (Visible only on small screens) -->
+        <div class="mobile-header">
+            <img src="logo.svg" alt="SmartFarm" style="max-height: 28px; height: auto;">
+            <button class="menu-btn" onclick="toggleMobileMenu()">☰</button>
+        </div>
+
+        <div class="sidebar" id="sidebarMenu">
+            <div class="sidebar-brand"
+                style="display:flex; align-items:center; justify-content:center; padding: 24px 20px;">
+                <img src="logo.svg" alt="Logo" style="max-width: 100%; max-height: 50px;">
+            </div>
+            <div class="menu-item active" onclick="switchView('status')">Status</div>
+            <div class="menu-item" onclick="switchView('device')">Device</div>
+            <div class="menu-item" onclick="switchView('wifi')">Wi-Fi</div>
+            <div class="menu-item" onclick="switchView('mqtt')">MQTT</div>
+            <div class="menu-item" onclick="switchView('hardware')">Hardware</div>
+            <div class="menu-item" onclick="switchView('modbus')">Modbus</div>
+            <div class="menu-item" onclick="switchView('local_control')">Local Control</div>
+            <div class="menu-item" onclick="switchView('ota')">Firmware Update</div>
+
+            <div class="sidebar-bottom">
+                <div class="menu-item" onclick="switchView('account')">Admin Account</div>
+                <div class="menu-item" style="color:var(--danger);" onclick="logout()">Logout</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- STATUS -->
+            <div id="view-status" class="view-section active">
+                <div class="card">
+                    <h3 class="card-title">System Status</h3>
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">Wi-Fi Status</span>
+                            <span class="metric-value" id="stat_conn">-</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">MQTT Status</span>
+                            <span class="metric-value" id="stat_mqtt">-</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">IP Address</span>
+                            <span class="metric-value" id="stat_ip">-</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">RSSI</span>
+                            <span class="metric-value" id="stat_rssi">-</span>
+                        </div>
+                    </div>
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <span class="metric-label">CPU Speed</span>
+                            <span class="metric-value" id="stat_cpu">-</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Uptime</span>
+                            <span class="metric-value" id="stat_uptime">-</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Heap</span>
+                            <span class="metric-value" id="stat_heap">-</span>
+                        </div>
+                    </div>
+                    <button class="outline" style="width:100%; margin-top:10px;" onclick="loadStatus()">Refresh</button>
+                    <button id="btn_discovery"
+                        style="width:100%; margin-top:10px; background-color:#eab308; border-color:#eab308; color:#000; font-weight:700;"
+                        onclick="sendDiscovery()">Send Discovery Signal</button>
+                </div>
+
+                <div class="card" style="margin-top:24px;">
+                    <h3 class="card-title">MQTT Integration Info</h3>
+                    <div class="form-group">
+                        <label>Telemetry Topic (Device -> Broker)</label>
+                        <div class="code-block" id="info_telemetry"
+                            style="margin-bottom:0; padding:10px; font-weight:600; color:var(--text);">-</div>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label>Actuator Topic (Broker -> Device)</label>
+                        <div class="code-block" id="info_control"
+                            style="margin-bottom:0; padding:10px; font-weight:600; color:var(--text);">-</div>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label>Actuator Payload Example (JSON)</label>
+                        <pre class="code-block"
+                            style="margin-bottom:0; padding:10px; font-weight:500; font-family:monospace;">
+{
+  "action": "set_output",
+  "target": "&lt;Output_Name&gt;",
+  "value": 1
+}</pre>
+                        <small
+                            style="display:block; margin-top:8px; color:var(--text-light); font-size:12px; line-height:1.4;">
+                            <strong>Hint:</strong> For DIGITAL outputs, use <code>1</code> (ON) or <code>0</code>
+                            (OFF).<br>
+                            For PWM outputs, use a value between <code>0</code> and <code>255</code>.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:24px;">
+                    <h3 class="card-title">MQTT Live Logs</h3>
+                    <div id="mqtt_logs_container"
+                        style="background:#111827; color:#10b981; font-family:monospace; font-size:12px; padding:12px; border-radius:6px; min-height:150px; max-height:250px; overflow-y:auto; line-height:1.6; border:1px solid #374151;">
+                        <div style="color:var(--text-light);">Loading live logs...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEVICE -->
+            <div id="view-device" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveDevice();">
+                    <h3 class="card-title">Device Identity</h3>
+                    <div class="form-group">
+                        <label>Node ID</label>
+                        <input type="text" id="cfg_node_id" required pattern="[a-zA-Z0-9_-]+">
+                    </div>
+                    <button type="submit">Save & Reboot</button>
+                </form>
+
+                <div class="card" style="margin-top:24px;">
+                    <h3 class="card-title">Backup & Restore</h3>
+                    <p style="color:var(--text-light); font-size:13px; margin-bottom:16px;">
+                        Export the current configuration as a JSON file, or import a saved backup configuration.
+                    </p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                        <button class="outline" onclick="exportConfig()"
+                            style="flex:1; min-width:140px; margin:0;">Download Backup</button>
+                    </div>
+                    <div class="form-group" style="border-top:1px solid var(--border); padding-top:16px;">
+                        <label>Upload Backup File (.json)</label>
+                        <input type="file" id="import_file" accept=".json" style="padding:10px 0;">
+                    </div>
+                    <button id="import_btn" class="danger" onclick="importConfig()" style="width:100%;">Upload &
+                        Restore</button>
+                </div>
+            </div>
+
+            <!-- WIFI -->
+            <div id="view-wifi" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveWifi();">
+                    <h3 class="card-title">Wi-Fi</h3>
+                    <div class="form-group"><label>SSID</label><input type="text" id="cfg_ssid" required
+                            autocomplete="username"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="cfg_pass"
+                            autocomplete="current-password"></div>
+
+                    <h3 class="card-title"
+                        style="margin-top:30px; border-top:1px solid var(--border); padding-top:20px;">WPA2-Enterprise
+                    </h3>
+                    <div class="form-group"><label>Identity (Email/Username)</label><input type="text" id="cfg_eap_id"
+                            placeholder="Leave empty if not using Eduroam"></div>
+                    <div class="form-group"><label>Eduroam Password</label><input type="password" id="cfg_eap_pass">
+                    </div>
+
+                    <button type="submit" style="margin-top:10px;">Save & Reboot</button>
+                </form>
+            </div>
+
+            <!-- MQTT -->
+            <div id="view-mqtt" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveMqtt();">
+                    <h3 class="card-title">MQTT Settings</h3>
+                    <div class="form-group"><label>Broker Server</label><input type="text" id="cfg_mqtt_srv" required>
+                    </div>
+                    <div class="form-group"><label>Port</label><input type="number" id="cfg_mqtt_port" required min="1"
+                            max="65535"></div>
+                    <div class="form-group"><label>Topic Prefix</label><input type="text" id="cfg_mqtt_pre" required
+                            pattern="[a-zA-Z0-9_\/]+"></div>
+                    <div class="form-group"><label>MQTT Username (Optional)</label><input type="text" id="cfg_mqtt_u"
+                            placeholder="Leave empty for public broker" autocomplete="username"></div>
+                    <div class="form-group"><label>MQTT Password (Optional)</label><input type="password"
+                            id="cfg_mqtt_p" autocomplete="current-password"></div>
+                    <div class="form-group"><label>Telemetry Interval (ms)</label><input type="number" id="cfg_mqtt_int"
+                            required min="1000"></div>
+                    <button type="submit">Save & Reboot</button>
+                </form>
+            </div>
+
+            <div id="view-hardware" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveHardware();">
+                    <h3 style="margin-top:0;">Input</h3>
+                    <div id="input-rows"></div>
+                    <button class="outline" onclick="addInputRow()" style="margin-top:10px;" type="button">+ Add
+                        Input</button>
+                </form>
+
+                <form class="card" onsubmit="event.preventDefault(); saveHardware();">
+                    <h3 style="margin-top:0;">Output</h3>
+                    <div id="output-rows"></div>
+                    <button class="outline" onclick="addOutputRow()" style="margin-top:10px;" type="button">+ Add
+                        Output</button>
+                </form>
+
+                <button style="width:100%; margin-top:10px;" onclick="saveHardware()">Save & Reboot All
+                    Hardware</button>
+            </div>
+
+            <!-- MODBUS -->
+            <div id="view-modbus" class="view-section">
+
+                <div class="card">
+                    <h3 style="margin-top:0;">Modbus Scanner Tool</h3>
+                    <div class="form-group"
+                        style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px;">
+                        <div style="flex: 1 1 120px;"><label>Baudrate (For Both Scans)</label><select id="scan_baud">
+                                <option value="4800">4800</option>
+                                <option value="9600" selected>9600</option>
+                                <option value="19200">19200</option>
+                            </select></div>
+                        <div style="flex: 1 1 120px;"><button onclick="startScanId()"
+                                style="width:100%; height:42px; background-color:#111; border-color:#111; color:#fff; margin:0;"
+                                type="button">Scan
+                                All IDs</button></div>
+                    </div>
+                    <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                        <div style="flex: 1 1 100px;"><label>Target ID</label><input type="number" id="scan_id"
+                                value="1" min="1" max="247">
+                        </div>
+                        <div style="flex: 1 1 120px;"><label>Register Type</label><select id="scan_type">
+                                <option value="HOLDING">HOLDING (03)</option>
+                                <option value="INPUT">INPUT (04)</option>
+                            </select></div>
+                        <div style="flex: 1 1 100px;"><label>Start Reg</label><input type="number" id="scan_reg_start"
+                                value="0" min="0" max="65535"></div>
+                        <div style="flex: 1 1 100px;"><label>End Reg</label><input type="number" id="scan_reg_end"
+                                value="10" min="0" max="65535"></div>
+                        <div style="flex: 1 1 120px;"><button onclick="startScanReg()"
+                                style="width:100%; height:42px; background-color:#111; border-color:#111; color:#fff; margin:0;"
+                                type="button">Scan
+                                Regs</button></div>
+                    </div>
+                    <div id="scan_results" class="code-block"
+                        style="max-height:200px; overflow-y:auto; margin-top:10px; font-size:12px;">Scanner results will
+                        appear here...</div>
+                </div>
+
+                <form class="card" onsubmit="event.preventDefault(); saveHardware();">
+                    <h3 style="margin-top:0;">Sensor Configurations</h3>
+                    <div id="modbus-rows"></div>
+                    <button class="outline" onclick="addModbusSensor()" style="margin-top:10px;" type="button">+ Add
+                        Modbus
+                        Sensor</button>
+                    <button style="width:100%; margin-top:10px;" type="submit">Save & Reboot</button>
+                </form>
+            </div>
+
+            <!-- LOCAL CONTROL -->
+            <div id="view-local_control" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveLocalControl();">
+                    <h3 class="card-title">Local Control Rules (Edge Computing)</h3>
+                    <p style="color:var(--text-light); font-size:13px; margin-bottom:16px;">
+                        These rules run directly on the ESP32 without requiring MQTT. They act as a safety net when the
+                        network is unavailable.
+                    </p>
+                    <div id="local-control-rows"></div>
+                    <button class="outline" onclick="addLocalControlRow()" style="margin-top:10px;" type="button">+ Add
+                        Rule</button>
+                    <button style="width:100%; margin-top:10px;" type="submit">Save & Reboot</button>
+                </form>
+            </div>
+
+            <!-- OTA -->
+            <div id="view-ota" class="view-section">
+                <div class="card">
+                    <h3 class="card-title">Firmware Update (OTA)</h3>
+                    <p style="color:var(--text-light); font-size:13px; margin-bottom:16px;">
+                        Upload a compiled <code>.bin</code> firmware file to update the device over the air.
+                    </p>
+                    <div class="form-group">
+                        <input type="file" id="ota_file" accept=".bin" style="padding:10px 0;">
+                    </div>
+                    <div id="ota_progress_container"
+                        style="display:none; width:100%; background:var(--primary-bg); height:12px; border-radius:6px; margin:16px 0; overflow:hidden;">
+                        <div id="ota_progress"
+                            style="width:0%; height:100%; background:var(--accent); transition:width 0.2s;"></div>
+                    </div>
+                    <div id="ota_status" style="font-size:13px; font-weight:500; margin-bottom:16px;"></div>
+                    <button id="ota_btn" onclick="startOtaUpdate()">Upload & Update</button>
+                </div>
+            </div>
+
+            <!-- ACCOUNT -->
+            <div id="view-account" class="view-section">
+                <form class="card" onsubmit="event.preventDefault(); saveAccount();">
+                    <h3 class="card-title">Admin Credentials</h3>
+                    <div class="form-group"><label>New Username</label><input type="text" id="cfg_admin_u" required
+                            autocomplete="username">
+                    </div>
+                    <div class="form-group"><label>New Password</label><input type="password" id="cfg_admin_p" required
+                            autocomplete="new-password">
+                    </div>
+                    <button class="danger" type="submit">Update Credentials & Reboot</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Reboot Overlay -->
+    <div id="reboot-overlay">
+        <div class="spinner"></div>
+        <div id="reboot-msg">Rebooting device, please wait...</div>
+        <div id="reboot-submsg" style="font-size:12px; margin-top:10px; color:rgba(255,255,255,0.7);">Don't close this
+            page. It will automatically reconnect.</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

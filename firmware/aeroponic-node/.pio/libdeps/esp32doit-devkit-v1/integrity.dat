@@ -1,0 +1,5 @@
+adafruit/Adafruit Unified Sensor @ ^1.1.9
+4-20ma/ModbusMaster @ ^2.0.1
+knolleary/PubSubClient @ ^2.8
+adafruit/DHT sensor library @ ^1.4.4
+bblanchon/ArduinoJson @ ^6.21.3

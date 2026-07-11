@@ -24,8 +24,37 @@ export function clearSession() {
   sessionStorage.removeItem('user');
 }
 
-// ---- Core request helper --------------------------------------------------
-export async function request(path, { method = 'GET', body, auth = false, headers = {} } = {}) {
+// ---- Auto token refresh on 401 (deduplicated) -----------------------------
+let refreshInFlight = null;
+
+async function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        await authApiRefresh();
+        return true;
+      } catch {
+        clearSession();
+        return false;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+  return refreshInFlight;
+}
+
+// authApi.refresh dipisah agar tidak circular: mengembalikan promise
+let authApiRefresh = async () => {
+  throw new Error('refresh not initialized');
+};
+
+// Dipanggil sekali dari auth.js agar client tahu cara me-refresh token
+export function registerRefresh(fn) {
+  authApiRefresh = fn;
+}
+
+export async function request(path, { method = 'GET', body, auth = false, headers = {} } = {}, _isRetry = false) {
   const finalHeaders = { 'Content-Type': 'application/json', ...headers };
   if (auth) {
     const token = getToken();
@@ -49,6 +78,13 @@ export async function request(path, { method = 'GET', body, auth = false, header
   }
 
   if (!res.ok) {
+    // Coba refresh token sekali bila expired/invalid, lalu ulangi request.
+    if (res.status === 401 && auth && !_isRetry) {
+      const ok = await refreshAccessToken();
+      if (ok) {
+        return request(path, { method, body, auth, headers }, true);
+      }
+    }
     const message = data?.error || data?.message || `Request failed (${res.status})`;
     const err = new Error(message);
     err.status = res.status;

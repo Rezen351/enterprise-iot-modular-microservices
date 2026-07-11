@@ -155,8 +155,8 @@ function Live({ selectedModule }) {
   }, []);
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 w-full animate-fadeIn relative pb-12">
-      <div className="flex-1 flex flex-col gap-6 min-w-0">
+    <div className="flex flex-col xl:flex-row gap-4 w-full animate-fadeIn relative">
+      <div className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
         <StreamHeader 
           selectedCamera={selectedCamera}
           setSelectedCamera={setSelectedCamera}
@@ -188,7 +188,7 @@ function Live({ selectedModule }) {
         <EventTimeline timelineEvents={timelineEvents} />
       </div>
 
-      <div className="w-full xl:w-80 shrink-0 flex flex-col gap-6">
+      <div className="w-full xl:w-80 shrink-0 flex flex-col gap-3 sm:gap-4">
         <StreamControls 
           autoSwitch={autoSwitch}
           setAutoSwitch={setAutoSwitch}

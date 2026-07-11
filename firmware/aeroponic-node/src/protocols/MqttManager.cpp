@@ -77,7 +77,7 @@ void MqttManager::init() {
         addLog("MQTT Plain TCP mode");
     }
     
-    mqttClient->setBufferSize(4096);
+    mqttClient->setBufferSize(8192);
     mqttClient->setServer(Config::MQTT_SERVER.c_str(), Config::MQTT_PORT);
     mqttClient->setCallback(MqttManager::mqttCallback);
 
@@ -200,7 +200,7 @@ void MqttManager::mqttCallback(char* topic, byte* payload, unsigned int length) 
     addLog(("Recv: " + String(topic).substring(0, 25) + " " + msg.substring(0, 30)).c_str());
     
     if (String(topic) == Config::TOPIC_ACTUATOR) {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(16384);
         DeserializationError err = deserializeJson(doc, msg);
         
         if (!err) {

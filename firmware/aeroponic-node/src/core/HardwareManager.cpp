@@ -31,8 +31,8 @@ namespace HardwareManager {
     } stats;
     
     // Pre-allocated static buffers (GAP #9 fix)
-    static StaticJsonDocument<4096> doc;
-    static char jsonBuffer[4096];
+    static StaticJsonDocument<8192> doc;
+    static char jsonBuffer[8192];
 
     // ==================== INTERRUPT HANDLER ====================
     // GAP #11: Interrupt untuk input kritis

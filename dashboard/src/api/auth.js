@@ -7,7 +7,7 @@
 //   GET  /auth/sessions   POST /auth/logout  DELETE /auth/account
 // ============================================================================
 
-import { request, setSession, clearSession, getRefreshToken } from './client';
+import { request, setSession, clearSession, getRefreshToken, registerRefresh } from './client';
 
 export const authApi = {
   // Register a new account (backend assigns the "viewer" role by default).
@@ -67,5 +67,17 @@ export const authApi = {
   adminDeleteUser: (id) =>
     request(`/auth/users/${id}`, { method: 'DELETE', auth: true }),
 };
+
+// Daftarkan fungsi refresh ke client agar token otomatis diperbarui saat 401.
+registerRefresh(async () => {
+  const refresh_token = getRefreshToken();
+  if (!refresh_token) throw new Error('no refresh token');
+  const pair = await request('/auth/refresh', {
+    method: 'POST',
+    body: { refresh_token },
+  });
+  setSession({ access_token: pair.access_token, refresh_token: pair.refresh_token });
+  return pair;
+});
 
 export default authApi;

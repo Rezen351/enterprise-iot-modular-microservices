@@ -12,10 +12,13 @@ import Sidebar from './Sidebar';
 import Profile from './Pages/Users';
 import UserManagement from './Pages/UserManagement';
 import ModuleManagement from './Pages/DeviceManagement';
+import NodeConfigPage from './Pages/NodeConfigPage';
+import Analytics from './Pages/Analytics';
 
 function DashboardContent({ onLogout }) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
+  const [nodeConfig, setNodeConfig] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -54,11 +57,16 @@ function DashboardContent({ onLogout }) {
   };
 
   const renderContent = () => {
+    if (nodeConfig) {
+      return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); }} />;
+    }
     switch (activeTab) {
       case 'profile':
         return <Profile onLogout={onLogout} />;
       case 'module':
-        return <ModuleManagement />;
+        return <ModuleManagement onOpenNodeConfig={setNodeConfig} />;
+      case 'analytics':
+        return <Analytics />;
       case 'users':
         return isAdmin ? <UserManagement /> : <Profile onLogout={onLogout} />;
       default:
@@ -67,7 +75,7 @@ function DashboardContent({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>
+    <div className="h-screen flex relative overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>
       {/* Background Glows */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[10%] right-[5%] w-[40%] h-[40%]  opacity-40 blur-[130px]" style={{ backgroundColor: 'var(--radial-glow-1)' }} />
@@ -87,8 +95,8 @@ function DashboardContent({ onLogout }) {
       />
 
       {/* Main Layout Area */}
-      <div className="flex-1 flex flex-col min-w-0 z-10 relative">
-        <header className={`fixed top-0 right-0 z-30 left-0 transition-all duration-300 border-b flex items-center justify-between gap-3 backdrop-blur-md h-20 lg:h-24 px-4 lg:px-8 compact-mobile-header ${sidebarHidden ? 'lg:left-0' : (sidebarCollapsed ? 'lg:left-20' : 'lg:left-72')
+      <div className="flex-1 flex flex-col min-w-0 z-10 relative h-screen overflow-hidden">
+        <header className={`shrink-0 transition-all duration-300 border-b flex items-center justify-between gap-2 backdrop-blur-md h-14 sm:h-16 lg:h-20 px-3 sm:px-4 lg:px-8 compact-mobile-header ${sidebarHidden ? 'lg:left-0' : (sidebarCollapsed ? 'lg:left-20' : 'lg:left-72')
           }`} style={{ backgroundColor: 'var(--bg-main)CC', borderColor: 'var(--border-main)' }}>
           {/* Header Left Actions */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -97,7 +105,7 @@ function DashboardContent({ onLogout }) {
               className="lg:hidden p-2.5  border border-emerald-500/20 bg-slate-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-200 cursor-pointer"
               title="Open Navigation"
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5" />
             </button>
 
             <button
@@ -105,7 +113,7 @@ function DashboardContent({ onLogout }) {
               className="hidden lg:flex p-2.5  border border-emerald-500/20 bg-slate-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all duration-200 cursor-pointer"
               title={sidebarHidden ? "Show Sidebar" : "Hide Sidebar"}
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5" />
             </button>
           </div>
 
@@ -125,35 +133,37 @@ function DashboardContent({ onLogout }) {
             </button>
 
             {/* Live Clock Card */}
-            <div className="hidden sm:flex items-center gap-3 lg:gap-4 px-5 py-2.5 border  " style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-main)' }}>
+            <div className="hidden sm:flex items-center gap-2 lg:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 lg:py-2.5 border  " style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-main)' }}>
               <div className="flex flex-col items-end">
-                <span className="text-sm lg:text-xl font-black font-display tracking-widest text-emerald-400 tabular-nums">
+                <span className="text-xs sm:text-base lg:text-lg font-black font-display tracking-widest text-emerald-400 tabular-nums">
                   {formatTime(currentTime)}
                 </span>
                 <span className="hidden lg:inline text-[11px] font-black uppercase tracking-widest mt-0.5" style={{ color: 'var(--text-muted)' }}>
                   {formatDate(currentTime)}
                 </span>
               </div>
-              <div className="p-2  bg-emerald-500/10 border border-emerald-500/20">
-                <Clock className="w-5 h-5 text-emerald-400 animate-pulse" />
+              <div className="p-1.5 sm:p-2 lg:p-2.5 bg-emerald-500/10 border border-emerald-500/20">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-400 animate-pulse" />
               </div>
             </div>
 
             {/* Logout */}
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-3 py-2 lg:px-4 lg:py-2.5  bg-red-500/5 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 font-display font-bold text-xs tracking-wider transition-all duration-200 cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 lg:px-5 lg:py-3  bg-red-500/5 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 font-display font-bold text-xs sm:text-sm tracking-wider transition-all duration-200 cursor-pointer"
               title="Logout from Session"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
               <span className="hidden sm:inline">LOGOUT</span>
             </button>
           </div>
         </header>
 
         {/* Content Page View */}
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto pt-24 lg:pt-32 main-content-area">
-          {renderContent()}
+        <main className="flex-1 overflow-y-auto pt-14 sm:pt-16 lg:pt-20 main-content-area">
+          <div className="p-3 sm:p-4 lg:p-6">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>

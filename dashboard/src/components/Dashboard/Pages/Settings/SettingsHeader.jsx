@@ -5,7 +5,7 @@ import ToggleSwitch from '../../ToggleSwitch';
 function SettingsHeader({ autoMode, setAutoMode, isSaving, handleSave, saveSuccess, selectedModule, handleReset }) {
   return (
     <>
-      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-4 sm:p-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 sm:gap-6">
+      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 sm:gap-4 w-full xl:w-auto xl:flex-1 min-w-0">
           <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
             <SlidersHorizontal className="w-8 h-8 sm:w-10 sm:h-10" />

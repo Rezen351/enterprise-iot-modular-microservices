@@ -164,10 +164,10 @@ function CropSettings({ selectedModule }) {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn">
+    <div className="flex flex-col gap-4 w-full animate-fadeIn">
       
       {/* Grid: Form vs Active Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         
         {/* Panel 1: Active Crop Status */}
         <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-6 flex flex-col justify-between">

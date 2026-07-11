@@ -196,3 +196,78 @@
 | 77 | ✅ | `Pages/UserManagement.jsx` — tabel akun, toggle aktif/nonaktif, modal ubah peran, hapus akun |
 | 78 | ✅ | `Sidebar` + `DashboardLayout` — menu **MANAJEMEN AKUN** hanya muncul untuk user ber-role `admin` (baca `sessionStorage.user.roles`) |
 | 79 | ✅ | `index.css` — style tabel, role-chip, status-dot, modal. `npm run build` OK, Vite dev server jalan di :5173 |
+
+---
+
+## 2026-07-11 — Penyelesaian Fase 2 (Module Service: telemetry.batch)
+
+### Telemetry Batch Aggregation
+| # | Status | Aktivitas |
+|---|---|---|
+| 80 | ✅ | `internal/service/batch.go` — `telemetryBatcher` (map mutex) akumulasi reading per (node, metric) per window 1 menit |
+| 81 | ✅ | `batch.add()` dipanggil di `IngestTelemetry` tiap reading sukses ditulis ke TimescaleDB |
+| 82 | ✅ | `StartBatchPublisher(ctx, interval)` — goroutine ticker 1 menit, flush + publish `telemetry.batch` (agregat count/sum/min/max/avg/last) |
+| 83 | ✅ | Final flush saat context cancel (shutdown) agar tidak ada reading terbuang |
+| 84 | ✅ | Wire `go svc.StartBatchPublisher(bgCtx, time.Minute)` di `main.go`; `New()` buat batcher |
+| 85 | ✅ | `go build ./...` + `go vet ./...` lolos; roadmap Fase 2 (2a+2b) ditandai selesai |
+
+---
+
+## 2026-07-11 — Fase 3: Analytics Service + Dashboard
+
+### Infrastruktur & Scaffold
+| # | Status | Aktivitas |
+|---|---|---|
+| 86 | ✅ | `docs/phase3-analytics-plan.md` dibuat — rencana detail Fase 3 (Analytics Service) |
+| 87 | ✅ | `infra/timescaledb/analytics/init.sql` — hypertable `metrics_rollup` + continuous aggregate `metrics_hourly`/`metrics_daily` + retention 30d |
+| 88 | ✅ | `services/analytics/` scaffold (Go 1.25): config, model, tsdb, nats, service, handler, middleware, main.go, Dockerfile |
+| 89 | ✅ | `go.mod` analytics: chi, pgx/v5, nats.go, prometheus/client_golang, uuid; `go mod tidy` + `go build` + `go vet` lolos |
+
+### Ingest & Aggregation
+| # | Status | Aktivitas |
+|---|---|---|
+| 90 | ✅ | `internal/nats/subscriber.go` — subscribe `telemetry.batch` (core NATS, mirror ws-gateway), decode → `IngestBatch` |
+| 91 | ✅ | `tsdb.UpsertRollup` — align menit via `last_ts`, upsert idempoten ON CONFLICT (time, node_id, metric) |
+| 92 | ✅ | `tsdb.QuerySeries` — pilih source otomatis: rollup (≤1h), hourly (≤24h), daily (>24h); value = sum/count |
+| 93 | ✅ | `tsdb.QuerySummary` / `ListNodes` — statistik + daftar node beserta metric tersedia (string_agg) |
+
+### API, Kong, Prometheus, Compose
+| # | Status | Aktivitas |
+|---|---|---|
+| 94 | ✅ | Handler: `GET /analytics/metrics` (node_id, metric, interval, from, to), `/analytics/summary`, `/analytics/nodes`, `/health` |
+| 95 | ✅ | `infra/kong/kong.yml` — `analytics-upstream` + `analytics-service` route `/analytics` (rate-limit 120/m); `docker-compose.yml` tambah `timescaledb-analytics` + `analytics` |
+| 96 | ✅ | `infra/prometheus/prometheus.yml` — job `analytics-service` → `analytics:8080/metrics`; `.env`/`.env.example` tambah `TIMESCALE_ANALYTICS_*` |
+| 97 | ✅ | `middleware/prometheus.go` — `analytics_http_requests_total` + durasi; healthcheck `/health` di compose |
+
+### Dashboard — Halaman Analytics
+| # | Status | Aktivitas |
+|---|---|---|
+| 98 | ✅ | `src/api/analytics.js` — `listNodes`, `getMetrics`, `getSummary` via Kong (auth: true) |
+| 99 | ✅ | `Pages/Analytics.jsx` — selector node + metric, range 1h/6h/24h/7d/30d, Line chart (chart.js), kartu summary, empty/loading/error state |
+| 100 | ✅ | `Sidebar.jsx` tambah menu **ANALYTICS** ( semua role); `DashboardLayout.jsx` route `analytics` → `<Analytics/>` |
+| 101 | ✅ | `npm run build` lolos; halaman Analytics tampil di dashboard via Kong |
+
+### Catatan
+| # | Jenis | Deskripsi | Status |
+|---|---|---|---|
+| 1 | 📝 Note | `telemetry.batch` dipublish Module ke core NATS (bukan JetStream) → Analytics pakai plain subscribe ( konsisten ws-gateway); pesan saat Analytics mati tidak di-buffer | Perlu diperhatikan |
+| 2 | 📝 Note | Cross-DB: Analytics tidak baca `timescaledb-module`; hanya konsumsi `telemetry.batch` → jaga Database-per-Service | ✅ Sesuai prinsip |
+
+### Deployment & Verifikasi (pasca-build)
+| # | Status | Aktivitas |
+|---|---|---|
+| 102 | ✅ | `docker compose build analytics` → image `microservices-analytics` |
+| 103 | ✅ | `docker compose up -d timescaledb-analytics` → init.sql jalan (hypertable + cagg + retention OK) |
+| 104 | ✅ | `docker compose up -d analytics` → healthy, subscribe `telemetry.batch`, NATS+TimescaleDB connected |
+| 105 | ✅ | `docker compose restart kong` → route `/analytics` aktif; `curl localhost:8000/analytics/nodes` → 200 |
+| 106 | ✅ | `curl -X POST localhost:9090/-/reload` → job `analytics-service` aktif & target **UP** |
+
+### Bugfix Pasca-Deploy (data kosong di dashboard)
+| # | Status | Aktivitas |
+|---|---|---|
+| 107 | 🔁 | Analitik kosong padahal `timescaledb-module.telemetry` punya 3882 row (node `ECE334219870`, metric `cwt1_*`). Root cause: upsert gagal `ON CONFLICT` karena `metrics_rollup` tidak punya unique constraint `(time,node_id,metric)` (SQLSTATE 42P10) |
+| 108 | ✅ | `ALTER TABLE metrics_rollup ADD CONSTRAINT uq_rollup_time_node_metric UNIQUE (time,node_id,metric)` + tambahkan ke `infra/timescaledb/analytics/init.sql` agar fresh deploy konsisten |
+| 109 | ✅ | Backfill historis: agregat 1-menit dari `timescaledb-module.telemetry` → `COPY` ke `analytics.metrics_rollup` (348 row, 05:46–07:41) |
+| 110 | 🔁 | `summary` 500: `sum(sum)`/`min`/`max`/`last` (float) di-scan ke `int64` → `cannot losslessly convert`. Fix tipe di `tsdb.QuerySummary` (countSum/firstTS/lastTS int64, sisanya float64) |
+| 111 | ✅ | `CALL refresh_continuous_aggregate` hourly & daily (terpisah, hindari transaction block) → cagg terisi; rebuild + `up -d analytics` (restart saja tidak ambil image baru) |
+| 112 | ✅ | Verifikasi: `/analytics/nodes` (node+3 metric), `/analytics/metrics` 1h=59/24h=3/7d=1 point, `/analytics/summary` 200 (count 1390, avg 27.83); rollup tumbuh live (348→360) tanpa error |

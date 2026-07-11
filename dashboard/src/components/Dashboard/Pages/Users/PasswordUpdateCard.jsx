@@ -9,7 +9,7 @@ function PasswordUpdateCard({
   passSuccess 
 }) {
   return (
-    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3.5 sm:p-6">
+    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4">
       <h3 className="text-xs font-bold font-display text-white tracking-wider uppercase border-b border-emerald-500/10 pb-4 mb-5 flex items-center gap-2.5">
         <Lock className="w-5 h-5 text-emerald-400" />
         Password

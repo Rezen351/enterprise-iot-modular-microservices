@@ -296,7 +296,7 @@ function VersionSecurity() {
   }, [logs, activeTab]);
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-4 w-full animate-fadeIn">
       <VersionSecurityHeader 
         lastAuditTime={lastAuditTime}
         handleCheckUpdates={handleCheckUpdates}

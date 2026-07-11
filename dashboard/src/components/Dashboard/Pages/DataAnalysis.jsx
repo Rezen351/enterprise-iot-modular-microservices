@@ -226,9 +226,9 @@ function DataAnalysis({ selectedModule }) {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-3 w-full animate-fadeIn">
       {/* 1. Header Filter Controls */}
-      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4 sm:gap-6">
+      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
         {/* Left Side: Title & Info */}
         <div className="flex items-center gap-3 sm:gap-4 w-full xl:w-auto xl:flex-1 min-w-0">
            <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
@@ -291,7 +291,7 @@ function DataAnalysis({ selectedModule }) {
       </div>
 
       {/* 3. Core Analytics Metrics & Heatmaps */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full items-stretch">
         {/* Avg Statistics Cards */}
         <div>
           <ParameterSummary summary={dataset.summary} />
@@ -309,7 +309,7 @@ function DataAnalysis({ selectedModule }) {
       </div>
 
       {/* 4. System Logs & Daily Statistics Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full items-stretch">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* System Logs from Database */}
         <div className="lg:col-span-1">
           <SystemLogs

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Cpu, Activity } from 'lucide-react';
+import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Cpu, Activity, Settings } from 'lucide-react';
 import { moduleApi } from '../../../api/module';
-import NodeMonitorModal from '../NodeMonitorModal';
 
 function timeAgo(iso) {
   if (!iso) return 'Never';
@@ -25,13 +24,12 @@ function StatusPill({ status }) {
   );
 }
 
-function NodeManagement({ selectedModule, onBack }) {
+function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
   const [pairedNodes, setPairedNodes] = useState([]);
   const [discoveredNodes, setDiscoveredNodes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
-  const [monitorNode, setMonitorNode] = useState(null);
 
   const isNodeLive = (node) => {
     if (!node?.last_seen_at) return false;
@@ -104,33 +102,37 @@ function NodeManagement({ selectedModule, onBack }) {
   };
 
   return (
-    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md overflow-hidden animate-fadeIn">
+    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md animate-fadeIn">
       {/* Header */}
-      <div className="p-3 sm:p-6 border-b border-white/5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            onClick={onBack}
-            className="p-2 bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <div className="min-w-0">
-            <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-white truncate">
+      <div className="p-3 sm:p-4 border-b border-white/5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 sm:gap-4 w-full">
+          <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+            <Network className="w-8 h-8 sm:w-10 sm:h-10" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-black font-display text-white tracking-wide uppercase truncate">
               Nodes: <span className="text-emerald-400">{selectedModule.name}</span>
-            </h3>
-            <p className="hidden sm:block text-[11px] text-slate-400 font-black uppercase tracking-wider mt-0.5">
-              Pair discovered devices to this module.
-            </p>
+            </h2>
+            <p className="hidden sm:block text-[11px] text-slate-400 mt-0.5">Pair discovered devices to this module.</p>
           </div>
         </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-1.5 px-3 py-2 text-[10px] sm:text-xs font-black bg-slate-800 border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
-          title="Refresh"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onBack}
+            className="h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold text-slate-400 border border-slate-700 hover:text-white hover:border-slate-500 transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          <button
+            onClick={fetchData}
+            className="h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold bg-slate-800 border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition-colors uppercase tracking-wider cursor-pointer flex items-center gap-2"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-4 sm:p-6">
@@ -246,18 +248,18 @@ function NodeManagement({ selectedModule, onBack }) {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-2.5 border-t border-white/5 flex justify-end gap-2">
+                <div className="mt-3 pt-2.5 border-t border-white/5 flex flex-wrap justify-end gap-2">
                   <button
-                    onClick={() => setMonitorNode(node)}
+                    onClick={() => onOpenNodeConfig && onOpenNodeConfig(node)}
                     disabled={busyId === node.node_id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 hover:border-emerald-500/50 hover:text-emerald-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1 px-2 py-1.5 bg-slate-800 border border-slate-700 hover:border-emerald-500/50 hover:text-emerald-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    <Activity className="w-3.5 h-3.5" /> Monitor
+                    <Settings className="w-3 h-3" /> Configure
                   </button>
                   <button
                     onClick={() => handleUnpair(node)}
                     disabled={busyId === node.node_id}
-                    className="px-3 py-1.5 bg-slate-800 border border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1.5 bg-slate-800 border border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Unpair
                   </button>
@@ -275,10 +277,6 @@ function NodeManagement({ selectedModule, onBack }) {
           </div>
         )}
       </div>
-
-      {monitorNode && (
-        <NodeMonitorModal node={monitorNode} onClose={() => setMonitorNode(null)} />
-      )}
     </div>
   );
 }

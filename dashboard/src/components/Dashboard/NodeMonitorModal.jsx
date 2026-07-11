@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Activity, X, Radio, Trash2, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { API_BASE } from '../../api/client';
 
@@ -100,7 +101,7 @@ function NodeMonitorModal({ node, onClose }) {
     }
   }, [messages]);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#030705] animate-fadeIn">
         {/* Header */}
         <div className="p-4 border-b border-white/5 flex items-center justify-between gap-3 bg-[#050b08]/40">
@@ -190,6 +191,7 @@ function NodeMonitorModal({ node, onClose }) {
         </div>
     </div>
   );
+}, document.body);
 }
 
 export default NodeMonitorModal;

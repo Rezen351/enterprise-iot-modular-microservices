@@ -4,13 +4,15 @@ import {
   X,
   User,
   ShieldCheck,
-  Server
+  Server,
+  BarChart3
 } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, isAdmin = false }) {
   const menuItems = [
     { id: 'profile', label: 'PROFILE', icon: User },
     { id: 'module', label: 'MODULE', icon: Server },
+    { id: 'analytics', label: 'ANALYTICS', icon: BarChart3 },
   ];
 
   if (isAdmin) {

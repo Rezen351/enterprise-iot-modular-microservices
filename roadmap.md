@@ -1,15 +1,15 @@
 # 🗺️ Roadmap — IOT-Modular-Microservice
 
-> **Versi:** 1.1.0  
+> **Versi:** 1.2.0  
 > **Terakhir diperbarui:** 2026-07-11  
 > **Status legend:** 🔴 P1 (Kritikal) · 🟡 P2 (Penting) · 🟢 P3 (Normal) · ⬜ Belum dijadwalkan  
 > **Progress:** `[ ]` Belum · `[/]` In Progress · `[x]` Selesai
 
 ---
 
-**Status keseluruhan:** Fase 1 (Auth + Observability) = SELESAI.
-Yang sudah berjalan end-to-end: Auth Service lengkap (register/login via `identifier` email-atau-username/refresh/logout/me/profile/password/sessions/account), seed akun admin default + halaman Manajemen Akun (admin only: aktif/nonaktif, ubah role, hapus, guard self/last-admin), Prometheus + plugin Kong prometheus, dan dashboard React terhubung ke Kong (fitur Auth saja; halaman non-auth di-hide). Target Prometheus `prometheus`, `auth-service`, `kong` semua UP.
-Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analytics, Audit, WS-Gateway, OTA, Cloudflare Tunnel, dan halaman dashboard non-auth.
+**Status keseluruhan:** Fase 1 (Auth + Observability) + Fase 2 (Module Service) + Fase 3 (Analytics Service) = SELESAI.
+Yang sudah berjalan end-to-end: Auth Service lengkap, Module Service (onboarding + telemetry ingest + batch NATS), Analytics Service (subscribe `telemetry.batch` → `timescaledb-analytics` → continuous aggregate → dashboard via Kong), seed akun admin + Manajemen Akun, Prometheus + plugin Kong prometheus, WS-Gateway, dan dashboard React terhubung ke Kong (fitur Auth + Analytics; halaman lain di-hide). Target Prometheus `prometheus`, `auth-service`, `module-service`, `wsgateway-service`, `kong`, dan `analytics-service` UP.
+Belum dikerjakan: Control, Alert, Notification, Stream, ML/Vision, Audit, OTA, Cloudflare Tunnel, dan halaman dashboard non-auth lainnya.
 
 ---
 
@@ -65,7 +65,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## 🟡 Fase 2 — Module Service (P2)
+## 🟡 Fase 2 — Module Service (P2) — SELESAI
 
 > Jembatan antara ESP32 dan backend. Menerima data sensor dan mendistribusikannya.
 
@@ -91,16 +91,30 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 | Status | Item | Deskripsi |
 |---|---|---|
-| `[ ]` | MQTT subscriber telemetry | Subscribe `smartfarm/{node}/telemetry` (hanya node paired) |
-| `[ ]` | Simpan ke MariaDB | Metadata reading di `mariadb-module` |
-| `[ ]` | Simpan ke TimescaleDB | Insert ke hypertable `telemetry` di `timescaledb-module` |
-| `[ ]` | Cache ke Redis | Nilai terbaru per node (TTL) |
-| `[ ]` | Publish NATS | `telemetry.ingest` per reading |
+| `[x]` | MQTT subscriber telemetry | Subscribe `smartfarm/{node}/telemetry` → `IngestTelemetry` |
+| `[x]` | Tag mapping (modular) | Tabel `node_tags` di MariaDB: source_key (dot-path) → tag_name DB, bisa diubah di UI tanpa kode |
+| `[x]` | Simpan ke TimescaleDB | Insert ke hypertable `telemetry` (node_id, module_id, metric, value, raw) |
+| `[x]` | Cache ke Redis | Nilai terbaru per node (`node:latest:{id}`, TTL) |
+| `[x]` | Publish NATS | `telemetry.ingest` per reading (ke WS-Gateway/alert/analytics) |
 | `[ ]` | Publish NATS | `telemetry.batch` setiap 1 menit (agregat) |
 
 ---
 
-## 🟡 Fase 2 — Control Service (P2)
+## 🟡 Fase 3 — Analytics Service (P2) — SELESAI
+
+> Akuisisi data pada database Timescale (atau module), diproses oleh Analytics Service, lalu ditampilkan di dashboard.
+
+| Status | Item |
+|---|---|
+| `[x]` | Subscribe `telemetry.batch` dari NATS (core NATS, mirror pola ws-gateway) |
+| `[x]` | Upsert agregat ke `metrics_rollup` di `timescaledb-analytics` (Database-per-Service) |
+| `[x]` | Agregasi & olah data: downsampling otomatis via continuous aggregate (`metrics_hourly`, `metrics_daily`) |
+| `[x]` | Ekspos hasil agregasi ke Dashboard via Kong (`/analytics/metrics`, `/analytics/summary`, `/analytics/nodes`) |
+| `[x]` | Continuous aggregate + Data Retention Policy (raw 30d, refresh policy 1j/1h) |
+
+---
+
+## 🟡 Fase 4 — Control Service (P2)
 
 > Meneruskan perintah dari dashboard/API ke ESP32 lewat MQTT.
 
@@ -115,7 +129,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## 🟢 Fase 3 — Alert Service (P3)
+## 🟢 Fase 5 — Alert Service (P3)
 
 > Mengevaluasi data sensor terhadap threshold dan memicu notifikasi.
 
@@ -131,7 +145,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## 🟢 Fase 3 — Notification Service (P3)
+## 🟢 Fase 5 — Notification Service (P3)
 
 > Mengirim notifikasi ke pengguna berdasarkan alert yang dipicu.
 
@@ -146,7 +160,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 4 — Stream Service
+## ⬜ Fase 6 — Stream Service
 
 | Status | Item |
 |---|---|
@@ -156,7 +170,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 5 — ML / Vision API
+## ⬜ Fase 7 — ML / Vision API
 
 | Status | Item |
 |---|---|
@@ -167,17 +181,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 6 — Analytics Service
-
-| Status | Item |
-|---|---|
-| `[ ]` | Subscribe `telemetry.>` dari NATS |
-| `[ ]` | Agregasi ke `timescaledb-analytics` |
-| `[ ]` | Continuous aggregate + Data Retention Policy |
-
----
-
-## ⬜ Fase 7 — Audit Service
+## ⬜ Fase 8 — Audit Service
 
 | Status | Item |
 |---|---|
@@ -187,7 +191,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## 🟡 Fase 8 — WS-Gateway
+## 🟡 Fase 9 — WS-Gateway
 
 | Status | Item |
 | --- | --- |
@@ -198,7 +202,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 9 — Dashboard
+## ⬜ Fase 10 — Dashboard
 
 | Status | Item |
 |---|---|
@@ -210,7 +214,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 10 — OTA Service
+## ⬜ Fase 11 — OTA Service
 
 | Status | Item |
 |---|---|
@@ -220,7 +224,7 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 
 ---
 
-## ⬜ Fase 11 — Prometheus Metrics Service [P11]
+## ⬜ Fase 12 — Prometheus Metrics Service [P11]
 
 | Status | Item | Deskripsi |
 |---|---|---|
@@ -230,11 +234,11 @@ Belum dikerjakan: Module, Control, Alert, Notification, Stream, ML/Vision, Analy
 | `[ ]` | Metrik terkumpul | request count, error rate, response time, uptime, resource usage |
 | `[ ]` | Publisher `metrics.health` | Publish metrik health aggregator sendiri |
 
-> **📝 Catatan (dari implementasi Fase 1):** Saat ini metrik **tidak lewat NATS** — tiap service (Auth) langsung expose HTTP `/metrics` dan Prometheus **scrape langsung** (`auth:8080/metrics`, `kong:8001/metrics`). Pada Fase 11 ini HARUS diubah ke desain awal: service publish ke NATS subject `metrics.health` → "Prometheus Service" subscribe & aggregasi → expose `/metrics`. Jadi perlu buat service penengah (aggregator) baru; jangan biarkan scrape langsung saja jika ingin konsisten dengan arsitektur event-driven.
+> **📝 Catatan (dari implementasi Fase 1):** Saat ini metrik **tidak lewat NATS** — tiap service (Auth) langsung expose HTTP `/metrics` dan Prometheus **scrape langsung** (`auth:8080/metrics`, `kong:8001/metrics`). Pada Fase 12 ini HARUS diubah ke desain awal: service publish ke NATS subject `metrics.health` → "Prometheus Service" subscribe & aggregasi → expose `/metrics`. Jadi perlu buat service penengah (aggregator) baru; jangan biarkan scrape langsung saja jika ingin konsisten dengan arsitektur event-driven.
 
 ---
 
-## ⬜ Fase 12 — Cloudflare Tunnel
+## ⬜ Fase 13 — Cloudflare Tunnel
 
 | Status | Item |
 |---|---|

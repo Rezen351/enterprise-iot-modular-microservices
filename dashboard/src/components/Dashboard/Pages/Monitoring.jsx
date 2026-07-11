@@ -505,15 +505,15 @@ function Monitoring({ selectedModule, setActiveTab }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-2 sm:gap-4 w-full animate-fadeIn">
       {/* 1. Header Area */}
-      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3.5 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-        <div className="flex items-center gap-4 w-full">
+      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 w-full">
           <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
             <Activity className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-2xl font-black font-display text-white tracking-wide uppercase truncate">
+            <h2 className="text-xl sm:text-2xl font-black font-display text-white tracking-wide uppercase truncate">
               Monitoring
             </h2>
             <p className="hidden sm:block text-slate-400 text-xs sm:text-sm mt-1 font-medium truncate sm:whitespace-normal">
@@ -525,10 +525,10 @@ function Monitoring({ selectedModule, setActiveTab }) {
       </div>
 
       {/* 2. Primary Layout Grid */}
-      <div className="flex flex-col gap-4 sm:gap-6 w-full">
+      <div className="flex flex-col gap-3 sm:gap-4 w-full">
         {/* Row 1: System Status, Environmental Overview, Quick Actions */}
-        <div className="grid grid-cols-1 xl:grid-cols-[0.6fr_1.6fr_0.8fr] gap-4 sm:gap-6">
-          <div className="w-full flex flex-col gap-4 sm:gap-6 order-2 xl:order-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[0.6fr_1.6fr_0.8fr] gap-3 sm:gap-4">
+          <div className="w-full flex flex-col gap-3 sm:gap-4 order-2 xl:order-1">
             <SystemStatus
               isMistPumpOn={currentMistPump}
               isInletPumpOn={currentInletPump}
@@ -559,7 +559,7 @@ function Monitoring({ selectedModule, setActiveTab }) {
         </div>
 
         {/* Row 2: Nutrient and Water Status, Sensor Status */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
           <div className="w-full">
             <NutrientWaterStatus activeModuleData={activeModuleData} alertsConfig={settings?.alerts} />
           </div>
@@ -572,7 +572,7 @@ function Monitoring({ selectedModule, setActiveTab }) {
         <AdditionalSensors activeModuleData={activeModuleData} />
 
         {/* Row 3: Timers and Schedules */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
           <MistSchedule mistingSchedule={settings?.intervalSchedules?.misting_pump || settings?.mistingSchedule} liveTimer={timersData?.misting} />
           <IntakeSchedule intakeSchedule={settings?.intervalSchedules?.intake_pump || settings?.intakeSchedule} liveTimer={timersData?.intake} />
           <ValveSchedule otherSchedules={settings?.otherSchedules} liveTimer={timersData?.valve} />

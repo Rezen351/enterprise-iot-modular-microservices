@@ -264,11 +264,11 @@ function Setting({ selectedModule }) {
   // Loading UI Screen (optimized for HMI tablet visibility)
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] sm:min-h-[50vh] gap-4 sm:gap-6 w-full border border-emerald-500/10 bg-[#030705]/80 backdrop-blur-md p-4 sm:p-8">
-        <Loader2 className="w-10 h-10 sm:w-14 sm:h-14 text-emerald-400 animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[30vh] sm:min-h-[40vh] gap-3 sm:gap-4 w-full border border-emerald-500/10 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4">
+        <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-400 animate-spin" />
         <div className="text-center">
-          <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider">Loading...</h3>
-          <p className="text-slate-400 text-xs sm:text-sm mt-2 font-medium">Fetching from Node-RED...</p>
+          <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">Loading...</h3>
+          <p className="text-slate-400 text-[10px] sm:text-xs mt-1.5 font-medium">Fetching from Node-RED...</p>
         </div>
       </div>
     );
@@ -277,16 +277,16 @@ function Setting({ selectedModule }) {
   // Error UI Screen (optimized for HMI tablet visibility, touch targets >= 48px)
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] sm:min-h-[50vh] gap-4 sm:gap-6 w-full border border-red-500/20 bg-[#0c0404]/80 backdrop-blur-md p-4 sm:p-8">
-        <div className="p-3 sm:p-4 bg-red-500/10 border border-red-500/20 text-red-400">
-          <AlertTriangle className="w-10 h-10 sm:w-14 sm:h-14" />
+      <div className="flex flex-col items-center justify-center min-h-[30vh] sm:min-h-[40vh] gap-3 sm:gap-4 w-full border border-red-500/20 bg-[#0c0404]/80 backdrop-blur-md p-3 sm:p-4">
+        <div className="p-2 sm:p-3 bg-red-500/10 border border-red-500/20 text-red-400">
+          <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10" />
         </div>
         <div className="text-center max-w-md">
-          <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider">Connection Error</h3>
-          <p className="text-slate-400 text-xs sm:text-sm mt-2 font-medium">
+          <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">Connection Error</h3>
+          <p className="text-slate-400 text-[10px] sm:text-xs mt-1.5 font-medium">
             Could not reach Node-RED. Check server and network.
           </p>
-          <div className="mt-3 px-3 py-2 bg-red-950/20 border border-red-500/10 text-[10px] sm:text-xs font-mono break-all">
+          <div className="mt-2 px-2 py-1.5 bg-red-950/20 border border-red-500/10 text-[9px] sm:text-[10px] font-mono break-all">
             Error: {error}
           </div>
         </div>
@@ -301,7 +301,7 @@ function Setting({ selectedModule }) {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12 text-slate-200">
+    <div className="flex flex-col gap-4 w-full animate-fadeIn text-slate-200">
       <SettingsHeader 
         autoMode={autoMode}
         setAutoMode={setAutoMode}

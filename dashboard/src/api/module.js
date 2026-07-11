@@ -34,6 +34,9 @@ export const moduleApi = {
   listNodes: (params) => request(`/nodes${qs(params)}`, { auth: true }),
   listDiscovered: () => request('/nodes/discovered', { auth: true }),
   getNode: (nodeId) => request(`/nodes/${nodeId}`, { auth: true }),
+  getNodeTags: (nodeId) => request(`/nodes/${nodeId}/tags`, { auth: true }),
+  saveNodeTags: (nodeId, tags) =>
+    request(`/nodes/${nodeId}/tags`, { method: 'PUT', auth: true, body: tags }),
   pairNode: (nodeId, { module_id, name }) =>
     request(`/nodes/${nodeId}/pair`, { method: 'POST', auth: true, body: { module_id, name } }),
   unpairNode: (nodeId) => request(`/nodes/${nodeId}/unpair`, { method: 'POST', auth: true }),

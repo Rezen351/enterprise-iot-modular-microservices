@@ -276,10 +276,10 @@ function Snapshot({ selectedModule }) {
   }, [snapshots]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col lg:flex-row gap-4 w-full animate-fadeIn">
       
       {/* LEFT GALLERY PANEL */}
-      <div className="flex-1 flex flex-col gap-6 min-w-0">
+      <div className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
         {selectedModule && (
           <div className="flex justify-end">
             <ModuleBadge selectedModule={selectedModule} />

@@ -58,6 +58,17 @@ scrape_configs:
         target_label: instance
         replacement: "wsgateway-service"
 
+  # Analytics Service — telemetry aggregation metrics
+  - job_name: "analytics-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["analytics:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "analytics-service"
+
   # Kong API Gateway — exposes metrics on port 8001 (admin API)
   - job_name: "kong"
     metrics_path: /metrics

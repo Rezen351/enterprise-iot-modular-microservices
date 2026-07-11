@@ -114,6 +114,21 @@ upstreams:
       - target: wsgateway:8090
         weight: 100
 
+  - name: analytics-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: analytics:8080
+        weight: 100
+
 # ─── Services ─────────────────────────────────────────────────────────
 services:
   # Auth Service
@@ -235,5 +250,29 @@ services:
             config:
               minute: 600
               hour: 10000
+              policy: local
+              fault_tolerant: true
+
+  # Analytics Service — aggregated telemetry queries for the dashboard
+  - name: analytics-service
+    host: analytics-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: analytics-routes
+        paths:
+          - /analytics
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true

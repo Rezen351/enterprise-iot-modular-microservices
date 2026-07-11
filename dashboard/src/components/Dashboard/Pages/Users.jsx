@@ -143,31 +143,31 @@ function Profile({ onLogout }) {
   const role = (profile.roles && profile.roles[0]) || '—';
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-3 w-full animate-fadeIn">
       <UsersHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left column: Profile + Password */}
-        <div className="lg:col-span-6 flex flex-col gap-6">
+        <div className="lg:col-span-6 flex flex-col gap-4">
           {/* Profile card */}
-          <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md  p-3.5 sm:p-6 ">
-            <h3 className="text-sm font-black font-display text-white tracking-widest uppercase border-b border-emerald-500/10 pb-4 mb-6 flex items-center gap-3">
-              <UserIcon className="w-5 h-5 text-emerald-400" />
+          <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md  p-3 sm:p-6 ">
+            <h3 className="text-xs sm:text-sm font-black font-display text-white tracking-widest uppercase border-b border-emerald-500/10 pb-3 mb-4 sm:pb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+              <UserIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
               Profile
             </h3>
 
-            <form onSubmit={handleUpdateProfile} className="space-y-6">
+            <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-5">
               <div>
-                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2">Unique User ID</label>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Unique User ID</label>
                 <input type="text" value={profile.id || ''} disabled
-                  className="w-full bg-[#040e0a]/60 border border-emerald-500/5 text-slate-500 text-sm h-12 sm:h-14 px-4 sm:px-5  font-mono focus:outline-none cursor-not-allowed " />
+                  className="w-full bg-[#040e0a]/60 border border-emerald-500/5 text-slate-500 text-sm h-10 sm:h-11 lg:h-12 px-3 sm:px-4 font-mono focus:outline-none cursor-not-allowed" />
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2">Display Username</label>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Display Username</label>
                 <input type="text" value={form.username} required
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full bg-[#040e0a] border border-emerald-500/20 hover:border-emerald-500/40 text-slate-200 text-sm h-12 sm:h-14 px-4 sm:px-5  focus:outline-none focus:border-emerald-500/60 font-black " />
+                  className="w-full bg-[#040e0a] border border-emerald-500/20 hover:border-emerald-500/40 text-slate-200 text-sm h-10 sm:h-11 lg:h-12 px-3 sm:px-4 focus:outline-none focus:border-emerald-500/60 font-black" />
               </div>
 
               <div>
@@ -184,24 +184,24 @@ function Profile({ onLogout }) {
                 </div>
               </div>
 
-              <div className="text-[11px] font-black text-slate-500 space-y-1.5 pt-3 border-t border-emerald-500/5">
-                <div className="flex justify-between uppercase"><span>Account Created:</span> <span className="text-slate-400 tabular-nums">{fmt(profile.created_at)}</span></div>
+              <div className="text-[10px] sm:text-[11px] font-black text-slate-500 space-y-1.5 pt-2 sm:pt-3 border-t border-emerald-500/5">
+                <div className="flex justify-between uppercase"><span>Created:</span> <span className="text-slate-400 tabular-nums">{fmt(profile.created_at)}</span></div>
                 <div className="flex justify-between uppercase"><span>Last Login:</span> <span className="text-slate-400 tabular-nums">{fmt(profile.last_login_at)}</span></div>
               </div>
 
               {profileError && (
-                <div className="text-[11px] font-bold text-red-400 flex items-center gap-1.5 animate-fadeIn">
-                  <AlertTriangle className="w-4 h-4 shrink-0" /><span>{profileError}</span>
+                <div className="text-xs font-bold text-red-400 flex items-center gap-1.5 animate-fadeIn">
+                  <AlertTriangle className="w-4 h-4 shrink-0" /><span className="break-all">{profileError}</span>
                 </div>
               )}
 
-              <div className="flex items-center gap-5 pt-2">
+              <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={isSavingProfile}
-                  className="h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm font-black text-black bg-emerald-500 hover:bg-emerald-400  transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]  uppercase tracking-widest">
+                  className="h-10 sm:h-11 lg:h-12 px-4 sm:px-6 text-xs sm:text-sm font-black text-black bg-emerald-500 hover:bg-emerald-400 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] uppercase tracking-widest">
                   {isSavingProfile ? 'Saving...' : 'Save Profile'}
                 </button>
                 {saveSuccess && (
-                  <span className="text-[12px] font-black text-emerald-400 flex items-center gap-2 animate-fadeIn uppercase tracking-wide">
+                  <span className="text-sm font-black text-emerald-400 flex items-center gap-2 animate-fadeIn uppercase tracking-wide">
                     <CheckCircle2 className="w-5 h-5" /> Saved
                   </span>
                 )}
@@ -220,29 +220,29 @@ function Profile({ onLogout }) {
         </div>
 
         {/* Right column: Sessions + Danger zone */}
-        <div className="lg:col-span-6 flex flex-col gap-6">
+        <div className="lg:col-span-6 flex flex-col gap-4">
           {/* Active Sessions */}
-          <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md  p-3.5 sm:p-6 ">
-            <h3 className="text-sm font-black font-display text-white tracking-widest uppercase border-b border-emerald-500/10 pb-4 mb-5 flex items-center gap-3">
-              <Monitor className="w-5 h-5 text-emerald-400" />
-Sessions
+          <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md  p-3 sm:p-6 ">
+            <h3 className="text-xs sm:text-sm font-black font-display text-white tracking-widest uppercase border-b border-emerald-500/10 pb-3 mb-3 sm:pb-4 sm:mb-5 flex items-center gap-2 sm:gap-3">
+              <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+              Sessions
             </h3>
 
             {loadingSessions ? (
-              <div className="flex items-center justify-center py-10 text-slate-500">
+              <div className="flex items-center justify-center py-8 text-slate-500">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
             ) : sessions.length === 0 ? (
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-6 text-center">No active sessions</p>
+              <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 sm:py-6 text-center">No active sessions</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {sessions.map((s) => (
-                  <div key={s.id} className="p-3  border border-emerald-500/10 bg-[#040e0a]/60">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="text-xs font-bold text-slate-300 truncate">{s.user_agent || 'Unknown device'}</span>
+                  <div key={s.id} className="p-2.5 sm:p-3 border border-emerald-500/10 bg-[#040e0a]/60">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-bold text-slate-300 truncate">{s.user_agent || 'Unknown device'}</span>
                     </div>
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex flex-wrap gap-x-4 gap-y-1">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex flex-wrap gap-x-3 gap-y-1">
                       <span>IP: <span className="text-slate-400">{s.ip_address || '—'}</span></span>
                       <span>Issued: <span className="text-slate-400">{fmt(s.issued_at)}</span></span>
                       <span>Expires: <span className="text-slate-400">{fmt(s.expires_at)}</span></span>
@@ -254,25 +254,25 @@ Sessions
           </div>
 
           {/* Danger zone */}
-          <div className="border border-red-500/20 bg-red-950/10 backdrop-blur-md  p-3.5 sm:p-6 ">
-            <h3 className="text-sm font-black font-display text-red-400 tracking-widest uppercase border-b border-red-500/10 pb-4 mb-5 flex items-center gap-3">
-              <Trash2 className="w-5 h-5" />
+          <div className="border border-red-500/20 bg-red-950/10 backdrop-blur-md  p-3 sm:p-6 ">
+            <h3 className="text-xs sm:text-sm font-black font-display text-red-400 tracking-widest uppercase border-b border-red-500/10 pb-3 mb-3 sm:pb-4 sm:mb-5 flex items-center gap-2 sm:gap-3">
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
               Delete Account
             </h3>
-            <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mb-3 sm:mb-4 leading-relaxed">
               Deactivating revokes all sessions. This cannot be undone.
             </p>
-            <form onSubmit={handleDeleteAccount} className="space-y-4">
+            <form onSubmit={handleDeleteAccount} className="space-y-3 sm:space-y-4">
               <input type="password" value={deletePassword} placeholder="Confirm password"
                 onChange={(e) => setDeletePassword(e.target.value)}
-                className="w-full bg-[#040e0a] border border-red-500/20 hover:border-red-500/40 text-slate-200 text-sm h-11 px-4  focus:outline-none focus:border-red-500/60 font-mono " />
+                className="w-full bg-[#040e0a] border border-red-500/20 hover:border-red-500/40 text-slate-200 text-sm h-10 sm:h-11 px-3 sm:px-4 focus:outline-none focus:border-red-500/60 font-mono" />
               {deleteError && (
-                <div className="text-[11px] font-bold text-red-400 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" /><span>{deleteError}</span>
+                <div className="text-[10px] sm:text-[11px] font-bold text-red-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /><span>{deleteError}</span>
                 </div>
               )}
               <button type="submit" disabled={isDeleting}
-                className="h-11 px-5 text-xs font-bold text-red-300 hover:text-white border border-red-500/30 hover:border-red-500/60 bg-red-950/20 hover:bg-red-900/30  transition-all cursor-pointer disabled:opacity-40 active:scale-[0.98] uppercase tracking-wider">
+                className="w-full sm:w-auto h-10 sm:h-11 px-4 sm:px-5 text-[10px] sm:text-xs font-bold text-red-300 hover:text-white border border-red-500/30 hover:border-red-500/60 bg-red-950/20 hover:bg-red-900/30  transition-all cursor-pointer disabled:opacity-40 active:scale-[0.98] uppercase tracking-wider">
                 {isDeleting ? 'Deactivating...' : 'Deactivate Account'}
               </button>
             </form>

@@ -116,6 +116,29 @@ services:
     networks:
       - iot-net
 
+  # ──────────────────────────────────────
+  # ANALYTICS SERVICE — database milik sendiri (TimescaleDB)
+  # Fase 3: agregasi telemetry dari NATS → continuous aggregate → dashboard
+  # ──────────────────────────────────────
+  timescaledb-analytics:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${TIMESCALE_ANALYTICS_DB:-analytics_ts}
+      POSTGRES_USER: ${TIMESCALE_ANALYTICS_USER:-analytics_user}
+      POSTGRES_PASSWORD: ${TIMESCALE_ANALYTICS_PASSWORD:-analytics_pass}
+    volumes:
+      - ./volumes/timescaledb-analytics:/var/lib/postgresql/data
+      - ./infra/timescaledb/analytics/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${TIMESCALE_ANALYTICS_USER:-analytics_user} -d ${TIMESCALE_ANALYTICS_DB:-analytics_ts}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iot-net
+
   module:
     build:
       context: ./services/module
@@ -150,6 +173,33 @@ services:
       retries: 5
     ports:
       - "8081:8080" # exposed for local testing
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # ANALYTICS SERVICE — aggregate telemetry & serve dashboard queries
+  # ──────────────────────────────────────
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      TIMESCALE_DSN: "postgres://${TIMESCALE_ANALYTICS_USER:-analytics_user}:${TIMESCALE_ANALYTICS_PASSWORD:-analytics_pass}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB:-analytics_ts}?sslmode=disable"
+      NATS_URL: "nats://nats:4222"
+      PORT: "8080"
+    depends_on:
+      timescaledb-analytics:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8083:8080" # exposed for local testing
     networks:
       - iot-net
 

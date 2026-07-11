@@ -10,13 +10,13 @@ function VersionSecurityHeader({
   scanProgress 
 }) {
   return (
-    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3.5 sm:p-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
-      <div className="flex items-center gap-4 w-full xl:w-auto xl:flex-1 min-w-0">
+    <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 w-full xl:w-auto xl:flex-1 min-w-0">
         <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
           <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg sm:text-2xl font-black font-display text-white tracking-widest uppercase truncate">
+          <h2 className="text-xl sm:text-2xl font-black font-display text-white tracking-wide uppercase truncate">
             Security
           </h2>
           <p className="hidden sm:block text-slate-400 text-xs sm:text-sm mt-1 font-medium truncate sm:whitespace-normal">

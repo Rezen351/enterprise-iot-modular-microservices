@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/almuzky/iot/services/module/internal/cache"
@@ -36,10 +37,11 @@ type ModuleService struct {
 	cache *cache.StatusCache
 	nats  NATSPublisher
 	ts    *tsdb.Store
+	batch *telemetryBatcher
 }
 
 func New(repo *repository.Repository, c *cache.StatusCache, nats NATSPublisher, ts *tsdb.Store) *ModuleService {
-	return &ModuleService{repo: repo, cache: c, nats: nats, ts: ts}
+	return &ModuleService{repo: repo, cache: c, nats: nats, ts: ts, batch: newTelemetryBatcher()}
 }
 
 // ─── Modules ─────────────────────────────────────────────────────────────────
@@ -276,7 +278,7 @@ func (s *ModuleService) IngestTelemetry(ctx context.Context, nodeID string, payl
 		return
 	}
 
-	var data map[string]json.RawMessage
+	var data map[string]interface{}
 	if err := json.Unmarshal(payload, &data); err != nil {
 		return
 	}
@@ -287,54 +289,76 @@ func (s *ModuleService) IngestTelemetry(ctx context.Context, nodeID string, payl
 		return
 	}
 	moduleID, _ := s.repo.GetModuleIDByNode(ctx, nodeID)
+	moduleIDStr := ""
+	if moduleID != nil {
+		moduleIDStr = *moduleID
+	}
 
 	for _, t := range tags {
 		if !t.Enabled {
 			continue
 		}
-		raw, ok := data[t.SourceKey]
+		// source_key supports dot-paths into nested telemetry, e.g.
+		// "telemetry.modbus.cwt1.temp" or "network.wifi_rssi".
+		val, ok := resolvePath(data, t.SourceKey)
 		if !ok {
 			continue
 		}
-		val, ok := toFloat(raw, t.DataType)
+		f, ok := toFloat(val, t.DataType)
 		if !ok {
 			continue // non-numeric (e.g. string) is kept only in raw
 		}
-		if err := s.ts.WriteReading(ctx, nodeID, moduleID, t.TagName, val, payload); err == nil {
-			s.publishTelemetry(nodeID, t.TagName, val)
+		if err := s.ts.WriteReading(ctx, nodeID, moduleID, t.TagName, f, payload); err == nil {
+			s.publishTelemetry(nodeID, t.TagName, f)
+			s.batch.add(nodeID, moduleIDStr, t.TagName, f, time.Now().UnixMilli())
 		}
 	}
 }
 
-// toFloat coerces a JSON value to a float64 according to the configured type.
-func toFloat(raw json.RawMessage, dt string) (float64, bool) {
+// resolvePath walks a dot-separated path (e.g. "a.b.c") into a decoded JSON map.
+func resolvePath(data map[string]interface{}, path string) (interface{}, bool) {
+	cur := interface{}(data)
+	for _, p := range strings.Split(path, ".") {
+		m, ok := cur.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+		v, ok := m[p]
+		if !ok {
+			return nil, false
+		}
+		cur = v
+	}
+	return cur, true
+}
+
+// toFloat coerces a decoded JSON value to a float64 according to the configured type.
+func toFloat(v interface{}, dt string) (float64, bool) {
 	switch dt {
 	case "int":
-		var i int64
-		if err := json.Unmarshal(raw, &i); err != nil {
-			return 0, false
+		switch n := v.(type) {
+		case float64:
+			return float64(int64(n)), true
+		case int:
+			return float64(n), true
 		}
-		return float64(i), true
+		return 0, false
 	case "bool":
-		var b bool
-		if err := json.Unmarshal(raw, &b); err != nil {
+		b, ok := v.(bool)
+		if !ok {
 			return 0, false
 		}
 		return map[bool]float64{true: 1, false: 0}[b], true
 	default: // float / numeric
-		var f float64
-		if err := json.Unmarshal(raw, &f); err == nil {
-			return f, true
+		switch n := v.(type) {
+		case float64:
+			return n, true
+		case float32:
+			return float64(n), true
+		case int:
+			return float64(n), true
 		}
-		var n json.Number
-		if err := json.Unmarshal(raw, &n); err != nil {
-			return 0, false
-		}
-		v, err := n.Float64()
-		if err != nil {
-			return 0, false
-		}
-		return v, true
+		return 0, false
 	}
 }
 

@@ -4,7 +4,7 @@ import { useModule } from '../../../context/ModuleContext';
 import { moduleApi } from '../../../api/module';
 import NodeManagement from './NodeManagement';
 
-function ModuleManagement() {
+function ModuleManagement({ onOpenNodeConfig }) {
   const { modules, fetchModules } = useModule();
   const [isEditing, setIsEditing] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
@@ -83,42 +83,41 @@ function ModuleManagement() {
 
   if (selectedModuleForNodes) {
     return (
-      <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+      <div className="flex flex-col gap-3 w-full animate-fadeIn">
         <NodeManagement
           selectedModule={selectedModuleForNodes}
           onBack={() => { setSelectedModuleForNodes(null); fetchModules(); }}
+          onOpenNodeConfig={onOpenNodeConfig}
         />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-3 w-full animate-fadeIn">
       <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3 w-full min-w-0">
-            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-              <Server className="w-5 h-5" />
+        <div className="p-3 sm:p-4 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 w-full">
+            <div className="p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+              <Server className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-white truncate">Modules</h3>
-              <p className="hidden sm:block text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate sm:whitespace-normal">
-                Create modules, then pair ESP32 devices via MQTT discovery.
-              </p>
+              <h2 className="text-xl sm:text-2xl font-black font-display text-white tracking-wide uppercase truncate">Modules</h2>
+              <p className="hidden sm:block text-[11px] text-slate-400 mt-0.5">Create modules, then pair ESP32 devices.</p>
             </div>
           </div>
           {!isEditing && (
             <button
               onClick={handleAddNew}
-              className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold bg-emerald-500 text-black hover:bg-emerald-400 transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold bg-emerald-500 text-black hover:bg-emerald-400 transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               Add Module
             </button>
           )}
         </div>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-4">
           {isEditing ? (
             <form onSubmit={handleSave} className="animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="grid grid-cols-1 gap-4 mb-6">
@@ -248,9 +247,6 @@ function ModuleManagement() {
       {!isEditing && (
         <div className="border border-emerald-500/10 bg-emerald-950/10 p-4 flex items-start gap-3">
           <Cpu className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            ESP32 devices auto-discover via MQTT. Pair them to a module to start.
-          </p>
         </div>
       )}
     </div>

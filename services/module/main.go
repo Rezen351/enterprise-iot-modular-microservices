@@ -102,6 +102,11 @@ func main() {
 		defer sub.Disconnect()
 	}
 
+	// ─── Telemetry batch publisher (telemetry.batch every 1 min) ────
+	bgCtx, bgCancel := context.WithCancel(context.Background())
+	defer bgCancel()
+	go svc.StartBatchPublisher(bgCtx, time.Minute)
+
 	// ─── Router ────────────────────────────────────────────────────────
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)

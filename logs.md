@@ -271,3 +271,12 @@
 | 110 | 🔁 | `summary` 500: `sum(sum)`/`min`/`max`/`last` (float) di-scan ke `int64` → `cannot losslessly convert`. Fix tipe di `tsdb.QuerySummary` (countSum/firstTS/lastTS int64, sisanya float64) |
 | 111 | ✅ | `CALL refresh_continuous_aggregate` hourly & daily (terpisah, hindari transaction block) → cagg terisi; rebuild + `up -d analytics` (restart saja tidak ambil image baru) |
 | 112 | ✅ | Verifikasi: `/analytics/nodes` (node+3 metric), `/analytics/metrics` 1h=59/24h=3/7d=1 point, `/analytics/summary` 200 (count 1390, avg 27.83); rollup tumbuh live (348→360) tanpa error |
+
+### Dashboard Analytics — penyempurnaan tampilan
+| # | Status | Aktivitas |
+|---|---|---|
+| 113 | ✅ | `Analytics.jsx`: label node dipendek (contoh `ECE334…9870`), metric selector dihapus → semua metric digambar di 1 multi-line chart |
+| 114 | ✅ | Tambah histogram per-metric + matriks korelasi Pearson (heatmap) dihitung client-side |
+| 115 | ✅ | Deteksi metric boolean (semua nilai 0/1) → dipisah ke panel "Digital states" dengan step-line chart + ringkasan ON/OFF & %on; metric analog tetap di trend kontinyu. Analog input otomatis masuk trend (numeric) |
+| 116 | 🔁 | Input digital `input1..4` (data_type bool) tidak muncul di telemetry/analytics padahal tag & payload ada. Root cause: `module` `toFloat` hanya terima `bool` JSON, padahal device kirim angka (`"input1":0` → float64) → dibuang |
+| 117 | ✅ | Fix `toFloat` case `bool` terima float64/float32/int (0/1) & string (true/false/on/off/yes/no); rebuild + restart `module`. `input1..4` kini mengalir ke telemetry → `telemetry.batch` → `metrics_rollup` (0/1) → tampil di panel Digital states |

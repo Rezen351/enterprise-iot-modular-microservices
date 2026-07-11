@@ -41,7 +41,7 @@ func main() {
 	defer nc.Drain()
 	log.Println("[ws-gateway] NATS connected")
 
-	h := handler.New(nc)
+	h := handler.New(nc, cfg.JWTSecret)
 
 	// ─── Router ───────────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -51,8 +51,9 @@ func main() {
 	r.Get("/health", handler.Health)
 
 	// Real-time node MQTT payloads (published by Module Service to mqtt.{node_id}).
+	// Secured by JWT: dashboard must send a valid access token via the
+	// Authorization header or ?token= query param on the WS handshake.
 	r.Get("/ws/nodes/{node_id}/live", h.NodeLive)
-	// Future: r.Get("/ws/system-status", h.SystemStatus)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

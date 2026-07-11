@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Cpu, Activity, Settings } from 'lucide-react';
+import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Settings } from 'lucide-react';
 import { moduleApi } from '../../../api/module';
 
 function timeAgo(iso) {
@@ -162,9 +162,7 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
                 <div key={node.node_id} className="p-3.5 bg-slate-950/70 border border-amber-500/20 hover:border-amber-500/50 flex flex-col justify-between transition-all">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-amber-400" /> Found
-                      </span>
+                      <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Found</span>
                       <StatusPill status={node.status} />
                     </div>
                     <div className="space-y-1 text-xs font-black text-slate-400 font-mono">

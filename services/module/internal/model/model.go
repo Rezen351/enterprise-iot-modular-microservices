@@ -90,7 +90,7 @@ type NodeTag struct {
 	TagName     string    `json:"tag_name"`   // metric stored in TimescaleDB `telemetry.metric`
 	DisplayName string    `json:"display_name"`
 	Unit        string    `json:"unit"`
-	DataType    string    `json:"data_type"` // float | int | bool | string
+	DataType    string    `json:"data_type"` // float | int | bool
 	Enabled     bool      `json:"enabled"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

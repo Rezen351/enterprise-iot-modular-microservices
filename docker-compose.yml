@@ -214,6 +214,7 @@ services:
     environment:
       NATS_URL: "nats://nats:4222"
       PORT: "8090"
+      JWT_SECRET: "${JWT_SECRET}"
     depends_on:
       nats:
         condition: service_started
@@ -318,6 +319,22 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    networks:
+      - iot-net
+
+  # ────────────────────────────────────
+  # MONITOR — Docker Compose Resource Monitor
+  # CLI tool to check CPU, RAM, Network, and Disk usage
+  # ────────────────────────────────────
+  monitor:
+    build:
+      context: ./services/monitor
+      dockerfile: Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker-compose.yml:/workspace/docker-compose.yml:ro
+    working_dir: /workspace
+    command: ["stats"]
     networks:
       - iot-net
 

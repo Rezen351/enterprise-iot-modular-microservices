@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User as UserIcon, CheckCircle2, AlertTriangle, ShieldCheck, Monitor, Trash2, Loader2 } from 'lucide-react';
-import UsersHeader from './Users/UsersHeader';
+import PageHeader from './PageHeader';
 import PasswordUpdateCard from './Users/PasswordUpdateCard';
 import { authApi } from '../../../api/auth';
 
@@ -144,7 +144,7 @@ function Profile({ onLogout }) {
 
   return (
     <div className="flex flex-col gap-3 w-full animate-fadeIn">
-      <UsersHeader />
+      <PageHeader icon={UserIcon} title="Account" />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left column: Profile + Password */}

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/almuzky/iot/services/wsgateway/internal/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/nats-io/nats.go"
@@ -12,11 +13,12 @@ import (
 
 // Handler bridges NATS topics to dashboard websocket clients.
 type Handler struct {
-	nc *nats.Conn
+	nc        *nats.Conn
+	jwtSecret string
 }
 
-func New(nc *nats.Conn) *Handler {
-	return &Handler{nc: nc}
+func New(nc *nats.Conn, jwtSecret string) *Handler {
+	return &Handler{nc: nc, jwtSecret: jwtSecret}
 }
 
 // Health is a liveness probe.
@@ -38,12 +40,33 @@ type client struct {
 	send chan []byte
 }
 
+// authenticate validates the WS handshake token (Bearer header or ?token=
+// query param). On failure it writes an HTTP 401 and returns false.
+func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request) bool {
+	token := auth.ExtractToken(r.Header.Get("Authorization"), r.URL.Query().Get("token"))
+	if token == "" {
+		http.Error(w, `{"error":"missing token"}`, http.StatusUnauthorized)
+		return false
+	}
+	if _, err := auth.ValidateToken(token, h.jwtSecret); err != nil {
+		log.Printf("[ws-gateway] auth failed: %v", err)
+		http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
 // NodeLive upgrades to a websocket and streams every NATS message published on
 // the node's live subject (mqtt.{node_id}) to the connecting dashboard client.
+// Requires a valid JWT (Bearer header or ?token= query param).
 func (h *Handler) NodeLive(w http.ResponseWriter, r *http.Request) {
 	nodeID := chi.URLParam(r, "node_id")
 	if nodeID == "" {
 		http.Error(w, "node_id required", http.StatusBadRequest)
+		return
+	}
+
+	if !h.authenticate(w, r) {
 		return
 	}
 

@@ -11,6 +11,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { authApi } from '../../../api/auth';
 import { Users as UsersIcon, UserPlus, ShieldCheck, Trash2, Edit3, X, Check } from 'lucide-react';
+import PageHeader from './PageHeader';
 
 const ACTIVE_LABEL = { true: 'Active', false: 'Inactive' };
 
@@ -153,17 +154,7 @@ export default function UserManagement() {
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4 w-full animate-fadeIn">
-      {/* Header */}
-      <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md p-3 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3 w-full min-w-0">
-          <div className="p-2 sm:p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-            <UsersIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xs sm:text-sm font-black font-display text-white tracking-widest uppercase truncate">Account Management</h2>
-            <p className="hidden sm:block text-[11px] text-slate-400 mt-0.5">Manage users, roles, and access.</p>
-          </div>
-        </div>
+      <PageHeader icon={UsersIcon} title="Account Management" subtitle="Manage users, roles, and access.">
         {!showAddForm && (
           <button
             onClick={() => setShowAddForm(true)}
@@ -173,7 +164,7 @@ export default function UserManagement() {
             Add User
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Add User Form */}
       {showAddForm && (
@@ -239,15 +230,19 @@ export default function UserManagement() {
       ) : (
         /* Table Card */
         <div className="border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-emerald-500/10 flex items-center gap-3">
+            <UsersIcon className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-sm sm:text-base font-black font-display text-white tracking-widest uppercase">User List</h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="pb-3 px-3 sm:px-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Username</th>
-                  <th className="pb-3 px-3 sm:px-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Email</th>
-                  <th className="pb-3 px-3 sm:px-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Roles</th>
-                  <th className="pb-3 px-3 sm:px-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</th>
-                  <th className="pb-3 px-3 sm:px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>
+                <tr className="border-b border-emerald-500/20 bg-slate-900/50">
+                  <th className="py-4 px-3 sm:px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Username</th>
+                  <th className="py-4 px-3 sm:px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Email</th>
+                  <th className="py-4 px-3 sm:px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Roles</th>
+                  <th className="py-4 px-3 sm:px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Status</th>
+                  <th className="py-4 px-3 sm:px-4 text-xs font-black uppercase tracking-widest text-slate-300 text-right align-middle leading-normal">Actions</th>
                 </tr>
               </thead>
               <tbody>

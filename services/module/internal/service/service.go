@@ -344,11 +344,36 @@ func toFloat(v interface{}, dt string) (float64, bool) {
 		}
 		return 0, false
 	case "bool":
-		b, ok := v.(bool)
-		if !ok {
-			return 0, false
+		switch n := v.(type) {
+		case bool:
+			if n {
+				return 1, true
+			}
+			return 0, true
+		case float64:
+			if n == 0 {
+				return 0, true
+			}
+			return 1, true
+		case float32:
+			if n == 0 {
+				return 0, true
+			}
+			return 1, true
+		case int:
+			if n == 0 {
+				return 0, true
+			}
+			return 1, true
+		case string:
+			switch strings.ToLower(strings.TrimSpace(n)) {
+			case "1", "true", "on", "yes":
+				return 1, true
+			case "0", "false", "off", "no":
+				return 0, true
+			}
 		}
-		return map[bool]float64{true: 1, false: 0}[b], true
+		return 0, false
 	default: // float / numeric
 		switch n := v.(type) {
 		case float64:

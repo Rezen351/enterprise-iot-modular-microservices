@@ -7,7 +7,7 @@ import { moduleApi } from '../../api/module';
 function inferType(value) {
   if (typeof value === 'boolean') return 'bool';
   if (typeof value === 'number') return Number.isInteger(value) ? 'int' : 'float';
-  return 'string';
+  return 'float';
 }
 
 // Recursively collect dot-paths to scalar values (supports nested telemetry).
@@ -197,7 +197,7 @@ function NodeTagModal({ node, onClose }) {
                 <option value="float">float</option>
                 <option value="int">int</option>
                 <option value="bool">bool</option>
-                <option value="string">string</option>
+                
               </select>
             </div>
             <button
@@ -228,12 +228,12 @@ function NodeTagModal({ node, onClose }) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="pb-2 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500">MQTT Key</th>
-                    <th className="pb-2 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500">DB Tag</th>
-                    <th className="pb-2 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Unit</th>
-                    <th className="pb-2 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Type</th>
-                    <th className="pb-2 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500">On</th>
-                    <th className="pb-2 px-2"></th>
+                    <th className="py-3 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">MQTT Key</th>
+                    <th className="py-3 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">DB Tag</th>
+                    <th className="py-3 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Unit</th>
+                    <th className="py-3 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Type</th>
+                    <th className="py-3 px-2 text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">On</th>
+                    <th className="py-3 px-2 align-middle leading-normal"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -257,7 +257,7 @@ function NodeTagModal({ node, onClose }) {
                           <option value="float">float</option>
                           <option value="int">int</option>
                           <option value="bool">bool</option>
-                          <option value="string">string</option>
+                          
                         </select>
                       </td>
                       <td className="py-2 px-2 text-center">
@@ -289,9 +289,9 @@ function NodeTagModal({ node, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
-}, document.body);
 }
 
 export default NodeTagModal;

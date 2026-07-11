@@ -180,15 +180,20 @@ function ModuleManagement({ onOpenNodeConfig }) {
                 </button>
               </div>
             </form>
-          ) : (
-            <div className="overflow-x-auto">
+            ) : (
+              <div>
+                <div className="px-4 sm:px-6 py-4 border-b border-emerald-500/10 flex items-center gap-3">
+                  <Server className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-sm sm:text-base font-black font-display text-white tracking-widest uppercase">Module List</h3>
+                </div>
+                <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Name</th>
-                    <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Description</th>
-                    <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Module ID</th>
-                    <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Actions</th>
+                  <tr className="border-b border-emerald-500/20 bg-slate-900/50">
+                    <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Name</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Description</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-300 align-middle leading-normal">Module ID</th>
+                    <th className="py-4 px-4 text-xs font-black uppercase tracking-widest text-slate-300 text-right align-middle leading-normal">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -239,16 +244,10 @@ function ModuleManagement({ onOpenNodeConfig }) {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
-
-      {/* Hint card */}
-      {!isEditing && (
-        <div className="border border-emerald-500/10 bg-emerald-950/10 p-4 flex items-start gap-3">
-          <Cpu className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-        </div>
-      )}
     </div>
   );
 }

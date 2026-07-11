@@ -29,7 +29,7 @@ function highlight(jsonStr) {
 function inferType(value) {
   if (typeof value === 'boolean') return 'bool';
   if (typeof value === 'number') return Number.isInteger(value) ? 'int' : 'float';
-  return 'string';
+  return 'float';
 }
 
 function collectPaths(obj, prefix, out) {
@@ -265,7 +265,7 @@ function NodeConfigPage({ node, onBack }) {
               <input value={draft.tag_name} onChange={e => setDraft({ ...draft, tag_name: e.target.value })} placeholder="DB tag" className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" />
               <input value={draft.unit} onChange={e => setDraft({ ...draft, unit: e.target.value })} placeholder="Unit" className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" />
               <select value={draft.data_type} onChange={e => setDraft({ ...draft, data_type: e.target.value })} className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
-                <option value="float">float</option><option value="int">int</option><option value="bool">bool</option><option value="string">string</option>
+                <option value="float">float</option><option value="int">int</option><option value="bool">bool</option>
               </select>
             </div>
             <button onClick={handleAdd} className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-emerald-500 hover:bg-emerald-400 transition-colors cursor-pointer">
@@ -283,12 +283,12 @@ function NodeConfigPage({ node, onBack }) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">MQTT Key</th>
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">DB Tag</th>
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">Unit</th>
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">Type</th>
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">On</th>
-                    <th className="pb-1.5 px-1.5 sm:pb-2 sm:px-2"></th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">MQTT Key</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">DB Tag</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Unit</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Type</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">On</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 align-middle leading-normal"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -299,7 +299,7 @@ function NodeConfigPage({ node, onBack }) {
                       <td className="py-1.5 px-1.5 sm:py-2 sm:px-2"><input value={t.unit} onChange={e => handleUpdate(idx, 'unit', e.target.value)} className="w-16 sm:w-20 bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" /></td>
                       <td className="py-1.5 px-1.5 sm:py-2 sm:px-2">
                         <select value={t.data_type} onChange={e => handleUpdate(idx, 'data_type', e.target.value)} className="bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
-                          <option value="float">float</option><option value="int">int</option><option value="bool">bool</option><option value="string">string</option>
+                          <option value="float">float</option><option value="int">int</option><option value="bool">bool</option>
                         </select>
                       </td>
                       <td className="py-1.5 px-1.5 sm:py-2 sm:px-2 text-center"><input type="checkbox" checked={t.enabled} onChange={e => handleUpdate(idx, 'enabled', e.target.checked)} className="accent-emerald-500 w-3.5 h-3.5 sm:w-4 sm:h-4 cursor-pointer" /></td>

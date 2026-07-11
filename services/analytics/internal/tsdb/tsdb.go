@@ -67,15 +67,21 @@ func (s *Store) UpsertRollup(ctx context.Context, row model.BatchRow) error {
 
 // sourceForInterval picks the materialized view (or raw hypertable) that best
 // matches the requested resolution to keep payloads small.
+//
+// The value column is `last` (the most recent raw sample in the bucket) rather
+// than `avg`. Averaging a boolean metric would turn a toggling 0/1 signal into
+// a fraction (e.g. 0.45), which is not a meaningful "state". Using `last`
+// preserves discrete 0/1 states for digital inputs while still giving a
+// representative latest sample for analog metrics.
 func sourceForInterval(interval string) (table string, agg string) {
 	d := parseInterval(interval)
 	switch {
 	case d <= time.Hour:
-		return "metrics_rollup", "avg"
+		return "metrics_rollup", "last"
 	case d <= 24*time.Hour:
-		return "metrics_hourly", "(CASE WHEN sum = 0 THEN 0 ELSE sum / count END)"
+		return "metrics_hourly", "last"
 	default:
-		return "metrics_daily", "(CASE WHEN sum = 0 THEN 0 ELSE sum / count END)"
+		return "metrics_daily", "last"
 	}
 }
 

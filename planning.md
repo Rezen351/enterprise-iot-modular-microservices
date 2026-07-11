@@ -1,8 +1,8 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 1.3.0  
+> **Versi Dokumen:** 2.0.0  
 > **Tanggal:** 2026-07-11  
-> **Status:** 🟢 Fase 1 Selesai — Lanjut ke Fase 2  
+> **Status:** 🟢 Fase 1-3 Selesai — Lanjut ke Fase 4  
 > **Penulis:** Tim TA
 
 ---
@@ -21,7 +21,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 
 | Prinsip | Deskripsi | Implementasi dalam Sistem |
 |---|---|---|
-| **Single Responsibility** | Setiap service hanya bertanggung jawab atas satu domain bisnis | Auth Service hanya menangani autentikasi, Module Service hanya menangani data sensor, Alert Service hanya menangani evaluasi threshold — tidak ada overlap tanggung jawab |
+| **Single Responsibility** | Setiap service hanya bertanggung jawab atas satu domain bisnis | Auth Service hanya menangani autentikasi, Module Service hanya menangani data sensor & device onboarding, Analytics Service hanya menangani agregasi data — tidak ada overlap tanggung jawab |
 | **Database Isolation** | Setiap service memiliki database sendiri, tidak ada sharing database antar service | 18 instance database terpisah untuk 13 service, masing-masing dengan kredensial unik |
 | **Bounded Context** | Setiap service memiliki model data dan bahasa domain sendiri | Service Auth berbicara tentang "user" dan "role", Module Service berbicara tentang "sensor" dan "telemetry", Control Service berbicara tentang "command" dan "device" |
 | **Independen Deployable** | Setiap service dapat di-build, di-deploy, dan di-scale secara independen | Masing-masing service memiliki Dockerfile sendiri, go.mod mandiri, dan port internal yang terisolasi |
@@ -54,7 +54,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 
 - **Device Layer:** ESP32 mengirim data sensor via MQTT ke Mosquitto broker
-- **Ingestion Layer:** Module Service menerima data dari Mosquitto, menyimpan ke database, dan mempublikasikan ke NATS
+- **Ingestion Layer:** Module Service menerima data dari Mosquitto, menyimpan ke database (MariaDB + TimescaleDB), dan mempublikasikan ke NATS
 - **Processing Layer:** Alert Service, Analytics Service, dan ML/Vision API memproses data secara real-time
 - **Control Layer:** Control Service mengirim perintah balik ke ESP32 melalui MQTT
 - **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal
@@ -62,6 +62,24 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 - **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
 - **Observability Layer:** Prometheus untuk aggregasi metrik dari seluruh service, dipublikasikan melalui NATS
 - **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel untuk akses aman dari internet
+
+### Diagram Alur Data End-to-End (Saat Ini)
+
+```
+ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
+                                           → TimescaleDB (time-series)
+                                           → Redis (cache)
+                                           → NATS (telemetry.ingest + telemetry.batch)
+                                                → Analytics Service → TimescaleDB (analytics)
+                                                → WS-Gateway → WebSocket → Dashboard
+                                                → (future) Alert Service
+                                                → (future) Audit Service
+
+User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
+                                     → Module Service (CRUD modules/nodes)
+                                     → Analytics Service (query agregasi)
+                                     → WS-Gateway (WebSocket real-time)
+```
 
 ### Prinsip Desain
 
@@ -81,21 +99,23 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 
 Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-nya:
 
-| Service | MariaDB | TimescaleDB | Redis | MinIO |
-|---|---|---|---|---|
-| Auth | `mariadb-auth` | — | — | — |
-| Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — |
-| Control | `mariadb-control` | — | — | — |
-| Alert | `mariadb-alert` | — | `redis-alert` | — |
-| Stream | `mariadb-stream` | — | — | `minio-stream` |
-| ML / Vision | `mariadb-ml` | — | — | `minio-ml` |
-| OTA | `mariadb-ota` | — | — | `minio-ota` |
-| Analytics | — | `timescaledb-analytics` | — | — |
-| Notification | `mariadb-notification` | — | `redis-notification` | — |
-| Audit | `mariadb-audit` | — | — | — |
-| Webhook | `mariadb-webhook` | — | — | — |
+| Service | MariaDB | TimescaleDB | Redis | MinIO | Status |
+|---|---|---|---|---|---|
+| Auth | `mariadb-auth` | — | — | — | ✅ Running |
+| Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — | ✅ Running |
+| Control | `mariadb-control` | — | — | — | ⬜ Belum |
+| Alert | `mariadb-alert` | — | `redis-alert` | — | ⬜ Belum |
+| Stream | `mariadb-stream` | — | — | `minio-stream` | ⬜ Belum |
+| ML / Vision | `mariadb-ml` | — | — | `minio-ml` | ⬜ Belum |
+| OTA | `mariadb-ota` | — | — | `minio-ota` | ⬜ Belum |
+| Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
+| Export | — | `timescaledb-module` (read) | `redis-export` | — | ⬜ Belum |
+| Notification | `mariadb-notification` | — | `redis-notification` | — | ⬜ Belum |
+| Audit | `mariadb-audit` | — | — | — | ⬜ Belum |
+| Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
 
-**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 3× Redis · 3× MinIO = **18 instance**
+**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 4× Redis · 3× MinIO = **19 instance**
+**Sudah berjalan:** 3× MariaDB · 2× TimescaleDB · 1× Redis = **6 instance**
 
 ---
 
@@ -103,22 +123,34 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 
 Proyek diorganisir dengan struktur sebagai berikut:
 
-- **`docker-compose.yml`** — Definisi semua service dan instance database
+- **`docker-compose.yml`** — Definisi semua service dan instance database (saat ini: auth, module, analytics, wsgateway, nats, mosquitto, kong, prometheus)
 - **`.env.example`** — Template variabel lingkungan untuk konfigurasi
 - **`infra/`** — Konfigurasi infrastruktur pendukung:
-  - `mariadb/` — Skema inisialisasi database per service (auth, module, control, alert, stream, ml, ota, notification, audit, webhook)
-  - `timescaledb/` — Skema untuk time-series data (module, analytics)
+  - `mariadb/` — Skema inisialisasi database per service (auth ✅, module ✅, control ⬜, alert ⬜, stream ⬜, ml ⬜, ota ⬜, notification ⬜, audit ⬜, webhook ⬜)
+  - `timescaledb/` — Skema untuk time-series data (module ✅, analytics ✅)
   - `redis/` — Konfigurasi Redis per instance
   - `minio/` — Script inisialisasi bucket
-  - `nats/` — Konfigurasi NATS dengan JetStream dan ACL per-service
-  - `mosquitto/` — Konfigurasi MQTT broker dan ACL per-topik
+  - `nats/` — Konfigurasi NATS dengan JetStream dan ACL per-service ✅
+  - `mosquitto/` — Konfigurasi MQTT broker dan ACL per-topik ✅
   - `mediamtx/` — Konfigurasi MediaMTX untuk streaming video
-  - `kong/` — Konfigurasi routing, JWT validation, rate-limiting, CORS
-  - `prometheus/` — Konfigurasi Prometheus untuk aggregasi metrik
+  - `kong/` — Konfigurasi routing, JWT validation, rate-limiting, CORS ✅
+  - `prometheus/` — Konfigurasi Prometheus untuk aggregasi metrik ✅
   - `cloudflared/` — Konfigurasi tunnel Cloudflare
-- **`services/`** — Kode sumber microservices (auth, module, control, alert, stream, ota, analytics, notification, audit, websocket, webhook)
-- **`vision-api/`** — Service Python untuk YOLOv8 inference
-- **`dashboard/`** — Frontend React untuk antarmuka pengguna
+- **`services/`** — Kode sumber microservices:
+  - `auth/` ✅ — Service autentikasi (Go)
+  - `module/` ✅ — Service manajemen device & telemetri (Go)
+  - `analytics/` ✅ — Service agregasi data time-series (Go)
+  - `wsgateway/` ✅ — WebSocket bridge NATS → Dashboard (Go)
+  - `export/` ⬜ — Service ekspor data untuk akses eksternal/Python (Go/Python)
+  - `control/` ⬜ — Service kontrol device
+  - `alert/` ⬜ — Service evaluasi threshold
+  - `stream/` ⬜ — Service streaming video
+  - `ota/` ⬜ — Service update firmware
+  - `notification/` ⬜ — Service notifikasi multi-channel
+  - `audit/` ⬜ — Service audit log
+  - `webhook/` ⬜ — Service webhook eksternal
+- **`vision-api/`** ⬜ — Service Python untuk YOLOv8 inference
+- **`dashboard/`** ✅ — Frontend React untuk antarmuka pengguna
 - **`docs/`** — Dokumentasi kontrak API, NATS subjects, MQTT topics, webhook payload schema
 - **`volumes/`** — Persistent data storage (diabaikan oleh git)
 
@@ -130,18 +162,18 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 
 ### Core Events
 
-| Subject | Publisher | Subscriber(s) | Pattern |
-|---|---|---|---|
-| `telemetry.ingest` | Module Service | Alert, Analytics, WebSocket, Webhook | Pub/Sub |
-| `telemetry.batch` | Module Service | Analytics | Pub/Sub |
-| `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub |
-| `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub |
-| `control.commands.>` | Control Service | Control Service (reply) | Request-Reply |
-| `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub |
-| `audit.log` | Semua service | Audit Service | Pub/Sub |
-| `metrics.health` | Semua service | Prometheus | Pub/Sub |
-| `webhook.delivery` | Webhook Service | Audit Service | Pub/Sub |
-| `webhook.retry` | Webhook Service | Webhook Service (internal) | Queue |
+| Subject | Publisher | Subscriber(s) | Pattern | Status |
+|---|---|---|---|---|
+| `telemetry.ingest` | Module Service | Alert, Analytics, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
+| `telemetry.batch` | Module Service | Analytics | Pub/Sub | ✅ Aktif |
+| `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
+| `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
+| `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
+| `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
+| `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module) tapi ⬜ belum di-consume |
+| `metrics.health` | Semua service | Prometheus | Pub/Sub | ⬜ Belum (masih scrape langsung) |
+| `webhook.delivery` | Webhook Service | Audit Service | Pub/Sub | ⬜ Belum |
+| `webhook.retry` | Webhook Service | Webhook Service (internal) | Queue | ⬜ Belum |
 
 ### Saga Events
 
@@ -153,6 +185,15 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `saga.alert.ml` | Alert Service | Notification Service | Saga Step |
 | `saga.*.compensate` | Service terkait | Service terkait | Compensating Transaction |
 | `saga.*.dlq` | NATS (auto) | Audit Service | Dead Letter Queue |
+
+### Catatan Penting: Core NATS vs JetStream
+
+| Subject | Tipe | Keterangan |
+|---|---|---|
+| `telemetry.ingest` | Core NATS | Pesan tidak di-buffer; subscriber offline akan kehilangan pesan |
+| `telemetry.batch` | Core NATS | ⚠️ Risiko: Analytics restart → batch hilang. Disarankan upgrade ke JetStream |
+| `audit.log` | Core NATS | Pesan audit hilang jika Audit Service belum berjalan |
+| `saga.*` | JetStream (SAGA stream) | Dijamin persistence dengan retry & DLQ |
 
 ---
 
@@ -216,7 +257,21 @@ Alur ketika Vision API mendeteksi anomali visual (misalnya hama pada tanaman):
 
 ### Struktur Payload Event Saga
 
-Setiap event saga memiliki struktur payload yang konsisten mencakup: `saga_id` (UUID v4), `step` (nama langkah), `service` (publisher), `timestamp` (ISO 8601), `payload` (data spesifik), dan `meta` (retry_count, correlation_id, trace_id).
+Setiap event saga memiliki struktur payload yang konsisten:
+```json
+{
+  "saga_id": "uuid-v4",
+  "step": "telemetry.saved",
+  "service": "module-service",
+  "timestamp": "2026-07-11T10:00:00Z",
+  "payload": { /* data spesifik */ },
+  "meta": {
+    "retry_count": 0,
+    "correlation_id": "uuid",
+    "trace_id": "uuid"
+  }
+}
+```
 
 ---
 
@@ -227,6 +282,8 @@ Setiap event saga memiliki struktur payload yang konsisten mencakup: `saga_id` (
 - Konfigurasi NATS (JetStream + per-service authentication)
 - Konfigurasi Kong (routing, JWT, rate-limiting, CORS)
 - Skema database Auth Service (RBAC + seed data)
+- Konfigurasi Mosquitto (MQTT broker + ACL per-topik)
+- Konfigurasi Prometheus (scrape targets)
 
 ### ✅ Fase 1 — Auth Service [P1 — SELESAI]
 - Scaffold Go service dengan struktur internal (model, repository, service, handler, middleware)
@@ -245,123 +302,300 @@ Setiap event saga memiliki struktur payload yang konsisten mencakup: `saga_id` (
 - Halaman non-auth (telemetri/control/video) di-hide, kode tetap di disk
 - Menu **Manajemen Akun** hanya muncul untuk user ber-role `admin`
 
-### ⬜ Fase 2 — Module Service [P2]
-- MQTT subscriber dari Mosquitto untuk menerima data sensor
-- Penyimpanan telemetri ke MariaDB (metadata) dan TimescaleDB (time-series)
-- Konfigurasi hypertable dengan time-partitioning pada kolom waktu
-- Publisher NATS untuk event telemetry.ingest
-- Cache data terakhir ke Redis
-- Publisher metrik health ke subject `metrics.health`
+### ✅ Fase 2 — Module Service [P2 — SELESAI]
 
-### ⬜ Fase 3 — Control Service [P3]
-- REST endpoint untuk mengirim perintah ke device
-- NATS Request-Reply pattern dengan timeout 500 ms untuk perintah darurat
-- Publisher MQTT ke Mosquitto untuk diteruskan ke ESP32
-- Audit log untuk setiap perintah yang dikirim
-- Publisher metrik health ke subject `metrics.health`
+#### 2a — Onboarding Perangkat
+- Scaffold Module Service (Go) dengan struktur internal mirror pola Auth
+- Skema `module_db` (MariaDB): tabel `modules` & `nodes` via GORM AutoMigrate
+- MQTT subscriber `discovery` → auto-register node (unpaired)
+- MQTT subscriber `status/#` → update status + last_seen
+- Redis status cache dengan TTL
+- REST: Module CRUD (`POST/GET/PUT/DELETE /modules`)
+- REST: Node onboarding (`GET /nodes`, `GET /nodes/discovered`, `pair`, `unpair`, `DELETE`)
+- NATS `audit.log` publish saat module/node created/paired/unpaired/deleted
+- TimescaleDB provisioning + hypertable `telemetry`
+- Dockerfile multi-stage + healthcheck
+- Kong route + Prometheus scrape
 
-### ⬜ Fase 4 — Alert Service [P4]
-- Subscriber NATS untuk event telemetry.ingest
-- Evaluasi threshold yang dikonfigurasi di database
-- Cache threshold ke Redis untuk akses cepat
-- Publisher event alert.triggered dan alert.resolved
-- Publisher metrik health ke subject `metrics.health`
+#### 2b — Telemetry Ingest
+- MQTT subscriber telemetry `smartfarm/{node}/telemetry` → `IngestTelemetry`
+- Tag mapping (modular): tabel `node_tags` — source_key → tag_name DB, bisa diubah di UI
+- Simpan ke TimescaleDB hypertable `telemetry` (node_id, module_id, metric, value, raw)
+- Cache ke Redis nilai terbaru per node (`node:latest:{id}`, TTL)
+- Publish NATS `telemetry.ingest` per reading
+- Publish NATS `telemetry.batch` setiap 1 menit (agregat count/sum/min/max/avg/last)
 
-### ⬜ Fase 5 — Stream Service [P5]
-- Integrasi dengan MediaMTX untuk streaming HLS/WebRTC
-- Penyimpanan metadata stream ke MariaDB
-- Upload snapshot ke MinIO
-- Publisher metrik health ke subject `metrics.health`
+### ✅ Fase 3 — Analytics Service [P2 — SELESAI]
+- Subscribe `telemetry.batch` dari NATS (core NATS, mirror pola ws-gateway)
+- Upsert agregat ke `metrics_rollup` di `timescaledb-analytics` (Database-per-Service)
+- Continuous aggregate: `metrics_hourly`, `metrics_daily` dengan auto-refresh
+- Data Retention Policy: raw 30d, hourly 365d, daily 730d
+- REST API via Kong: `/analytics/metrics`, `/analytics/summary`, `/analytics/nodes`
+- Dashboard halaman Analytics dengan Line chart (Chart.js), selector node + metric, range 1h/6h/24h/7d/30d
+- Prometheus target UP
 
-### ⬜ Fase 6 — ML / Vision API [P6]
-- YOLOv8 inference service menggunakan Python
-- Penyimpanan hasil deteksi ke MariaDB
-- Upload annotated image ke MinIO
-- Publisher event detection.result ke NATS
-- Publisher metrik health ke subject `metrics.health`
+### ✅ Fase 3 — WS-Gateway [P2 — SELESAI]
+- Service `wsgateway` (NATS → WebSocket bridge), route `/ws` via Kong
+- Subscribe `mqtt.{node_id}` → push realtime payload ke dashboard (`/ws/nodes/{node_id}/live`)
+- ✅ **Autentikasi koneksi WS via JWT** — validasi access token (Bearer header / `?token=`) pakai `JWT_SECRET` yang sama dengan Auth Service
+- ⬜ **`system-status` / notifikasi multi-subject (NotificationContext)** — ditunda (belum diperlukan)
 
-### ⬜ Fase 7 — Analytics Service [P7]
-- Subscriber NATS untuk semua event telemetry
-- Agregasi data time-series ke TimescaleDB
-- Implementasi data retention policy dengan continuous aggregate dan drop chunk
-- Publisher metrik health ke subject `metrics.health`
+### ⬜ Fase 4 — Control Service [P2 — PRIORITAS BERIKUTNYA]
+- `POST /control/command` — Terima perintah dari Kong (JWT Operator/Admin)
+- NATS Request-Reply — Kirim command, tunggu ACK dari device (timeout 500 ms)
+- Publish MQTT — Forward command ke `cmd/{device_id}`
+- Simpan ke MariaDB — Log perintah + status di `mariadb-control`
+- Publish `audit.log` — Setiap perintah terkirim/gagal
+- Dockerfile + healthcheck
 
-### ⬜ Fase 8 — Audit Service [P8]
-- Subscriber NATS untuk subject audit.log
-- Append-only insert ke MariaDB untuk immutability log
-- Publisher metrik health ke subject `metrics.health`
+### ⬜ Fase 5 — Alert Service [P2]
+- Subscribe NATS `telemetry.ingest`
+- Ambil threshold dari `mariadb-alert`, cache di `redis-alert`
+- Evaluasi threshold — bandingkan nilai sensor dengan batas min/max
+- Publish `alert.triggered` jika threshold terlampaui
+- Publish `alert.resolved` jika nilai kembali normal
+- REST endpoint: `GET /alerts`, `PUT /alerts/:id/ack`
+- Dockerfile + healthcheck
 
-### ⬜ Fase 9 — WebSocket Service [P9]
-- Subscriber multi-subject NATS untuk real-time events (telemetry, alert, detection)
-- Maintain koneksi WebSocket persistent dengan dashboard
-- Broadcast event ke seluruh client yang terhubung
-- Auto-reconnect dan connection pooling
-- Publisher metrik health ke subject `metrics.health`
+### ⬜ Fase 5 — Notification Service [P3]
+- Subscribe NATS `alert.triggered`, `alert.resolved`
+- Multi-channel: Push notification, Email (SMTP), Telegram (Bot API)
+- Queue di `redis-notification` sebagai antrian notifikasi (retry)
+- Simpan log notifikasi di `mariadb-notification`
+- Dockerfile + healthcheck
 
-### ⬜ Fase 10 — Webhook Service [P10]
-- REST endpoint untuk registrasi webhook oleh pengguna
-- Subscriber NATS untuk event yang akan diforward ke eksternal
-- HTTP client untuk mengirim payload ke endpoint eksternal
-- Retry mechanism dengan exponential backoff (3x percobaan)
-- Tracking status pengiriman (success, failed, pending)
-- Publisher event `webhook.delivery` untuk audit trail
-- Publisher metrik health ke subject `metrics.health`
+### ⬜ Fase 6 — Stream Service [P3]
+- Integrasi MediaMTX untuk streaming HLS/WebRTC
+- Metadata stream di `mariadb-stream`
+- Upload snapshot ke `minio-stream`
 
-### ⬜ Fase 11 — Prometheus Metrics Service [P11]
+### ⬜ Fase 7 — ML / Vision API [P3]
+- YOLOv8 inference service menggunakan Python FastAPI
+- Penyimpanan hasil deteksi ke `mariadb-ml`
+- Upload annotated image ke `minio-ml`
+- Publisher event `detection.result` ke NATS
+
+### ⬜ Fase 8 — Audit Service [P2 — QUICK WIN]
+- Subscribe `audit.log` dari NATS
+- Append-only insert ke `mariadb-audit` untuk immutability log
+- Endpoint `GET /audit/logs` (admin only)
+- ⚠️ **Catatan:** Semua service (Auth, Module) sudah publish `audit.log` tapi belum ada yang consume. Data audit menumpuk sia-sia.
+
+### ⬜ Fase 9 — Dashboard (Lengkap) [P3]
+- React app (reuse dari Aeroponik-Docker)
+- Tampilan telemetri real-time via WebSocket
+- Tampilan alert & history
+- Panel kontrol device
+- Halaman Device Management (file sudah ada, tinggal integrasi penuh)
+- Koneksi ke WS-Gateway dengan JWT auth
+
+### ⬜ Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
+> Melayani akses data untuk mahasiswa/peneliti via REST API. Memungkinkan import langsung ke Python pandas, R, Excel, dan tools analisis data lainnya.
+
+#### Latar Belakang
+Mahasiswa dan peneliti perlu mengakses data sensor, telemetri, alert, dan metadata untuk keperluan analisis, tugas akhir, dan penelitian. Data tersimpan di berbagai database (TimescaleDB, MariaDB) dan tidak bisa diakses langsung. Export Service menjembatani dengan menyediakan REST API yang menghasilkan output CSV/JSON/Parquet yang siap di-import ke pandas.
+
+#### Arsitektur
+```
+Mahasiswa (Python/Notebook)
+  │ pd.read_csv("https://api.smartfarm.local/export/v1/telemetry?...")
+  ▼
+Kong API Gateway (JWT Auth + Rate Limiting: 5 req/min)
+  │
+  ▼
+Export Service (Go/Python FastAPI)
+  ├─ Query TimescaleDB (telemetry raw + aggregate)
+  ├─ Query MariaDB (metadata node, module, alert, audit)
+  ├─ Multi-format: CSV, JSON, Parquet, Excel (XLSX)
+  ├─ Streaming response (tidak load semua ke memory)
+  ├─ Caching query results (redis-export)
+  └─ Discover endpoint (self-documenting schema)
+```
+
+#### Endpoint
+
+| Method | Endpoint | Deskripsi | Format Output |
+|--------|----------|-----------|---------------|
+| `GET` | `/export/v1/telemetry` | Data telemetri mentah | CSV, JSON, Parquet |
+| `GET` | `/export/v1/telemetry/aggregate` | Data agregat (hourly/daily) | CSV, JSON |
+| `GET` | `/export/v1/nodes` | Metadata node & module | CSV, JSON |
+| `GET` | `/export/v1/alerts` | History alert | CSV, JSON |
+| `GET` | `/export/v1/commands` | Log perintah kontrol | CSV, JSON |
+| `GET` | `/export/v1/audit` | Audit log (admin only) | CSV, JSON |
+| `GET` | `/export/v1/discover` | List semua tabel & kolom yang tersedia | JSON |
+
+#### Parameter Query
+
+| Parameter | Tipe | Default | Deskripsi |
+|-----------|------|---------|-----------|
+| `format` | string | `csv` | `csv`, `json`, `parquet`, `xlsx` |
+| `from` | ISO8601 | -7 hari | Awal time range |
+| `to` | ISO8601 | sekarang | Akhir time range |
+| `node_id` | string | semua | Filter per node |
+| `metric` | string | semua | Filter per metric |
+| `module_id` | string | semua | Filter per module |
+| `limit` | int | 10000 | Max baris per response |
+| `offset` | int | 0 | Pagination |
+| `sort` | string | `time` | Kolom sorting |
+| `order` | string | `desc` | `asc` / `desc` |
+| `compress` | bool | `false` | GZip response |
+
+#### Contoh Penggunaan dari Python
+
+```python
+import pandas as pd
+
+# Setup autentikasi
+headers = {"Authorization": "Bearer student-api-key-xxx"}
+
+# Satu baris: export telemetri langsung ke DataFrame
+df = pd.read_csv(
+    "https://api.smartfarm.local/export/v1/telemetry",
+    params={"from": "2026-07-01", "to": "2026-07-11"},
+    headers=headers
+)
+
+# Filter spesifik
+df_node = pd.read_csv(
+    "https://api.smartfarm.local/export/v1/telemetry",
+    params={"node_id": "ECE334219870", "metric": "cwt1_temperature"},
+    headers=headers
+)
+
+# Data agregat (lebih ringan)
+df_agg = pd.read_csv(
+    "https://api.smartfarm.local/export/v1/telemetry/aggregate",
+    params={"bucket": "hourly", "from": "2026-06-01", "to": "2026-07-11"},
+    headers=headers
+)
+
+# Multi-tabel untuk analisis lengkap
+nodes = pd.read_csv("https://api.smartfarm.local/export/v1/nodes", headers=headers)
+telemetry = pd.read_csv("https://api.smartfarm.local/export/v1/telemetry", params={...}, headers=headers)
+alerts = pd.read_csv("https://api.smartfarm.local/export/v1/alerts", params={...}, headers=headers)
+df = telemetry.merge(nodes, on="node_id").merge(alerts, on="node_id", how="left")
+
+# Export Parquet untuk big data
+import requests
+resp = requests.get("https://api.smartfarm.local/export/v1/telemetry",
+                    params={"format": "parquet", "limit": 1000000},
+                    headers=headers)
+with open("data.parquet", "wb") as f:
+    f.write(resp.content)
+df = pd.read_parquet("data.parquet")
+```
+
+#### Keamanan & Access Control
+
+| Aspek | Implementasi |
+|-------|-------------|
+| Autentikasi | JWT via Kong (sama seperti service lain) |
+| Role-based Access | Viewer: data non-sensitif. Admin: semua termasuk audit log |
+| Rate Limiting | 5 req/min untuk non-admin, 30 req/min untuk admin |
+| Data Limit | Maks 100.000 baris per request (admin: 1.000.000) |
+| Time Range Limit | Maks 90 hari per request untuk non-admin |
+| API Key Tiers | Student Basic (50 req/hari, 10rb baris, 7 hari), Student Research (200 req/hari, 100rb baris, 90 hari), Admin (unlimited) |
+
+#### Checklist Implementasi
+
+| Status | Item | Deskripsi | Estimasi |
+|---|---|---|---|
+| `[ ]` | Scaffold service (Go/Python) | Struktur internal, go.mod/requirements.txt | 1 hari |
+| `[ ]` | Koneksi ke TimescaleDB (module + analytics) | Read-only query pool | 0.5 hari |
+| `[ ]` | Koneksi ke MariaDB (module + auth) | Read-only query untuk metadata | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/telemetry` | Query + streaming CSV/JSON/Parquet | 1 hari |
+| `[ ]` | Endpoint `/export/v1/telemetry/aggregate` | Query continuous aggregate | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/nodes` | Metadata node & module | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/alerts` | History alert | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/audit` (admin only) | Audit log | 0.5 hari |
+| `[ ]` | Endpoint `/export/v1/discover` | Self-documenting schema | 0.5 hari |
+| `[ ]` | Redis caching (`redis-export`) | Cache query results, TTL configurable | 0.5 hari |
+| `[ ]` | Kong route + rate limiting | `/export` route, 5 req/min limit | 0.5 hari |
+| `[ ]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[ ]` | Prometheus metrics | `export_http_requests_total` | 0.5 hari |
+| `[ ]` | Dokumentasi API untuk mahasiswa | Contoh pandas, R, Excel | 1 hari |
+
+**Total estimasi: 5-7 hari**
+
+### ⬜ Fase 10 — OTA Service [P4]
+- Upload firmware binary ke `minio-ota`
+- Trigger update ke ESP32 via MQTT
+- Tracking status update per device
+- Verifikasi checksum firmware
+
+### ⬜ Fase 11 — Prometheus Metrics Service [P4]
 - Subscriber NATS untuk subject `metrics.health` dari seluruh service
 - Aggregasi metrik health dan performa sistem
 - Expose endpoint `/metrics` untuk Prometheus scraping
-- Metrik yang dikumpulkan: request count, error rate, response time, uptime, resource usage
-- Publisher metrik health ke subject `metrics.health`
+- Metrik: request count, error rate, response time, uptime, resource usage
+- **Catatan:** Saat ini metrik scrape langsung (bukan via NATS). Fase ini akan mengubah ke arsitektur event-driven.
 
-### ⬜ Fase 12 — Notification Service [P12]
-- Subscriber NATS untuk event alert.triggered
-- Multi-channel notification: Push notification, Email, Telegram
-- Publisher metrik health ke subject `metrics.health`
-
-### ⬜ Fase 13 — Dashboard [P13]
-- React application (reuse dari Aeroponik-Docker)
-- Koneksi WebSocket ke WebSocket Service
-- Visualisasi telemetri real-time, manajemen alert, dan kontrol device
-
-### ⬜ Fase 14 — OTA Service [P14]
-- Upload firmware binary ke MinIO
-- Trigger update ke ESP32 via MQTT
-- Tracking status update per device
-- Publisher metrik health ke subject `metrics.health`
-
-### ⬜ Fase 15 — Cloudflare Tunnel [P15]
-- Konfigurasi cloudflared tunnel ke Kong:8000
+### ⬜ Fase 12 — Cloudflare Tunnel [P4]
+- `cloudflared tunnel run` → Kong:8000
 - TLS end-to-end untuk koneksi aman dari internet
+- Custom domain mapping
 
 ---
 
 ## 🔐 Keamanan
 
-| Aspek | Implementasi |
-|---|---|
-| Autentikasi | JWT HS256 dengan expiry 15 menit |
-| Refresh Token | Rotation + revocation, hash disimpan di database |
-| RBAC | Tiga level akses: Admin, Operator, Viewer — divalidasi per endpoint |
-| Database Isolation | Setiap service hanya mengetahui kredensial database miliknya sendiri |
-| Network Isolation | Semua container berada di network private `iot-net`, hanya Kong yang terekspos ke host |
-| Rate Limiting | Kong: 20 req/min untuk endpoint auth, 60–120 req/min untuk endpoint lain |
-| CORS | Whitelist origin eksplisit, tidak menggunakan wildcard |
-| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto |
-| NATS ACL | Kontrol akses per-subject per-user di konfigurasi NATS |
-| Webhook Auth | Setiap webhook endpoint eksternal memerlukan secret token untuk verifikasi |
+| Aspek | Implementasi | Status |
+|---|---|---|
+| Autentikasi | JWT HS256 dengan expiry 15 menit | ✅ |
+| Refresh Token | Rotation + revocation, hash (SHA-256) disimpan di database | ✅ |
+| RBAC | Tiga level akses: Admin, Operator, Viewer — divalidasi per endpoint | ✅ |
+| Database Isolation | Setiap service hanya mengetahui kredensial database miliknya sendiri | ✅ |
+| Network Isolation | Semua container berada di network private `iot-net`, hanya Kong yang terekspos ke host | ✅ |
+| Rate Limiting | Kong: 20 req/min untuk endpoint auth publik, 60-120 req/min untuk endpoint lain | ✅ |
+| CORS | Whitelist origin eksplisit (localhost:3000, localhost:5173, FRONTEND_URL), tidak menggunakan wildcard | ✅ |
+| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto | ✅ |
+| NATS ACL | Kontrol akses per-subject per-user di konfigurasi NATS | ✅ |
+| WebSocket Auth | ✅ JWT pada handshake WS (Bearer header / `?token=`), validasi via `JWT_SECRET` | ✅ |
+| Webhook Auth | Setiap webhook endpoint eksternal memerlukan secret token untuk verifikasi | ⬜ |
 
 ---
 
 ## 📊 Monitoring dan Observability
 
-- **Healthcheck:** Setiap service menyediakan endpoint `/health` untuk Docker healthcheck
-- **Metrics Pipeline (saat ini):** Service mengekspos endpoint `/metrics` (Prometheus client) yang di-scrape langsung oleh Prometheus server. Auth Service → `auth:8080/metrics`, Kong → `kong:8001/metrics` (plugin prometheus). Target `prometheus`, `auth-service`, `kong` semua UP.
-- **Metrics Pipeline (rencana):** Setiap service juga mempublikasikan metrik health ke subject `metrics.health` via NATS, dikonsumsi oleh Prometheus Service (lihat Fase 11).
-- **Audit Trail:** Semua operasi kritis dicatat melalui event `audit.log` ke NATS
-- **Saga Tracing:** Setiap transaksi saga memiliki `saga_id` dan `trace_id` untuk end-to-end tracing
-- **Dead Letter Queue:** Pesan gagal terkumpul di subject `saga.*.dlq` untuk investigasi
-- **Webhook Delivery Log:** Setiap pengiriman webhook ke eksternal dicatat melalui event `webhook.delivery`
+| Aspek | Implementasi | Status |
+|---|---|---|
+| Healthcheck | Setiap service menyediakan endpoint `/health` untuk Docker healthcheck | ✅ |
+| Prometheus Metrics | Auth, Module, Analytics, WS-Gateway expose `/metrics`; Kong via plugin prometheus | ✅ |
+| Scrape Targets | `prometheus`, `auth-service`, `module-service`, `analytics-service`, `wsgateway-service`, `kong` — semua UP | ✅ |
+| Audit Trail | Auth & Module publish `audit.log` ke NATS; ⬜ belum di-consume Audit Service | 🟡 Sebagian |
+| Saga Tracing | Setiap transaksi saga memiliki `saga_id` dan `trace_id` untuk end-to-end tracing | ⬜ |
+| Dead Letter Queue | Pesan gagal terkumpul di subject `saga.*.dlq` untuk investigasi | ⬜ |
+| Webhook Delivery Log | Setiap pengiriman webhook ke eksternal dicatat melalui event `webhook.delivery` | ⬜ |
+
+### Target Prometheus Saat Ini
+
+| Target | Endpoint | Status |
+|---|---|---|
+| `prometheus` | `localhost:9090` | ✅ UP |
+| `auth-service` | `auth:8080/metrics` | ✅ UP |
+| `module-service` | `module:8080/metrics` | ✅ UP |
+| `analytics-service` | `analytics:8080/metrics` | ✅ UP |
+| `wsgateway-service` | `wsgateway:8090/metrics` | ✅ UP |
+| `kong` | `kong:8001/metrics` | ✅ UP |
+
+---
+
+## 🚀 Rekomendasi Prioritas Pengerjaan
+
+| Prioritas | Fase | Service | Estimasi | Alasan |
+|---|---|---|---|---|
+| 🔴 P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah kirim data tapi belum bisa dikontrol |
+| 🔴 P1 | Fase 5 | Alert Service | 3-5 hari | Data sensor sudah masuk tapi belum ada evaluasi threshold |
+| 🔴 P1 | Fase 8 | Audit Service | 1-2 hari | Quick win: data audit sudah dipublish tapi tidak di-consume |
+| 🟡 P2 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna |
+| 🟡 P2 | Fase 3 | WS-Gateway JWT Auth | ✅ Selesai | Celah keamanan WS sudah ditutup |
+| 🟡 P2 | Fase 9 | Dashboard Device Management | 2-3 hari | File sudah ada, tinggal integrasi |
+| 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | Fitur lanjutan, tidak menghalangi operasi dasar |
+| 🟢 P3 | Fase 7 | ML / Vision API | 7-14 hari | Memerlukan dataset dan training model |
+| ⬜ P4 | Fase 10 | OTA Service | 5-7 hari | Fitur opsional |
+| ⬜ P4 | Fase 11 | Prometheus Metrics Service | 3-5 hari | Refactoring pipeline metrik |
+| ⬜ P4 | Fase 12 | Cloudflare Tunnel | 1-2 hari | Deployment ke production |
 
 ---
 
@@ -369,12 +603,14 @@ Setiap event saga memiliki struktur payload yang konsisten mencakup: `saga_id` (
 
 - Semua service dan 18 instance database dalam status `healthy` setelah `docker compose up -d`
 - Tidak ada service yang mengakses database milik service lain (verifikasi via environment variables dan network policy)
-- End-to-end flow ESP32 → Module → NATS → WebSocket → Dashboard berjalan
+- End-to-end flow ESP32 → Module → NATS → WebSocket → Dashboard berjalan ✅
+- End-to-end flow Module → Analytics → Dashboard berjalan ✅
 - End-to-end flow Alert → Notification → Webhook (eksternal) berjalan
 - End-to-end flow Control → ESP32 berjalan
 - End-to-end flow Stream → ML → MinIO berjalan
 - End-to-end flow Metrics: semua service → NATS → Prometheus → /metrics berjalan
-- Kong JWT validation berfungsi pada semua protected routes
+- Kong JWT validation berfungsi pada semua protected routes ✅
+- WebSocket Gateway dengan JWT authentication ✅
 - Webhook Service dapat mengirim event ke endpoint eksternal dengan retry mechanism
 - Semua service memiliki unit test dengan minimal 80% code coverage
 
@@ -382,11 +618,23 @@ Setiap event saga memiliki struktur payload yang konsisten mencakup: `saga_id` (
 
 ## 📝 Catatan Teknis
 
-- **Bahasa Pemrograman:** Go untuk microservices, Python untuk Vision API, JavaScript/React untuk Dashboard
+- **Bahasa Pemrograman:** Go 1.22+ untuk microservices, Python untuk Vision API, JavaScript/React untuk Dashboard
 - **Container Runtime:** Docker Compose untuk development dan staging
 - **Message Broker:** NATS JetStream untuk event bus, Mosquitto untuk MQTT
-- **Database:** MariaDB untuk data relasional, TimescaleDB untuk time-series, Redis untuk caching, MinIO untuk object storage
-- **API Gateway:** Kong dengan plugin JWT, rate-limiting, dan CORS
+- **Database:** MariaDB 10.11 untuk data relasional, TimescaleDB 2.17 untuk time-series, Redis 7 untuk caching, MinIO untuk object storage
+- **API Gateway:** Kong 3.6 dengan plugin JWT, rate-limiting, dan CORS
 - **Streaming:** MediaMTX untuk RTSP/HLS/WebRTC
-- **Metrics:** Prometheus untuk aggregasi metrik dari seluruh service
+- **Metrics:** Prometheus 3.4 untuk aggregasi metrik dari seluruh service
 - **Deployment:** Cloudflare Tunnel untuk akses publik yang aman
+- **Frontend:** React + Vite + Chart.js + Tailwind CSS
+- **ORM:** GORM (Go) untuk MariaDB, pgx (Go) untuk TimescaleDB
+
+### Risiko Teknis yang Perlu Dimitigasi
+
+| Risiko | Dampak | Mitigasi |
+|---|---|---|
+| Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | Upgrade ke JetStream stream |
+| WS tanpa autentikasi | Data real-time bisa diakses siapa saja | ✅ Sudah: JWT handshake di WS-Gateway |
+| 18 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal |
+| Tidak ada backup strategy | Data hilang jika container crash | Tambah volume backup atau cron job dump SQL |
+| Tidak ada CI/CD | Manual build & deploy rawan human error | Setup GitHub Actions atau GitLab CI sederhana |

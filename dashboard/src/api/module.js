@@ -37,6 +37,14 @@ export const moduleApi = {
   getNodeTags: (nodeId) => request(`/nodes/${nodeId}/tags`, { auth: true }),
   saveNodeTags: (nodeId, tags) =>
     request(`/nodes/${nodeId}/tags`, { method: 'PUT', auth: true, body: tags }),
+  // Actuator tags — separate from sensor telemetry tags. The user maps a
+  // firmware output (chosen from a node's discovered outputs) to a friendly
+  // control tag; these drive the Control page.
+  getActuatorTags: (nodeId) => request(`/nodes/${nodeId}/actuators`, { auth: true }),
+  createActuatorTag: (nodeId, body) =>
+    request(`/nodes/${nodeId}/actuators`, { method: 'POST', auth: true, body }),
+  deleteActuatorTag: (nodeId, id) =>
+    request(`/nodes/${nodeId}/actuators/${id}`, { method: 'DELETE', auth: true }),
   pairNode: (nodeId, { module_id, name }) =>
     request(`/nodes/${nodeId}/pair`, { method: 'POST', auth: true, body: { module_id, name } }),
   unpairNode: (nodeId) => request(`/nodes/${nodeId}/unpair`, { method: 'POST', auth: true }),

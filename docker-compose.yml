@@ -15,11 +15,12 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE_AUTH}
-      MYSQL_USER: ${MYSQL_USER_AUTH}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD_AUTH}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./volumes/mariadb-auth:/var/lib/mysql
       - ./infra/mariadb/auth/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
     healthcheck:
       test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
       interval: 10s
@@ -35,7 +36,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DB_DSN: "${MYSQL_USER_AUTH}:${MYSQL_PASSWORD_AUTH}@tcp(mariadb-auth:3306)/${MYSQL_DATABASE_AUTH}?parseTime=true"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/${MYSQL_DATABASE_AUTH}?parseTime=true"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
       JWT_EXPIRY: "${JWT_EXPIRY:-15m}"
@@ -54,152 +55,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ports:
-      - "8080:8080" # exposed for local testing
-    networks:
-      - iot-net
-
-  # ──────────────────────────────────────
-  # MODULE SERVICE — database-per-service (MariaDB + TimescaleDB + Redis)
-  # Fase: Onboarding perangkat (discovery / pair / unpair)
-  # ──────────────────────────────────────
-  mariadb-module:
-    image: mariadb:10.11
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_MODULE:-module_db}
-      MYSQL_USER: ${MYSQL_USER_MODULE:-module_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD_MODULE:-module_pass}
-    volumes:
-      - ./volumes/mariadb-module:/var/lib/mysql
-      - ./infra/mariadb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 45s
-    networks:
-      - iot-net
-
-  timescaledb-module:
-    image: timescale/timescaledb:2.17.2-pg16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${TIMESCALE_MODULE_DB:-module_ts}
-      POSTGRES_USER: ${TIMESCALE_MODULE_USER:-module_user}
-      POSTGRES_PASSWORD: ${TIMESCALE_MODULE_PASSWORD:-module_pass}
-    volumes:
-      - ./volumes/timescaledb-module:/var/lib/postgresql/data
-      - ./infra/timescaledb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${TIMESCALE_MODULE_USER:-module_user} -d ${TIMESCALE_MODULE_DB:-module_ts}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - iot-net
-
-  redis-module:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: [ "redis-server", "--appendonly", "yes" ]
-    volumes:
-      - ./volumes/redis-module:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - iot-net
-
-  # ──────────────────────────────────────
-  # ANALYTICS SERVICE — database milik sendiri (TimescaleDB)
-  # Fase 3: agregasi telemetry dari NATS → continuous aggregate → dashboard
-  # ──────────────────────────────────────
-  timescaledb-analytics:
-    image: timescale/timescaledb:2.17.2-pg16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${TIMESCALE_ANALYTICS_DB:-analytics_ts}
-      POSTGRES_USER: ${TIMESCALE_ANALYTICS_USER:-analytics_user}
-      POSTGRES_PASSWORD: ${TIMESCALE_ANALYTICS_PASSWORD:-analytics_pass}
-    volumes:
-      - ./volumes/timescaledb-analytics:/var/lib/postgresql/data
-      - ./infra/timescaledb/analytics/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${TIMESCALE_ANALYTICS_USER:-analytics_user} -d ${TIMESCALE_ANALYTICS_DB:-analytics_ts}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - iot-net
-
-  module:
-    build:
-      context: ./services/module
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      DB_DSN: "${MYSQL_USER_MODULE:-module_user}:${MYSQL_PASSWORD_MODULE:-module_pass}@tcp(mariadb-module:3306)/${MYSQL_DATABASE_MODULE:-module_db}?parseTime=true&charset=utf8mb4"
-      TIMESCALE_DSN: "postgres://${TIMESCALE_MODULE_USER:-module_user}:${TIMESCALE_MODULE_PASSWORD:-module_pass}@timescaledb-module:5432/${TIMESCALE_MODULE_DB:-module_ts}?sslmode=disable"
-      REDIS_ADDR: "redis-module:6379"
-      NATS_URL: "nats://nats:4222"
-      MQTT_URL: "${MQTT_URL:-tcp://mosquitto:1883}"
-      MQTT_USER: "${MQTT_USER:-}"
-      MQTT_PASS: "${MQTT_PASS:-}"
-      MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX:-smartfarm}"
-      MQTT_CLIENT_ID: "module-svc"
-      PORT: "8080"
-    depends_on:
-      mariadb-module:
-        condition: service_healthy
-      timescaledb-module:
-        condition: service_healthy
-      redis-module:
-        condition: service_healthy
-      nats:
-        condition: service_started
-      mosquitto:
-        condition: service_started
-    healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "8081:8080" # exposed for local testing
-    networks:
-      - iot-net
-
-  # ──────────────────────────────────────
-  # ANALYTICS SERVICE — aggregate telemetry & serve dashboard queries
-  # ──────────────────────────────────────
-  analytics:
-    build:
-      context: ./services/analytics
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      TIMESCALE_DSN: "postgres://${TIMESCALE_ANALYTICS_USER:-analytics_user}:${TIMESCALE_ANALYTICS_PASSWORD:-analytics_pass}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB:-analytics_ts}?sslmode=disable"
-      NATS_URL: "nats://nats:4222"
-      PORT: "8080"
-    depends_on:
-      timescaledb-analytics:
-        condition: service_healthy
-      nats:
-        condition: service_started
-    healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "8083:8080" # exposed for local testing
     networks:
       - iot-net
 
@@ -223,8 +78,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ports:
-      - "8091:8090" # exposed for local testing
     networks:
       - iot-net
 
@@ -237,9 +90,6 @@ services:
     volumes:
       - ./infra/nats/nats.conf:/etc/nats/nats.conf:ro
       - ./volumes/nats:/data
-    ports:
-      - "4222:4222" # client connections
-      - "8222:8222" # monitoring HTTP
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8222/healthz" ]
       interval: 10s
@@ -259,6 +109,208 @@ services:
       - ./volumes/mosquitto:/mosquitto/data
     ports:
       - "1883:1883"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # MariaDB Control — control database
+  # ──────────────────────────────
+  mariadb-control:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_CONTROL}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-control:/var/lib/mysql
+      - ./infra/mariadb/control/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # Redis Module — cache for module service
+  # ──────────────────────────────
+  redis-module:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./volumes/redis-module:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # TimescaleDB Module — time-series telemetry
+  # ──────────────────────────────
+  timescaledb-module:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${TIMESCALE_DATABASE_MODULE}
+    volumes:
+      - ./volumes/timescaledb-module:/var/lib/postgresql/data
+      - ./infra/timescaledb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${DB_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # MariaDB Module — module database
+  # ──────────────────────────────
+  mariadb-module:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_MODULE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-module:/var/lib/mysql
+      - ./infra/mariadb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # TimescaleDB Analytics — time-series rollup store (Analytics Service)
+  # ──────────────────────────────
+  timescaledb-analytics:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${TIMESCALE_ANALYTICS_DB}
+    volumes:
+      - ./volumes/timescaledb-analytics:/var/lib/postgresql/data
+      - ./infra/timescaledb/analytics/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${DB_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # MODULE SERVICE — device registry, telemetry tag-mapping, ingest
+  # ──────────────────────────────────────
+  module:
+    build:
+      context: ./services/module
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-module:3306)/${MYSQL_DATABASE_MODULE}?parseTime=true&charset=utf8mb4"
+      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+      REDIS_ADDR: "redis-module:6379"
+      NATS_URL: "nats://nats:4222"
+      MQTT_URL: "${MQTT_URL}"
+      MQTT_USER: "${MQTT_USER}"
+      MQTT_PASS: "${MQTT_PASS}"
+      MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
+      JWT_SECRET: "${JWT_SECRET}"
+    depends_on:
+      mariadb-module:
+        condition: service_healthy
+      redis-module:
+        condition: service_started
+      timescaledb-module:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # ANALYTICS SERVICE — aggregated telemetry queries (TimescaleDB rollups)
+  # ──────────────────────────────
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
+      NATS_URL: "nats://nats:4222"
+    depends_on:
+      timescaledb-analytics:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  control:
+    build:
+      context: ./services/control
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-control:3306)/${MYSQL_DATABASE_CONTROL}?parseTime=true&charset=utf8mb4"
+      NATS_URL: "nats://nats:4222"
+      MQTT_URL: "${MQTT_URL}"
+      MQTT_USER: "${MQTT_USER}"
+      MQTT_PASS: "${MQTT_PASS}"
+      MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
+      JWT_SECRET: "${JWT_SECRET}"
+      MODULE_URL: "http://module:8080"
+      ACK_TIMEOUT_SECONDS: "${ACK_TIMEOUT_SECONDS:-8}"
+    depends_on:
+      mariadb-control:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - iot-net
 
@@ -310,7 +362,7 @@ services:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./volumes/prometheus:/prometheus
     ports:
-      - "9090:9090"   # Prometheus UI & API
+      - "9090:9090"   # Prometheus UI & API (eksternal, debugging)
     depends_on:
       - auth
       - kong
@@ -335,6 +387,255 @@ services:
       - ./docker-compose.yml:/workspace/docker-compose.yml:ro
     working_dir: /workspace
     command: ["stats"]
+    networks:
+      - iot-net
+
+  # ────────────────────────────────────
+  # EXPORTERS — metrik infra ke Prometheus
+  # Setiap exporter mengekspos /metrics agar Prometheus bisa scrape
+  # service database/broker yang tidak punya endpoint Prometheus native.
+  # ────────────────────────────────────
+
+  # MariaDB Auth
+  mysqld-exporter-auth:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-auth:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-auth:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # MariaDB Control
+  mysqld-exporter-control:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-control:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-control:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # MariaDB Module
+  mysqld-exporter-module:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-module:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-module:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # Redis (Module cache)
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis-module:6379"
+    depends_on:
+      redis-module:
+        condition: service_started
+    networks:
+      - iot-net
+
+  # TimescaleDB Module
+  postgres-exporter-module:
+    image: wrouesnel/postgres_exporter:latest
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+    depends_on:
+      timescaledb-module:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # TimescaleDB Analytics
+  postgres-exporter-analytics:
+    image: wrouesnel/postgres_exporter:latest
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
+    depends_on:
+      timescaledb-analytics:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # Mosquitto MQTT Broker — scrape $SYS/broker/# via MQTT
+  mosquitto-exporter:
+    image: sapcc/mosquitto-exporter:latest
+    restart: unless-stopped
+    command:
+      - "--endpoint=tcp://mosquitto:1883"
+      - "--bind-address=:9234"
+    depends_on:
+      - mosquitto
+    networks:
+      - iot-net
+
+  # NATS JetStream — sidecar exporter (NATS monitoring port hanya JSON,
+  # butuh exporter ini untuk menghasilkan format Prometheus di :7777)
+  nats-exporter:
+    image: natsio/prometheus-nats-exporter:latest
+    restart: unless-stopped
+    command:
+      - "-varz"
+      - "-connz"
+      - "-subz"
+      - "-routez"
+      - "-jsz=all"
+      - "http://nats:8222"
+    depends_on:
+      - nats
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # DASHBOARD — Vite frontend (dev mode, HMR)
+  # Di-build dari ./dashboard (Dockerfile). Source di-mount sebagai volume
+  # agar perubahan file langsung ter-reload. Berbicara ke Kong (published
+  # port 8000) dari browser; tidak butuh join network secara khusus.
+  # ──────────────────────────────────────
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Dikonsumsi browser (host), bukan container → pakai host-published Kong.
+      VITE_API_URL: "http://localhost:8000"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules   # jaga node_modules image (musl) agar tidak tertimpa host
+    depends_on:
+      - kong
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # MariaDB Stream — stream metadata database (Stream Service)
+  # ──────────────────────────────────────
+  mariadb-stream:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_STREAM}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-stream:/var/lib/mysql
+      - ./infra/mariadb/stream/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # MediaMTX — RTSP/WebRTC/HLS server (CCTV pull + playback)
+  # API internal-only (iot-net); HLS proxied via Kong, WebRTC host-direct.
+  # ──────────────────────────────────────
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    restart: unless-stopped
+    command: [ "/etc/mediamtx/mediamtx.yml" ]
+    volumes:
+      - ./infra/mediamtx/mediamtx.yml:/etc/mediamtx/mediamtx.yml:ro
+    ports:
+      - "8888:8888"   # HLS (also proxied via Kong /hls)
+      - "8889:8889"   # WebRTC (signaling + UDP media, host-direct)
+      - "8554:8554"   # RTSP (debug)
+      # API (9997) intentionally NOT published — internal iot-net only.
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # MinIO — object storage (shared infra; Stream Service does not use in Fase 5)
+  # Buckets stream/ml/ota provisioned by minio-setup for Fase 6/10.
+  # ──────────────────────────────────────
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - ./volumes/minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+    networks:
+      - iot-net
+
+  minio-setup:
+    image: minio/mc
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "mc alias set m local ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
+             mc mb -p m/stream; mc mb -p m/ml; mc mb -p m/ota"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # STREAM SERVICE — CCTV stream metadata + MediaMTX path registry
+  # ──────────────────────────────────────
+  stream:
+    build:
+      context: ./services/stream
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-stream:3306)/${MYSQL_DATABASE_STREAM}?parseTime=true&charset=utf8mb4"
+      MEDIAMTX_API_URL: "http://mediamtx:9997"
+      MEDIAMTX_HTTP_URL: "http://mediamtx:8888"
+      CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
+      KONG_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}"
+      JWT_SECRET: "${JWT_SECRET}"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_USE_SSL: "false"
+      MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
+    depends_on:
+      mariadb-stream:
+        condition: service_healthy
+      mediamtx:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - iot-net
 

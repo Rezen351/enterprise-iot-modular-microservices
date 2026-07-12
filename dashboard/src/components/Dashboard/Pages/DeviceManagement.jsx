@@ -139,7 +139,7 @@ function ModuleManagement({ onOpenNodeConfig }) {
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                     className="w-full bg-slate-900/50 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                    placeholder="e.g. Zona aeroponik lantai atap"
+                    placeholder="e.g. Rooftop aeroponic zone"
                   />
                 </div>
                 <div>
@@ -150,7 +150,7 @@ function ModuleManagement({ onOpenNodeConfig }) {
                     className="w-full bg-slate-900/50 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors font-mono h-24 resize-none"
                     placeholder='{"ph_target": 6.0}'
                   />
-                  <p className="text-[9px] text-slate-500 mt-1 uppercase">Pengaturan module dalam format JSON</p>
+                  <p className="text-[9px] text-slate-500 mt-1 uppercase">Module settings in JSON format</p>
                 </div>
               </div>
 
@@ -199,7 +199,7 @@ function ModuleManagement({ onOpenNodeConfig }) {
                 <tbody>
                   {modules.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="py-8 text-center text-slate-500 text-xs">Belum ada module. Klik "Add Module" untuk membuat.</td>
+                      <td colSpan="4" className="py-8 text-center text-slate-500 text-xs">No modules yet. Click "Add Module" to create one.</td>
                     </tr>
                   ) : (
                     modules.map(mod => (

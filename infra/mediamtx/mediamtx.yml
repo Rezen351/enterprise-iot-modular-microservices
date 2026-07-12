@@ -1,0 +1,56 @@
+# =====================================================================
+# MediaMTX — CCTV pull + HLS/WebRTC playback server
+# API on :9997 (internal iot-net only; not published to host).
+# Paths are registered dynamically by the Stream Service via the
+# config/paths API (sourceOnDemand). The `default` block is a fallback.
+# =====================================================================
+
+api: yes
+apiAddress: :9997
+
+# Authentication — internal only (iot-net, not published to host).
+# The default `any` user is granted api/read/playback/publish from any IP so
+# the Stream Service can register paths via the Control API without creds.
+# Tighten (per-user credentials + IP allowlist) before exposing beyond a
+# trusted network.
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+        path:
+      - action: read
+        path:
+      - action: playback
+        path:
+      - action: api
+        path:
+
+hls: yes
+hlsAddress: :8888
+
+webrtc: yes
+webrtcAddress: :8889
+
+rtsp: yes
+rtspAddress: :8554
+
+rtmp: no
+srt: no
+
+metrics: no
+
+# Auth on the media endpoints is disabled for LAN/dev convenience.
+# Enable readUser/readPass (and publishUser/publishPass) + a reverse
+# proxy with TLS before exposing this beyond a trusted network.
+hlsEncryption: no
+webrtcEncryption: no
+
+paths:
+  default:
+    # Fallback for paths not explicitly configured. Source is intentionally
+    # omitted — actual CCTV sources are registered per-stream by the Stream
+    # Service via the config/paths API (sourceOnDemand pull).
+    record: no

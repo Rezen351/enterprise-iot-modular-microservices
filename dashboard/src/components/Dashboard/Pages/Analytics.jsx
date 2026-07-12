@@ -216,7 +216,17 @@ function Analytics() {
     setError(null);
     try {
       const results = await Promise.all(
-        metrics.map((m) => analyticsApi.getMetrics({ node_id: nodeId, metric: m, interval: range }))
+        metrics.map((m) =>
+          analyticsApi.getMetrics({
+            node_id: nodeId,
+            metric: m,
+            interval: range,
+            // Digital/state metrics stay at raw 1-min resolution (never averaged)
+            // so their on/off transitions survive wide ranges; analog metrics use
+            // the hourly/daily continuous aggregates.
+            ...(booleanSet.has(m) ? { discrete: true } : {}),
+          })
+        )
       );
       const map = {};
       metrics.forEach((m, i) => { map[m] = results[i]?.points || []; });
@@ -227,7 +237,7 @@ function Analytics() {
     } finally {
       setLoading(false);
     }
-  }, [nodeId, nodes, range]);
+  }, [nodeId, nodes, range, booleanSet]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

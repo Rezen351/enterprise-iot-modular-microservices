@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, Activity, Tags, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, Network } from 'lucide-react';
+import { ArrowLeft, Activity, Tags, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, Network, SlidersHorizontal } from 'lucide-react';
 import { API_BASE } from '../../../api/client';
 import { moduleApi } from '../../../api/module';
 
@@ -43,6 +43,38 @@ function collectPaths(obj, prefix, out) {
   }
 }
 
+// Collect only controllable outputs from a payload. Firmware publishes outputs
+// under `telemetry.outputs.<name>` (or a top-level `outputs.<name>`); we store
+// the bare output name (e.g. "load1") because that is exactly the `target`
+// the Control Service publishes to MQTT and the firmware matches via hw.name.
+function collectOutputPaths(obj, prefix, out) {
+  if (!obj || typeof obj !== 'object') return;
+  for (const [k, v] of Object.entries(obj)) {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (k === 'outputs' && v && typeof v === 'object' && !Array.isArray(v)) {
+      for (const [ok, ov] of Object.entries(v)) {
+        if (ov && typeof ov === 'object' && !Array.isArray(ov)) {
+          collectOutputPaths(ov, ok, out);
+        } else if (typeof ov === 'number' || typeof ov === 'boolean' || typeof ov === 'string') {
+          out[ok] = ov;
+        }
+      }
+    } else if (v && typeof v === 'object' && !Array.isArray(v)) {
+      collectOutputPaths(v, key, out);
+    }
+  }
+}
+
+// Normalize a user-entered key to the bare firmware output name. Accepts
+// `telemetry.outputs.load1`, `outputs.load1`, or just `load1` → "load1".
+// This bare name is what the firmware expects as the MQTT command target.
+function normalizeActuatorKey(raw) {
+  let k = (raw || '').trim();
+  const i = k.toLowerCase().lastIndexOf('outputs.');
+  if (i !== -1) k = k.slice(i + 'outputs.'.length);
+  return k;
+}
+
 function NodeConfigPage({ node, onBack }) {
   const [messages, setMessages] = useState([]);
   const [connState, setConnState] = useState('connecting');
@@ -56,6 +88,12 @@ function NodeConfigPage({ node, onBack }) {
   const [isSaving, setIsSaving] = useState(false);
   const [tagError, setTagError] = useState('');
   const [detecting, setDetecting] = useState(false);
+
+  // Actuator (control output) tags
+  const [actuatorTags, setActuatorTags] = useState([]);
+  const [actDraft, setActDraft] = useState({ source_key: '', tag_name: '', display_name: '', unit: '', data_type: 'int' });
+  const [actBusy, setActBusy] = useState(false);
+  const [detectingOutputs, setDetectingOutputs] = useState(false);
 
   const nodeId = node.node_id;
 
@@ -73,13 +111,13 @@ function NodeConfigPage({ node, onBack }) {
     try { ws = new WebSocket(wsUrl); }
     catch (err) {
       setConnState('error');
-      setWsError('Gagal membuka koneksi live monitor.');
+      setWsError('Failed to open live monitor connection.');
       return;
     }
     wsRef.current = ws;
 
     ws.onopen = () => { if (!cancelled) setConnState('open'); };
-    ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Koneksi terputus. Perangkat mungkin offline atau WS tidak tersedia.'); } };
+    ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Connection lost. The device may be offline or the WebSocket may be unavailable.'); } };
     ws.onclose = () => { if (!cancelled) setConnState('closed'); };
     ws.onmessage = (event) => {
       if (cancelled) return;
@@ -110,6 +148,18 @@ function NodeConfigPage({ node, onBack }) {
       }
     };
     load();
+    return () => { cancelled = true; };
+  }, [nodeId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAct = async () => {
+      try {
+        const d = await moduleApi.getActuatorTags(nodeId);
+        if (!cancelled) setActuatorTags(Array.isArray(d?.tags) ? d.tags : []);
+      } catch { if (!cancelled) setActuatorTags([]); }
+    };
+    loadAct();
     return () => { cancelled = true; };
   }, [nodeId]);
 
@@ -177,6 +227,116 @@ function NodeConfigPage({ node, onBack }) {
     }
   };
 
+  // ─── Actuator tag handlers ─────────────────────────────────────────────
+  const handleCreateActuator = async () => {
+    if (!actDraft.source_key.trim()) { setTagError('Source key (e.g. telemetry.outputs.load1) is required.'); return; }
+    setActBusy(true);
+    setTagError('');
+    try {
+      const sourceKey = normalizeActuatorKey(actDraft.source_key);
+      await moduleApi.createActuatorTag(nodeId, {
+        source_key: sourceKey,
+        tag_name: actDraft.tag_name.trim() || sourceKey.replace(/^outputs\./, ''),
+        display_name: actDraft.display_name.trim(),
+        unit: actDraft.unit.trim(),
+        data_type: actDraft.data_type,
+      });
+      setActDraft({ source_key: '', tag_name: '', display_name: '', unit: '', data_type: 'int' });
+      const d = await moduleApi.getActuatorTags(nodeId);
+      setActuatorTags(Array.isArray(d?.tags) ? d.tags : []);
+    } catch (err) {
+      setTagError(err.message || 'Failed to create actuator mapping');
+    } finally {
+      setActBusy(false);
+    }
+  };
+
+  const handleDeleteActuator = async (id) => {
+    setActBusy(true);
+    setTagError('');
+    try {
+      await moduleApi.deleteActuatorTag(nodeId, id);
+      const d = await moduleApi.getActuatorTags(nodeId);
+      setActuatorTags(Array.isArray(d?.tags) ? d.tags : []);
+    } catch (err) {
+      setTagError(err.message || 'Failed to delete actuator mapping');
+    } finally {
+      setActBusy(false);
+    }
+  };
+
+  // Edit a field of an existing actuator mapping (local state; persisted via Save).
+  const handleUpdateActuator = (idx, field, value) => {
+    setActuatorTags(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
+  };
+
+  // Persist every actuator mapping (upsert by id). Lets the user re-edit the
+  // type / tag / label / unit produced by "Detect Outputs".
+  const handleSaveActuators = async () => {
+    setActBusy(true);
+    setTagError('');
+    try {
+      for (const t of actuatorTags) {
+        await moduleApi.createActuatorTag(nodeId, {
+          id: t.id,
+          source_key: normalizeActuatorKey(t.source_key),
+          tag_name: t.tag_name?.trim() || normalizeActuatorKey(t.source_key).replace(/^outputs\./, ''),
+          display_name: t.display_name?.trim() || '',
+          unit: t.unit?.trim() || '',
+          data_type: t.data_type,
+        });
+      }
+      const d = await moduleApi.getActuatorTags(nodeId);
+      setActuatorTags(Array.isArray(d?.tags) ? d.tags : []);
+    } catch (err) {
+      setTagError(err.message || 'Failed to save actuator mapping');
+    } finally {
+      setActBusy(false);
+    }
+  };
+
+  // Detect controllable outputs (telemetry.outputs.*) from the live MQTT stream.
+  const handleDetectOutputs = () => {
+    setDetectingOutputs(true);
+    setTagError('');
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
+    let ws;
+    try { ws = new WebSocket(wsUrl); }
+    catch (e) { setTagError('Failed to open live stream for output detection.'); setDetectingOutputs(false); return; }
+    const found = {};
+    const timer = setTimeout(async () => {
+      try { ws.close(); } catch { /* ignore */ }
+      setDetectingOutputs(false);
+      const keys = Object.keys(found);
+      if (keys.length === 0) {
+        setTagError('Tidak ada output terdeteksi dalam 5 detik. Pastikan perangkat mengirim telemetry.outputs.*');
+        return;
+      }
+      for (const k of keys) {
+        const sourceKey = normalizeActuatorKey(k);
+        try {
+          await moduleApi.createActuatorTag(nodeId, {
+            source_key: sourceKey,
+            tag_name: sourceKey.replace(/^outputs\./, ''),
+            display_name: '',
+            unit: '',
+            data_type: inferType(found[k]),
+          });
+        } catch { /* skip duplicates — backend upserts */ }
+      }
+      const d = await moduleApi.getActuatorTags(nodeId);
+      setActuatorTags(Array.isArray(d?.tags) ? d.tags : []);
+    }, 5000);
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        const payload = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;
+        if (payload && typeof payload === 'object') collectOutputPaths(payload, '', found);
+      } catch { /* ignore */ }
+    };
+    ws.onerror = () => { setTagError('Live stream error during output detection.'); setDetectingOutputs(false); clearTimeout(timer); };
+  };
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-main)' }}>
       {/* Header */}
@@ -216,7 +376,7 @@ function NodeConfigPage({ node, onBack }) {
             {connState !== 'open' && messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center gap-2 sm:gap-3 text-slate-500">
                 {connState === 'error' || connState === 'closed' ? (
-                  <><AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400/70" /><p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{wsError || 'Koneksi tertutup'}</p></>
+                  <><AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400/70" /><p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{wsError || 'Connection closed'}</p></>
                 ) : (
                   <><div className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider animate-pulse">Menunggu payload...</p></>
                 )}
@@ -249,7 +409,7 @@ function NodeConfigPage({ node, onBack }) {
         {/* ─── TAG MAPPING ─── */}
         <div>
           <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-            <Tags className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Tag Mapping
+            <Tags className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Telemetry Mapping
           </h4>
           {tagError && (
             <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] sm:text-xs flex items-center gap-1.5 sm:gap-2">
@@ -277,7 +437,7 @@ function NodeConfigPage({ node, onBack }) {
             {detecting ? 'Detecting...' : 'Detect keys'}
           </button>
           {tags.length === 0 ? (
-            <p className="text-[10px] sm:text-xs text-slate-500 italic text-center py-4 sm:py-6 border border-dashed border-slate-800">No tag mapping. Klik "Detect" atau tambah manual.</p>
+            <p className="text-[10px] sm:text-xs text-slate-500 italic text-center py-4 sm:py-6 border border-dashed border-slate-800">No tag mapping. Click "Detect" or add manually.</p>
           ) : (
             <div className="overflow-x-auto border border-white/5">
               <table className="w-full text-left border-collapse">
@@ -319,6 +479,117 @@ function NodeConfigPage({ node, onBack }) {
               <Save className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {isSaving ? 'Saving...' : 'Save Mapping'}
             </button>
           </div>
+        </div>
+
+        {/* ─── ACTUATOR MAPPING (control outputs) ─── */}
+        <div>
+          <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+            <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Actuator Mapping
+            <span className="text-[9px] font-normal text-slate-500 normal-case tracking-normal">— output kontrol → tampil di halaman Control</span>
+          </h4>
+          <p className="text-[10px] sm:text-xs text-slate-400 mb-2 sm:mb-3">
+            Firmware memublikasikan output sebagai <b className="text-emerald-300 font-mono">telemetry.outputs.&lt;nama&gt;</b> (mis. <b className="text-emerald-300 font-mono">telemetry.outputs.load1</b>). Petakan ke tag kontrol — key yang disimpan adalah nama output murni (<b className="text-emerald-300 font-mono">load1</b>) yang dikirim ke firmware. Output ter-map muncul sebagai target di menu <b>Control</b>. Pakai <b>Detect Outputs</b> untuk memindai otomatis dari live MQTT.
+          </p>
+          <div className="p-2.5 sm:p-3 border border-emerald-500/15 bg-emerald-500/5 space-y-2 sm:space-y-3 mb-2 sm:mb-3">
+            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+              <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Attach actuator
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+              <input
+                value={actDraft.source_key}
+                onChange={e => setActDraft({ ...actDraft, source_key: e.target.value })}
+                placeholder="load1"
+                className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+              />
+              <input
+                value={actDraft.tag_name}
+                onChange={e => setActDraft({ ...actDraft, tag_name: e.target.value })}
+                placeholder="Database tag"
+                className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+              <input
+                value={actDraft.display_name}
+                onChange={e => setActDraft({ ...actDraft, display_name: e.target.value })}
+                placeholder="Label"
+                className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+              <input
+                value={actDraft.unit}
+                onChange={e => setActDraft({ ...actDraft, unit: e.target.value })}
+                placeholder="Unit"
+                className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+              <select
+                value={actDraft.data_type}
+                onChange={e => setActDraft({ ...actDraft, data_type: e.target.value })}
+                className="bg-slate-900/50 border border-slate-700 px-2 py-1.5 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+              >
+                <option value="int">int (PWM/level)</option>
+                <option value="bool">bool (ON/OFF)</option>
+                <option value="float">float</option>
+              </select>
+            </div>
+            <button
+              onClick={handleCreateActuator}
+              disabled={actBusy}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-black bg-emerald-500 hover:bg-emerald-400 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Plus className="w-3 h-3" /> Add Actuator
+            </button>
+          </div>
+          <button onClick={handleDetectOutputs} disabled={detectingOutputs} className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 disabled:opacity-50 transition-colors cursor-pointer mb-2 sm:mb-3">
+            {detectingOutputs ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
+            {detectingOutputs ? 'Detecting...' : 'Detect Outputs'}
+          </button>
+
+          {actuatorTags.length === 0 ? (
+            <p className="text-[10px] sm:text-xs text-slate-500 italic text-center py-4 sm:py-6 border border-dashed border-slate-800">No actuator mapping yet. Enter a key or use Detect Outputs.</p>
+          ) : (
+            <div className="overflow-x-auto border border-white/5">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Output Key</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Tag</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Label</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Unit</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 align-middle leading-normal">Type</th>
+                    <th className="py-2.5 px-1.5 sm:py-3 sm:px-2 align-middle leading-normal"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {actuatorTags.map((t, idx) => (
+                    <tr key={t.id || idx} className="border-b border-white/5 last:border-0">
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2"><input value={t.source_key} onChange={e => handleUpdateActuator(idx, 'source_key', e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-emerald-400 font-mono focus:outline-none focus:border-emerald-500" /></td>
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2"><input value={t.tag_name} onChange={e => handleUpdateActuator(idx, 'tag_name', e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" /></td>
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2"><input value={t.display_name} onChange={e => handleUpdateActuator(idx, 'display_name', e.target.value)} placeholder="(optional)" className="w-full bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" /></td>
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2"><input value={t.unit} onChange={e => handleUpdateActuator(idx, 'unit', e.target.value)} placeholder="-" className="w-14 sm:w-20 bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500" /></td>
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2">
+                        <select value={t.data_type} onChange={e => handleUpdateActuator(idx, 'data_type', e.target.value)} className="bg-slate-900/50 border border-slate-700 px-1.5 py-1 text-[10px] sm:text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                          <option value="int">int (PWM/level)</option>
+                          <option value="bool">bool (ON/OFF)</option>
+                          <option value="float">float</option>
+                        </select>
+                      </td>
+                      <td className="py-1.5 px-1.5 sm:py-2 sm:px-2 text-right">
+                        <button onClick={() => handleDeleteActuator(t.id)} disabled={actBusy}
+                          className="p-1 sm:p-1.5 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors cursor-pointer disabled:opacity-50">
+                          <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {actuatorTags.length > 0 && (
+            <div className="mt-2 sm:mt-3 flex justify-end">
+              <button onClick={handleSaveActuators} disabled={actBusy} className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 transition-colors uppercase tracking-widest cursor-pointer">
+                <Save className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {actBusy ? 'Saving...' : 'Save Mapping'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

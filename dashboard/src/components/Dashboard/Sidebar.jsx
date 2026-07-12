@@ -5,19 +5,26 @@ import {
   User,
   ShieldCheck,
   Server,
-  BarChart3
+  BarChart3,
+  SlidersHorizontal,
+  Video,
+  Camera
 } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, isAdmin = false }) {
   const menuItems = [
-    { id: 'profile', label: 'PROFILE', icon: User },
-    { id: 'module', label: 'MODULE', icon: Server },
     { id: 'analytics', label: 'ANALYTICS', icon: BarChart3 },
+    { id: 'control', label: 'CONTROL', icon: SlidersHorizontal },
+    { id: 'module', label: 'MODULE', icon: Server },
+    { id: 'live', label: 'LIVE', icon: Video },
+    { id: 'snapshot', label: 'SNAPSHOT', icon: Camera },
   ];
 
   if (isAdmin) {
     menuItems.push({ id: 'users', label: 'Account', icon: ShieldCheck });
   }
+
+  menuItems.push({ id: 'profile', label: 'PROFILE', icon: User });
 
   return (
     <>
@@ -39,14 +46,14 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
           {/* Collapsed State Logo (Desktop Only) */}
           <div className={`mx-auto animate-fadeIn ${collapsed ? 'lg:flex hidden' : 'hidden'
             }`}>
-            <img src="/favicon.svg" className="w-8 h-8 select-none" alt="Smart Farm Icon" />
+            <img src={`${import.meta.env.BASE_URL || '/'}favicon.svg`} className="w-8 h-8 select-none" alt="Smart Farm Icon" />
           </div>
 
           {/* Full Branding (Mobile always, Desktop only if not collapsed) */}
           <div className={`items-center justify-between w-full ${collapsed ? 'flex lg:hidden' : 'flex'
             }`}>
             <div className="flex items-center animate-fadeIn overflow-hidden select-none">
-              <img src="/Smart Farm Logo.svg" className="h-10 w-auto object-contain" alt="Smart Farm Logo" />
+              <img src={`${import.meta.env.BASE_URL || '/'}Smart Farm Logo.svg`} className="h-10 w-auto object-contain" alt="Smart Farm Logo" />
             </div>
 
             {/* Close drawer button (Mobile Only) */}

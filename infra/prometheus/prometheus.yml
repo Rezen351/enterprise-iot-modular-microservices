@@ -69,6 +69,28 @@ scrape_configs:
         target_label: instance
         replacement: "analytics-service"
 
+  # Control Service — device command dispatch metrics
+  - job_name: "control-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["control:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "control-service"
+
+  # Stream Service — CCTV stream metadata + MediaMTX registry metrics
+  - job_name: "stream-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["stream:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "stream-service"
+
   # Kong API Gateway — exposes metrics on port 8001 (admin API)
   - job_name: "kong"
     metrics_path: /metrics
@@ -79,3 +101,93 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "kong-gateway"
+
+  # ─── Infra exporters ───────────────────────────────────────────────────
+
+  # MariaDB Auth — via mysqld-exporter
+  - job_name: "mariadb-auth"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-auth:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-auth"
+
+  # MariaDB Control — via mysqld-exporter
+  - job_name: "mariadb-control"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-control:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-control"
+
+  # MariaDB Module — via mysqld-exporter
+  - job_name: "mariadb-module"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-module:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-module"
+
+  # Redis (Module cache) — via redis-exporter
+  - job_name: "redis-module"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "redis-module"
+
+  # TimescaleDB Module — via postgres-exporter
+  - job_name: "timescaledb-module"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["postgres-exporter-module:9187"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "timescaledb-module"
+
+  # TimescaleDB Analytics — via postgres-exporter
+  - job_name: "timescaledb-analytics"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["postgres-exporter-analytics:9187"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "timescaledb-analytics"
+
+  # Mosquitto MQTT Broker — via mosquitto-exporter ($SYS/broker/#)
+  - job_name: "mosquitto"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mosquitto-exporter:9234"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mosquitto-broker"
+
+  # NATS JetStream — via prometheus-nats-exporter sidecar (:7777)
+  - job_name: "nats"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["nats-exporter:7777"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "nats-server"

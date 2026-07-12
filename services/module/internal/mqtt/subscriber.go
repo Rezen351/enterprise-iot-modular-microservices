@@ -109,10 +109,11 @@ func (s *Subscriber) onMessage(_ mqtt.Client, m mqtt.Message) {
 }
 
 // nodeIDFromTopic extracts the node id from any per-node firmware topic:
-//   {prefix}/{node_id}/telemetry|diagnostics|alert|confirm
-//   {prefix}/actuator/{node_id}
-//   {prefix}/status/{node_id}
-//   {prefix}/discovery            -> node id comes from the payload
+//
+//	{prefix}/{node_id}/telemetry|diagnostics|alert|confirm
+//	{prefix}/actuator/{node_id}
+//	{prefix}/status/{node_id}
+//	{prefix}/discovery            -> node id comes from the payload
 func (s *Subscriber) nodeIDFromTopic(topic string, payload []byte) (string, bool) {
 	rel := strings.TrimPrefix(topic, s.topicPrefix+"/")
 	if rel == topic {

@@ -48,10 +48,11 @@ export const authApi = {
     return pair;
   },
 
-  // Logout — revoke all tokens then clear local session
+  // Logout — revoke all tokens then clear local session. `quiet` agar 504
+  // dari backend saat logout tidak memicu toast "backend down".
   logout: async () => {
     try {
-      await request('/auth/logout', { method: 'POST', auth: true });
+      await request('/auth/logout', { method: 'POST', auth: true, quiet: true });
     } catch {
       /* ignore network/expiry errors on logout */
     } finally {

@@ -137,6 +137,9 @@ func main() {
 		r.Delete("/{node_id}", h.DeleteNode)
 		r.Get("/{node_id}/tags", h.GetNodeTags)
 		r.Put("/{node_id}/tags", h.SaveNodeTags)
+		r.Get("/{node_id}/actuators", h.GetActuatorTags)
+		r.Post("/{node_id}/actuators", h.CreateActuatorTag)
+		r.Delete("/{node_id}/actuators/{id}", h.DeleteActuatorTag)
 	})
 
 	// ─── HTTP Server ───────────────────────────────────────────────────

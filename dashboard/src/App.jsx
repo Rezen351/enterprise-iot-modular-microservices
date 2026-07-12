@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-  Leaf, 
   Activity, 
-  ShieldAlert, 
+  ShieldAlert,
   Video, 
   ArrowRight, 
   Sparkles, 
@@ -22,6 +21,17 @@ import DashboardLayout from './components/Dashboard/DashboardLayout';
 import WebSerialClient from './components/WebSerial/WebSerialClient';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { authApi } from './api/auth';
+import { registerUnauthorized, registerServerError, clearSession } from './api/client';
+
+// Base path where the dashboard is served via Kong (see vite.config.js -> base).
+// All navigation & assets must be relative to this BASE.
+const BASE = import.meta.env.BASE_URL || '/';
+function stripBase(p) {
+  if (BASE !== '/' && p.startsWith(BASE)) {
+    return p.slice(BASE.length - 1); // pertahankan leading '/'
+  }
+  return p;
+}
 
 function AppContent() {
   const { theme, toggleTheme } = useTheme();
@@ -39,27 +49,49 @@ function AppContent() {
 
   // Initialize view based on current path and user session
   const [view, setView] = useState(() => {
-    const path = window.location.pathname;
+    const rel = stripBase(window.location.pathname);
     const savedUser = sessionStorage.getItem('user');
-    if (path === '/dashboard' && savedUser) {
+    if (rel === '/dashboard' && savedUser) {
       return 'dashboard';
     }
     return 'landing';
   });
 
-  // Sync state changes to browser URL
+  // Session validation on boot: if a user exists in sessionStorage, the session
+  // should be checked before showing the dashboard.
+  const [validating, setValidating] = useState(() =>
+    !!sessionStorage.getItem('user')
+  );
+
+  // Toast for "session expired" triggered by a 401 (not a manual logout).
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  // Register the unauthorized handler SYNCHRONOUSLY (during render), not in
+  // useEffect. A parent's useEffect runs AFTER child effects, so on first load
+  // an authed call (e.g. /modules from ModuleProvider) could return 401 while
+  // onUnauthorized is still a no-op → no redirect. Registering it here makes the
+  // handler active before the child mounts.
+  registerUnauthorized(() => {
+    setUser(null);
+    setView('landing');
+    setValidating(false);
+    setSessionExpired(true);
+  });
+
+  // Sync state changes to browser URL (base-aware: /app)
   useEffect(() => {
+    const rel = stripBase(window.location.pathname);
     if (view === 'dashboard' && user) {
-      if (window.location.pathname !== '/dashboard') {
-        window.history.pushState(null, '', '/dashboard');
+      if (rel !== '/dashboard') {
+        window.history.pushState(null, '', BASE + 'dashboard');
       }
     } else if (view === 'webserial') {
-      if (window.location.pathname !== '/configurator') {
-        window.history.pushState(null, '', '/configurator');
+      if (rel !== '/configurator') {
+        window.history.pushState(null, '', BASE + 'configurator');
       }
     } else {
-      if (window.location.pathname !== '/') {
-        window.history.pushState(null, '', '/');
+      if (rel !== '/') {
+        window.history.pushState(null, '', BASE === '/' ? '/' : BASE);
       }
     }
   }, [view, user]);
@@ -67,11 +99,11 @@ function AppContent() {
   // Handle browser back/forward buttons (popstate)
   useEffect(() => {
     const handlePopState = () => {
-      const path = window.location.pathname;
+      const rel = stripBase(window.location.pathname);
       const savedUser = sessionStorage.getItem('user');
-      if (path === '/dashboard' && savedUser) {
+      if (rel === '/dashboard' && savedUser) {
         setView('dashboard');
-      } else if (path === '/configurator') {
+      } else if (rel === '/configurator') {
         setView('webserial');
       } else {
         setView('landing');
@@ -81,20 +113,87 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Toast for "backend unavailable" on 5xx/network failures.
+  const [backendDown, setBackendDown] = useState(false);
+
+  // Register the server-error handler (5xx/network) so App can show a toast
+  // without treating the session as invalid (504 ≠ logout). Throttling is in client.
+  registerServerError((msg) => {
+    setBackendDown(true);
+    if (msg) console.warn('[api] backend error:', msg);
+  });
+
+  // Auto-hide the "session expired" & "backend down" toasts.
+  useEffect(() => {
+    if (!sessionExpired && !backendDown) return;
+    const t = setTimeout(() => {
+      setSessionExpired(false);
+      setBackendDown(false);
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [sessionExpired, backendDown]);
+
+  // Session validation on boot: if a user exists in sessionStorage, call /auth/me.
+  // On failure (a 401 that can't be refreshed), onUnauthorized already resets the
+  // session & redirects. On success, show the dashboard.
+  useEffect(() => {
+    if (!validating) return;
+    let active = true;
+    authApi.me()
+      .catch(() => {})
+      .finally(() => { if (active) setValidating(false); });
+    return () => { active = false; };
+  }, [validating]);
+
+  // Logout must still clean up the LOCAL session even if the backend is 504/down.
   const handleLogout = async () => {
-    await authApi.logout();
-    setUser(null);
-    setView('landing');
+    try {
+      await authApi.logout();
+    } catch {
+      /* ignore — local session is still cleared in finally */
+    } finally {
+      clearSession();
+      setUser(null);
+      setView('landing');
+      setValidating(false);
+    }
   };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setShowAuth(false);
     setView('dashboard');
+    setValidating(false);
   };
 
+  // Global toast for session expired / backend unavailable.
+  const authToast = sessionExpired ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[120] px-5 py-3 bg-red-500/15 border border-red-500/30 backdrop-blur-xl  text-red-300 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+      <LogOut className="w-4 h-4" /> Session expired, please sign in again
+    </div>
+  ) : backendDown ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[120] px-5 py-3 bg-amber-500/15 border border-amber-500/30 backdrop-blur-xl  text-amber-200 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+      <Database className="w-4 h-4" /> Backend unavailable
+    </div>
+  ) : null;
+
+  // On boot with a session from sessionStorage, show a loading state first until
+  // the /auth/me validation finishes (success → dashboard, 401 failure → redirect).
+  if (validating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-muted)' }}>
+        <span className="text-xs font-black uppercase tracking-[0.3em] animate-pulse">Verifying session…</span>
+      </div>
+    );
+  }
+
   if (view === 'dashboard' && user) {
-    return <DashboardLayout onExit={() => setView('landing')} onLogout={handleLogout} />;
+    return (
+      <>
+        {authToast}
+        <DashboardLayout onExit={() => setView('landing')} onLogout={handleLogout} />
+      </>
+    );
   }
 
   if (view === 'webserial') {
@@ -103,7 +202,7 @@ function AppContent() {
         <nav className="relative z-50 border-b border-emerald-500/10 bg-inherit/80 backdrop-blur-xl sticky top-0" style={{ borderColor: 'var(--border-main)' }}>
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center compact-mobile-px">
             <div className="flex items-center cursor-pointer group" onClick={() => setView('landing')}>
-              <img src="/Smart Farm Logo.svg" className={`h-9 sm:h-10 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
+              <img src={`${BASE}Smart Farm Logo.svg`} className={`h-9 sm:h-10 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
             </div>
             <button onClick={() => setView('landing')} className="text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
               <LogOut className="w-4 h-4 rotate-180" /> Back to Home
@@ -117,7 +216,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen font-sans selection:bg-emerald-500/30 overflow-x-hidden relative">
-      
+      {authToast}
+
       {/* Background Radial Glows */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%]  opacity-40 blur-[150px]" style={{ backgroundColor: 'var(--radial-glow-1)' }} />
@@ -373,7 +473,7 @@ function AppContent() {
       {/* Footer */}
       <footer className="border-t py-16 text-center relative z-10" style={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-main)' }}>
         <div className="flex justify-center items-center mb-8 opacity-60 select-none">
-            <img src="/Smart Farm Logo.svg" className={`h-8 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
+            <img src={`${BASE}Smart Farm Logo.svg`} className={`h-8 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
         </div>
         <div className="flex justify-center gap-10 text-[10px] font-black uppercase tracking-[0.2em] mb-10" style={{ color: 'var(--text-muted)' }}>
             <a href="#" className="hover:text-emerald-400 transition-colors">Safety Logs</a>

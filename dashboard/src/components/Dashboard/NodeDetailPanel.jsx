@@ -73,13 +73,13 @@ function NodeDetailPanel({ node, onClose }) {
     try { ws = new WebSocket(wsUrl); }
     catch (err) {
       setConnState('error');
-      setWsError('Gagal membuka koneksi live monitor.');
+      setWsError('Failed to open live monitor connection.');
       return;
     }
     wsRef.current = ws;
 
     ws.onopen = () => { if (!cancelled) setConnState('open'); };
-    ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Koneksi terputus. Perangkat mungkin offline atau WS tidak tersedia.'); } };
+    ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Connection lost. The device may be offline or the WebSocket may be unavailable.'); } };
     ws.onclose = () => { if (!cancelled) setConnState('closed'); };
     ws.onmessage = (event) => {
       if (cancelled) return;
@@ -217,7 +217,7 @@ function NodeDetailPanel({ node, onClose }) {
             {connState !== 'open' && messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center gap-3 text-slate-500">
                 {connState === 'error' || connState === 'closed' ? (
-                  <><AlertTriangle className="w-8 h-8 text-red-400/70" /><p className="text-xs font-bold uppercase tracking-wider">{wsError || 'Koneksi tertutup'}</p></>
+                  <><AlertTriangle className="w-8 h-8 text-red-400/70" /><p className="text-xs font-bold uppercase tracking-wider">{wsError || 'Connection closed'}</p></>
                 ) : (
                   <><div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[11px] font-bold uppercase tracking-wider animate-pulse">Menunggu payload...</p></>
                 )}
@@ -278,7 +278,7 @@ function NodeDetailPanel({ node, onClose }) {
             {detecting ? 'Detecting 5s...' : 'Detect keys from live stream'}
           </button>
           {tags.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6 border border-dashed border-slate-800">Belum ada tag mapping. Klik "Detect" atau tambah manual.</p>
+            <p className="text-xs text-slate-500 italic text-center py-6 border border-dashed border-slate-800">No tag mapping yet. Click "Detect" or add manually.</p>
           ) : (
             <div className="overflow-x-auto border border-white/5">
               <table className="w-full text-left border-collapse">

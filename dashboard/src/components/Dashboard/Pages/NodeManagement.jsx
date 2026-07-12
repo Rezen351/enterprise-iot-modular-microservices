@@ -74,7 +74,7 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
   };
 
   const handleUnpair = async (node) => {
-    if (!window.confirm(`Unpair node ${node.node_id} dari module ini?`)) return;
+    if (!window.confirm(`Unpair node ${node.node_id} from this module?`)) return;
     setBusyId(node.node_id);
     setError('');
     try {
@@ -88,7 +88,7 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
   };
 
   const handleDelete = async (node) => {
-    if (!window.confirm(`Hapus catatan node ${node.node_id}? Node akan muncul lagi jika perangkat mengirim discovery.`)) return;
+    if (!window.confirm(`Delete node record ${node.node_id}? The node will reappear if the device sends a discovery message.`)) return;
     setBusyId(node.node_id);
     setError('');
     try {

@@ -86,7 +86,39 @@ func sourceForInterval(interval string) (table string, agg string) {
 }
 
 // QuerySeries returns the aggregated time-series for a node/metric over a window.
-func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string) (*model.SeriesResponse, error) {
+// For discrete (digital/state, 0/1) metrics pass discrete=true: the series is
+// read from the raw 1-minute rollup with a fine time-bucket (still using `last`,
+// never `avg`) so on/off transitions are preserved instead of being collapsed to
+// one value per hour by the hourly/daily continuous aggregates.
+func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string, discrete bool) (*model.SeriesResponse, error) {
+	if discrete {
+		step := discreteStep(parseInterval(interval))
+		q := `SELECT time_bucket(CAST($5 AS interval), time) AS t, last(last, time) AS v
+		      FROM metrics_rollup
+		      WHERE node_id = $1 AND metric = $2 AND time BETWEEN $3 AND $4
+		      GROUP BY t
+		      ORDER BY t`
+		rows, err := s.pool.Query(ctx, q, nodeID, metric, from, to, step)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		pts := make([]model.SeriesPoint, 0)
+		for rows.Next() {
+			var t time.Time
+			var v float64
+			if err := rows.Scan(&t, &v); err != nil {
+				return nil, err
+			}
+			pts = append(pts, model.SeriesPoint{T: t.UTC().Format(time.RFC3339), V: v})
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return &model.SeriesResponse{NodeID: nodeID, Metric: metric, Interval: interval, Points: pts}, nil
+	}
+
 	table, valueExpr := sourceForInterval(interval)
 	timeCol := "time"
 	if table != "metrics_rollup" {
@@ -116,6 +148,24 @@ func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to
 		return nil, err
 	}
 	return &model.SeriesResponse{NodeID: nodeID, Metric: metric, Interval: interval, Points: pts}, nil
+}
+
+// discreteStep picks a coarse-enough but transition-preserving bucket for digital
+// metrics so the raw 1-minute rollup stays bounded in point count at wide ranges
+// (max ~720 points). The bucket always carries `last`, so values stay 0/1.
+func discreteStep(d time.Duration) string {
+	switch {
+	case d <= 6*time.Hour:
+		return "1 minute"
+	case d <= 24*time.Hour:
+		return "5 minutes"
+	case d <= 7*24*time.Hour:
+		return "15 minutes"
+	case d <= 30*24*time.Hour:
+		return "1 hour"
+	default:
+		return "3 hours"
+	}
 }
 
 // QuerySummary returns the statistical summary for a node/metric over a window.

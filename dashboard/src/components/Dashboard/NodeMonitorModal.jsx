@@ -62,13 +62,13 @@ function NodeMonitorModal({ node, onClose }) {
       ws = new WebSocket(wsUrl);
     } catch (err) {
       setConnState('error');
-      setError('Gagal membuka koneksi live monitor.');
+      setError('Failed to open live monitor connection.');
       return;
     }
     wsRef.current = ws;
 
     ws.onopen = () => { if (!cancelled) setConnState('open'); };
-    ws.onerror = () => { if (!cancelled) { setConnState('error'); setError('Koneksi terputus. Perangkat mungkin offline atau WS tidak tersedia.'); } };
+    ws.onerror = () => { if (!cancelled) { setConnState('error'); setError('Connection lost. The device may be offline or the WebSocket may be unavailable.'); } };
     ws.onclose = () => { if (!cancelled) setConnState('closed'); };
     ws.onmessage = (event) => {
       if (cancelled) return;
@@ -112,7 +112,7 @@ function NodeMonitorModal({ node, onClose }) {
                 Live MQTT — <span className="text-emerald-400 font-mono">{nodeId}</span>
               </h3>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5 truncate">
-                Semua payload dari perangkat (telemetry / actuator / diagnostics / alert / status)
+                All payloads from the device (telemetry / actuator / diagnostics / alert / status)
               </p>
             </div>
           </div>
@@ -144,7 +144,7 @@ function NodeMonitorModal({ node, onClose }) {
               {connState === 'error' || connState === 'closed' ? (
                 <>
                   <AlertTriangle className="w-8 h-8 text-red-400/70" />
-                  <p className="text-xs font-bold uppercase tracking-wider">{error || 'Koneksi tertutup'}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider">{error || 'Connection closed'}</p>
                 </>
               ) : (
                 <>

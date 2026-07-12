@@ -1,8 +1,8 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 2.0.0  
-> **Tanggal:** 2026-07-11  
-> **Status:** 🟢 Fase 1-3 Selesai — Lanjut ke Fase 4  
+> **Versi Dokumen:** 2.2.0  
+> **Tanggal:** 2026-07-12  
+> **Status:** 🟢 Fase 1-5 + Monitor Service Selesai — Fase 4 (Control) & Fase 5 (Stream) Selesai  
 > **Penulis:** Tim TA
 
 ---
@@ -55,30 +55,36 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 
 - **Device Layer:** ESP32 mengirim data sensor via MQTT ke Mosquitto broker
 - **Ingestion Layer:** Module Service menerima data dari Mosquitto, menyimpan ke database (MariaDB + TimescaleDB), dan mempublikasikan ke NATS
-- **Processing Layer:** Alert Service, Analytics Service, dan ML/Vision API memproses data secara real-time
+- **Processing Layer:** Analytics Service, Stream Service (MediaMTX + MinIO), dan (future) ML/Vision API memproses data secara real-time
 - **Control Layer:** Control Service mengirim perintah balik ke ESP32 melalui MQTT
+- **Streaming Layer:** Stream Service + MediaMTX (RTSP→HLS/WebRTC) + MinIO (snapshot/recording) untuk kamera CCTV/ESP32-CAM
 - **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal
 - **Presentation Layer:** Dashboard (React) dan WebSocket Service untuk real-time updates
 - **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
-- **Observability Layer:** Prometheus untuk aggregasi metrik dari seluruh service, dipublikasikan melalui NATS
-- **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel untuk akses aman dari internet
+- **Observability Layer:** Prometheus + exporter (mysqld/postgres/redis/mosquitto/nats) untuk aggregasi metrik; Monitor Service untuk resource container
+- **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel (scaffold) untuk akses aman dari internet
 
 ### Diagram Alur Data End-to-End (Saat Ini)
 
 ```
 ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
-                                           → TimescaleDB (time-series)
-                                           → Redis (cache)
-                                           → NATS (telemetry.ingest + telemetry.batch)
-                                                → Analytics Service → TimescaleDB (analytics)
-                                                → WS-Gateway → WebSocket → Dashboard
-                                                → (future) Alert Service
-                                                → (future) Audit Service
+                                            → TimescaleDB (time-series)
+                                            → Redis (cache)
+                                            → NATS (telemetry.ingest + telemetry.batch)
+                                                 → Analytics Service → TimescaleDB (analytics)
+                                                 → WS-Gateway → WebSocket → Dashboard (realtime telemetry)
+                                                 → Stream Service → MediaMTX (HLS/WebRTC) + MinIO (snapshot/recording)
+                                                 → (future) Alert Service
+                                                 → (future) Audit Service
+
+CCTV / ESP32-CAM → RTSP → MediaMTX → Stream Service (register path) → HLS/WebRTC → Dashboard Live View
 
 User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
-                                     → Module Service (CRUD modules/nodes)
-                                     → Analytics Service (query agregasi)
-                                     → WS-Gateway (WebSocket real-time)
+                                      → Module Service (CRUD modules/nodes)
+                                      → Analytics Service (query agregasi)
+                                      → Control Service (perintah actuator)
+                                      → Stream Service (CRUD stream + snapshot/recording)
+                                      → WS-Gateway (WebSocket real-time)
 ```
 
 ### Prinsip Desain
@@ -103,9 +109,9 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 |---|---|---|---|---|---|
 | Auth | `mariadb-auth` | — | — | — | ✅ Running |
 | Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — | ✅ Running |
-| Control | `mariadb-control` | — | — | — | ⬜ Belum |
+| Control | `mariadb-control` | — | — | — | ✅ Running |
+| Stream | `mariadb-stream` | — | — | `minio-stream` | ✅ Running |
 | Alert | `mariadb-alert` | — | `redis-alert` | — | ⬜ Belum |
-| Stream | `mariadb-stream` | — | — | `minio-stream` | ⬜ Belum |
 | ML / Vision | `mariadb-ml` | — | — | `minio-ml` | ⬜ Belum |
 | OTA | `mariadb-ota` | — | — | `minio-ota` | ⬜ Belum |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
@@ -113,9 +119,10 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | Notification | `mariadb-notification` | — | `redis-notification` | — | ⬜ Belum |
 | Audit | `mariadb-audit` | — | — | — | ⬜ Belum |
 | Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
+| Monitor | — (docker stats) | — | — | — | ✅ Running |
 
 **Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 4× Redis · 3× MinIO = **19 instance**
-**Sudah berjalan:** 3× MariaDB · 2× TimescaleDB · 1× Redis = **6 instance**
+**Sudan berjalan:** 4× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **8 instance**
 
 ---
 
@@ -142,7 +149,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `analytics/` ✅ — Service agregasi data time-series (Go)
   - `wsgateway/` ✅ — WebSocket bridge NATS → Dashboard (Go)
   - `export/` ⬜ — Service ekspor data untuk akses eksternal/Python (Go/Python)
-  - `control/` ⬜ — Service kontrol device
+  - `control/` ✅ — Service kontrol device
   - `alert/` ⬜ — Service evaluasi threshold
   - `stream/` ⬜ — Service streaming video
   - `ota/` ⬜ — Service update firmware
@@ -231,10 +238,12 @@ Alur ketika data sensor masuk dari ESP32 hingga notifikasi dikirim ke pengguna:
 
 Alur ketika operator mengirim perintah ke perangkat (misalnya menyalakan pompa):
 
-1. **Control Service** menerima perintah, set status `pending` di database, publikasikan `saga.control.initiated`
-2. **ESP32** mengirim ACK via MQTT, Control Service update status menjadi `sent`
-3. **Control Service** konfirmasi eksekusi, status menjadi `done`, publikasikan `saga.control.completed`
-4. **Kompensasi:** Jika timeout 500 ms tanpa ACK, Control Service publikasikan `saga.control.compensate`, status menjadi `failed`, dan notifikasi dikirim ke operator
+1. **Control Service** menerima perintah (manual) atau scheduler memicu (otomatis), set status `pending` di database, publish MQTT `set_output` ke `smartfarm/actuator/{node_id}` dengan `req_id`
+2. **ESP32** eksekusi lalu kirim ACK via MQTT `smartfarm/{node_id}/confirm`; Module Service fan-out ke NATS → Control Service korelasi `req_id`, status `acked`
+3. **Verifikasi:** state final dikonfirmasi via `telemetry.outputs.{name}`, status menjadi `done`
+4. **Kompensasi:** Jika timeout tanpa `/confirm`, status menjadi `failed` dan notifikasi dikirim ke operator
+
+> Catatan: firmware membalas ACK via **MQTT `/confirm`**, bukan NATS Request-Reply sinkron. Timeout ditetapkan Control Service (mis. 2–5 detik, menyesuaikan interval telemetry 5s).
 
 ### Saga 3 — OTA Firmware Update
 
@@ -340,13 +349,43 @@ Setiap event saga memiliki struktur payload yang konsisten:
 - ✅ **Autentikasi koneksi WS via JWT** — validasi access token (Bearer header / `?token=`) pakai `JWT_SECRET` yang sama dengan Auth Service
 - ⬜ **`system-status` / notifikasi multi-subject (NotificationContext)** — ditunda (belum diperlukan)
 
-### ⬜ Fase 4 — Control Service [P2 — PRIORITAS BERIKUTNYA]
-- `POST /control/command` — Terima perintah dari Kong (JWT Operator/Admin)
-- NATS Request-Reply — Kirim command, tunggu ACK dari device (timeout 500 ms)
-- Publish MQTT — Forward command ke `cmd/{device_id}`
-- Simpan ke MariaDB — Log perintah + status di `mariadb-control`
-- Publish `audit.log` — Setiap perintah terkirim/gagal
-- Dockerfile + healthcheck
+### ✅ Fase 4 — Control Service [P2 — SELESAI]
+
+> Dua mode: **Manual** (publish langsung) dan **Otomatis** (scheduler **server-side** — interval/jadwal/threshold nyala-mati). Firmware = *dumb actuator*; semua penjadwalan di Control Service.
+
+#### Yang sudah dikerjakan (status 2026-07-12)
+- **Backend (Go):** arbitrasi mode node-level via sentinel `output_name='*'` di tabel `control_modes`. `HandleManualCommand` menolak override manual di mode `AUTO`/`EMERGENCY` (kecuali `emergency_stop`); `EnabledSchedules` menjeda scheduler node saat mode `MANUAL`/`EMERGENCY`.
+- **Persistensi mode pra-emergency:** kolom `prev_mode` ditambahkan ke `gormControlMode` (AutoMigrate). `EnterEmergency` menyimpan mode aktif sebelum emergency; `ResumeNode` mengembalikan mode tersebut (default `AUTO` bila `prev_mode` kosong), sehingga **Resume merestorasi mode sebelum emergency**, bukan selalu AUTO.
+- **Endpoint:** `PUT /control/modes/{node_id}`, `GET`, `POST .../resume` (Kong sudah route `/control/modes`).
+- **Dashboard (React):** Halaman **Control Panel** dengan kartu *Control Mode* (badge MANUAL / OTOMATIS · BERJALAN NORMAL / EMERGENCY STOP, toggle Manual⇄Otomatis, tombol Emergency Stop, tombol Resume yang hanya muncul saat EMERGENCY). Perbaikan bug: `TargetTile` kini menerima `nodeMode` sehingga tombol manual ON/OFF/Toggle/level aktif hanya di mode MANUAL.
+- **Jadwal:** CRUD jadwal + **edit** (prefill form, `PUT /control/schedules/{id}`) + toggle enable/disable + **pagination** (PAGE_SIZE=4) agar rapi saat jadwal banyak.
+
+#### Kontrak nyata firmware (hasil audit `firmware/aeroponic-node`)
+Skema ini **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply):
+- **Topik command:** `smartfarm/actuator/{node_id}` (bukan `cmd/{device_id}`) — `ConfigManager.cpp:142`
+- **Action:** hanya `set_output` (eksekusi seketika, tanpa scheduler lokal)
+- **Payload:** `{"action":"set_output","target":"<output_name>","value":<int>,"req_id":"<opsional>"}`
+  - `value`: DIGITAL → `0`/`1` · PWM → `0–255`; `target` = `HardwareOutputs[].name`
+- **ACK:** via MQTT `smartfarm/{node_id}/confirm` (**bukan** NATS Request-Reply) → korelasi `req_id`; fallback verifikasi via `telemetry.outputs.{name}`
+- **Fitur lokal firmware:** local control threshold+histeresis & emergency shutdown (interrupt → semua OFF)
+
+#### Type control — Manual (publish seketika)
+- `set_state` (ON/OFF DIGITAL) · `set_level` (PWM 0–100%→0–255) · `toggle` · `pulse` (ON X detik lalu OFF, timer server) · `emergency_stop` (semua output=0)
+
+#### Type control — Otomatis (scheduler server-side)
+- `interval` ⭐ (ON x detik / OFF y detik berulang — pola pompa aeroponik)
+- `schedule` (cron jam nyala/mati) · `threshold` (sensor + histeresis) · `duration` (nyala total durasi) · `ramp` (PWM bertahap)
+
+#### Implementasi
+- `POST /control/command` — mode manual, publish `set_output` seketika (JWT Operator/Admin)
+- Publish MQTT ke `smartfarm/actuator/{node_id}` + ACL Mosquitto (izin publish `smartfarm/actuator/#`)
+- Korelasi ACK dari `/confirm` (via NATS fan-out Module Service), timeout → `failed`
+- CRUD `schedules` + scheduler engine (goroutine/cron) untuk mode otomatis
+- Simpan ke MariaDB (`mariadb-control`) + publish `audit.log`
+- Dockerfile + healthcheck + Kong route + Prometheus
+
+#### Database `mariadb-control`
+- `control_targets` (katalog output per node), `control_modes` (MANUAL/AUTO per output), `schedules` (definisi otomatis + params JSON), `commands` (log: req_id, status pending→sent→acked / timeout / failed)
 
 ### ⬜ Fase 5 — Alert Service [P2]
 - Subscribe NATS `telemetry.ingest`
@@ -385,8 +424,8 @@ Setiap event saga memiliki struktur payload yang konsisten:
 - React app (reuse dari Aeroponik-Docker)
 - Tampilan telemetri real-time via WebSocket
 - Tampilan alert & history
-- Panel kontrol device
-- Halaman Device Management (file sudah ada, tinggal integrasi penuh)
+  - Panel kontrol device (Control Panel: mode arbitration + manual override + schedule editor/pagination) ✅
+  - Halaman Device Management (file sudah ada, tinggal integrasi penuh)
 - Koneksi ke WS-Gateway dengan JWT auth
 
 ### ⬜ Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
@@ -585,7 +624,7 @@ df = pd.read_parquet("data.parquet")
 
 | Prioritas | Fase | Service | Estimasi | Alasan |
 |---|---|---|---|---|
-| 🔴 P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah kirim data tapi belum bisa dikontrol |
+| ✅ P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah bisa dikontrol (manual + otomatis + emergency/resume) |
 | 🔴 P1 | Fase 5 | Alert Service | 3-5 hari | Data sensor sudah masuk tapi belum ada evaluasi threshold |
 | 🔴 P1 | Fase 8 | Audit Service | 1-2 hari | Quick win: data audit sudah dipublish tapi tidak di-consume |
 | 🟡 P2 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna |
@@ -638,3 +677,12 @@ df = pd.read_parquet("data.parquet")
 | 18 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal |
 | Tidak ada backup strategy | Data hilang jika container crash | Tambah volume backup atau cron job dump SQL |
 | Tidak ada CI/CD | Manual build & deploy rawan human error | Setup GitHub Actions atau GitLab CI sederhana |
+
+---
+
+## 📝 Catatan Perubahan
+
+| Tanggal | Versi | Perubahan |
+|---------|-------|-----------|
+| 2026-07-11 | 2.0.0 | Sinkronisasi dengan roadmap.md; update status Fase 2 & 3 selesai; tambah ringkasan, timeline, risiko |
+| 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). `mariadb-control` & `services/control` ditandai Running/✅ |

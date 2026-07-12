@@ -1,7 +1,7 @@
 # 🗺️ Roadmap — IOT-Modular-Microservice
 
-> **Versi:** 2.0.0  
-> **Terakhir diperbarui:** 2026-07-11  
+> **Versi:** 2.3.0  
+> **Terakhir diperbarui:** 2026-07-12  
 > **Status legend:** 🔴 P1 (Kritikal) · 🟡 P2 (Penting) · 🟢 P3 (Normal) · ⬜ P4 (Opsional)  
 > **Progress:** `[ ]` Belum · `[/]` In Progress · `[x]` Selesai
 
@@ -9,7 +9,7 @@
 
 ## 📊 Status Keseluruhan
 
-**Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module Service) ✅ · Fase 3 (Analytics + WS-Gateway Partial) ✅**
+**Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module Service) ✅ · Fase 3 (Analytics + WS-Gateway) ✅ · Fase 4 (Control Service) ✅ · Fase 5 (Stream Service) ✅ · Monitor Service ✅**
 
 ### Yang sudah berjalan end-to-end:
 | Alur | Status |
@@ -17,25 +17,29 @@
 | Auth Service (register, login, JWT, refresh token, RBAC, manajemen akun) | ✅ |
 | Module Service (onboarding device via MQTT discovery, pair/unpair, telemetry ingest, batch NATS) | ✅ |
 | Analytics Service (subscribe `telemetry.batch` → `timescaledb-analytics` → continuous aggregate → dashboard via Kong) | ✅ |
-| WS-Gateway (NATS → WebSocket bridge + JWT auth, route `/ws` via Kong) | ✅ |
-| Dashboard React (Auth + Analytics + Module Management via Kong) | ✅ |
-| Prometheus (scrape auth, module, analytics, wsgateway, kong — semua UP) | ✅ |
+| WS-Gateway (NATS → WebSocket bridge + JWT auth, route `/ws` via Kong, realtime telemetry + system-status notif) | ✅ |
+| Stream Service (MediaMTX RTSP→HLS/WebRTC + MinIO snapshot/recording + CRUD stream via Kong) | ✅ |
+| Monitor Service (snapshot resource container via `docker stats` untuk halaman Version/Security) | ✅ |
+| Dashboard React (Auth + Analytics + Module + Control + Live View + Snapshot via Kong) | ✅ |
+| Dashboard Control Panel (mode arbitration Manual/Otomatis/Emergency + Resume, manual override, editor jadwal + pagination) | ✅ |
+| Dashboard Live View + Snapshot (player MediaMTX iframe, manajemen stream, galeri snapshot/recording) | ✅ |
+| Dashboard Telemetri Real-time (WebSocket ke WS-Gateway di Node Detail) | ✅ |
+| Control Service (manual + scheduler otomatis + emergency stop/resume via MQTT) | ✅ |
 | Seed akun admin default + Manajemen Akun (Admin only) | ✅ |
+| Observability (Prometheus + exporter: mysqld/postgres/redis/mosquitto/nats) | ✅ |
 
 ### Yang belum dikerjakan:
 | Service | Fase | Prioritas |
 |---------|------|-----------|
-| Control Service | Fase 4 | 🔴 P1 |
-| Alert Service | Fase 5 | 🔴 P1 |
-| Audit Service | Fase 8 | 🔴 P1 |
-| Notification Service | Fase 5 | 🟡 P2 |
-| Dashboard Device Management | Fase 9 | 🟡 P2 |
-| Export Service / Data API | Fase 9b | 🟢 P3 |
-| Stream Service | Fase 6 | 🟢 P3 |
-| ML / Vision API | Fase 7 | 🟢 P3 |
-| OTA Service | Fase 10 | ⬜ P4 |
-| Prometheus Metrics Service | Fase 11 | ⬜ P4 |
-| Cloudflare Tunnel | Fase 12 | ⬜ P4 |
+| ML / Vision API | Fase 6 | 🟢 P3 |
+| Alert Service | Fase 7 | 🔴 P1 |
+| Notification Service | Fase 8 | 🟡 P2 |
+| Audit Service | Fase 9 | 🔴 P1 |
+| Dashboard Alert & History | Fase 10 | 🟡 P2 |
+| Export Service / Data API | Fase 11 | 🟢 P3 |
+| OTA Service | Fase 12 | ⬜ P4 |
+| Prometheus Metrics Service | Fase 13 | ⬜ P4 |
+| Cloudflare Tunnel | Fase 14 | ⬜ P4 |
 
 ---
 
@@ -94,7 +98,8 @@
 | `smartfarm/discovery` | ESP32 | Module Service | Auto-register node saat pertama connect |
 | `smartfarm/status/+` | ESP32 | Module Service | Online/offline LWT (Last Will Testament) |
 | `smartfarm/{node}/telemetry` | ESP32 | Module Service | Data sensor real-time |
-| `cmd/{device_id}` | Control Service | ESP32 | Perintah kontrol (pompa on/off, valve, dll) |
+| `smartfarm/actuator/{node_id}` | Control Service | ESP32 | Perintah kontrol `set_output` (pompa on/off, valve, PWM). ⚠️ Firmware subscribe topik ini, **bukan** `cmd/{device_id}` |
+| `smartfarm/{node_id}/confirm` | ESP32 | Module→NATS→Control | ACK eksekusi command (`req_id`, status) |
 | `ota/push/{device}` | Module Service | ESP32 | URL firmware update |
 
 ---
@@ -194,7 +199,7 @@
 
 ---
 
-## 🟡 Fase 3 — WS-Gateway (P2 — SEBAGIAN)
+## 🟡 Fase 3 — WS-Gateway (P2 — SELESAI)
 
 > WebSocket bridge: NATS → Dashboard untuk data real-time.
 
@@ -203,47 +208,112 @@
 | `[x]` | Service `wsgateway` | NATS → WebSocket bridge, route `/ws` via Kong |
 | `[x]` | Subscribe `mqtt.{node_id}` | Push realtime payload ke dashboard (`/ws/nodes/{node_id}/live`) |
 | `[x]` | **Autentikasi koneksi WS via JWT** | Validasi access token (Bearer header / `?token=`) via `JWT_SECRET` yang sama dengan Auth Service |
+| `[x]` | Realtime telemetry di Dashboard | `NodeDetailPanel` membuka WS ke `/ws/nodes/{id}/live` → render metrik sensor live |
+| `[x]` | System-status notifications | `NotificationContext` membuka WS ke `/ws/system-status?token=` → notifikasi push real-time |
 
 ---
 
-## 🔴 Fase 4 — Control Service (P2 — PRIORITAS)
+## ✅ Fase 4 — Control Service (P2 — SELESAI)
 
-> Meneruskan perintah dari dashboard/API ke ESP32 lewat MQTT.
+> Meneruskan perintah dari dashboard/API ke ESP32 lewat MQTT, dengan dua mode: **Manual** (publish langsung) dan **Otomatis** (scheduler server-side: interval/jadwal/threshold nyala-mati). Firmware bersifat *dumb actuator* — semua kecerdasan penjadwalan berada di Control Service.
+
+### ⚠️ Kontrak Nyata Firmware (hasil audit `firmware/aeroponic-node`)
+
+> Skema di bawah **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply). Kontrak berikut adalah yang benar-benar diimplementasikan firmware.
+
+| Aspek | Nilai Aktual Firmware | Sumber |
+|---|---|---|
+| Topik command (subscribe) | `smartfarm/actuator/{node_id}` | `ConfigManager.cpp:142`, `MqttManager.cpp:202` |
+| Action yang didukung | Hanya `set_output` (eksekusi seketika, **tanpa** scheduler lokal) | `MqttManager.cpp:211` |
+| Payload command | `{"action":"set_output","target":"<output_name>","value":<int>,"req_id":"<opsional>"}` | `MqttManager.cpp:207-213` |
+| Nilai `value` | DIGITAL → `0`/`1` · PWM → `0–255` | `HardwareManager.cpp:293-305` |
+| `target` | Harus cocok `HardwareOutputs[].name` | `HardwareManager.cpp:294` |
+| ACK per-perintah | MQTT ke `smartfarm/{node_id}/confirm` → `{"req_id","target","value","status":"executed"}` | `MqttManager.cpp:216-222` |
+| Verifikasi state | `smartfarm/{node_id}/telemetry` → `telemetry.outputs.{name}` (state kontinu tiap interval) | `HardwareManager.cpp:233-236` |
+| Fitur lokal firmware | Local control threshold+histeresis (`LocalControlRule`) & emergency shutdown (interrupt → semua OFF → `/alert`) | `HardwareManager.cpp:69-91,174-193` |
+
+> **Catatan integrasi:** ACK **bukan** NATS Request-Reply — firmware balas via MQTT `/confirm`. Module Service sudah fan-out semua topik per-node ke NATS/live-hub (`subscriber.go:76-99`), jadi Control Service mengkorelasikan `req_id` dari stream `/confirm` (bukan reply sinkron), dengan fallback verifikasi via `telemetry.outputs.{name}`.
+
+### Type Control — Mode MANUAL (publish langsung seketika)
+
+| Type | Deskripsi | Payload ke firmware |
+|---|---|---|
+| `set_state` | ON/OFF output DIGITAL | `{action:set_output, target, value:0\|1, req_id}` |
+| `set_level` | PWM/dimmer 0–100% → map 0–255 | `{action:set_output, target, value:0..255, req_id}` |
+| `toggle` | Balik state terakhir (baca dari cache/telemetry lalu kirim lawannya) | `set_output` value lawan |
+| `pulse` | ON selama X detik lalu OFF (timer di Control Service) | ON → jadwalkan OFF |
+| `emergency_stop` | Matikan semua output segera | broadcast `set_output` semua target=0 |
+
+### Type Control — Mode OTOMATIS (scheduler **server-side** di Control Service)
+
+| Type | Deskripsi | Cara kerja scheduler | Use case |
+|---|---|---|---|
+| `interval` ⭐ | Siklus **ON x detik / OFF y detik** berulang | publish ON → tunggu `on_sec` → publish OFF → tunggu `off_sec` → ulang | Pompa aeroponik (mis. ON 5s/OFF 300s) |
+| `schedule` | Nyala/mati pada jam tertentu (cron-like) | cron `HH:MM ON` / `HH:MM OFF` + hari aktif | Lampu grow, sirkulasi harian |
+| `threshold` | ON/OFF berdasar nilai sensor + histeresis | evaluasi telemetry `inputs`/`modbus` vs `min/max` | Kipas suhu, dosing pH/EC |
+| `duration` | Nyala total selama durasi lalu OFF | ON → OFF setelah total durasi | Isi tandon, dosing sekali jalan |
+| `ramp` | PWM naik/turun bertahap dalam rentang waktu | publish `set_level` bertingkat | Dimming sunrise/sunset |
+
+> ⭐ Mode `interval` adalah pola inti aeroponik (nyala-mati berkala). Semua mode Otomatis dievaluasi & di-publish oleh Control Service; firmware tidak tahu sedang otomatis (tetap terima `set_output`).
+
+### Checklist Implementasi
 
 | Status | Item | Deskripsi | Estimasi |
 |---|---|---|---|
-| `[ ]` | Scaffold Go service | Struktur `internal/` mirror pola Module Service | 1 hari |
-| `[ ]` | `POST /control/command` | Terima perintah dari Kong (JWT Operator/Admin) | 1 hari |
-| `[ ]` | NATS Request-Reply | Kirim command, tunggu ACK dari device (timeout 500 ms) | 1 hari |
-| `[ ]` | Publish MQTT | Forward command ke `cmd/{device_id}` | 0.5 hari |
-| `[ ]` | Simpan ke MariaDB | Log perintah + status di `mariadb-control` | 0.5 hari |
-| `[ ]` | Publish `audit.log` | Setiap perintah terkirim/gagal | 0.5 hari |
-| `[ ]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
-| `[ ]` | Kong route + Prometheus | `/control` via Kong, job prometheus | 0.5 hari |
+| `[x]` | Scaffold Go service | Struktur `internal/` mirror pola Module Service | 1 hari |
+| `[x]` | `POST /control/command` | Mode manual — publish `set_output` seketika (JWT Operator/Admin) | 1 hari |
+| `[x]` | Publish MQTT | Forward ke `smartfarm/actuator/{node_id}` (bukan `cmd/{device_id}`) | 0.5 hari |
+| `[x]` | Korelasi ACK | Subscribe/konsumsi `/confirm` (MQTT langsung), cocokkan `req_id`, timeout → `failed`/`timeout` | 1 hari |
+| `[x]` | CRUD `schedules` | `POST/GET/PUT/DELETE /control/schedules` + enable/disable (interval/schedule/threshold/duration/ramp) | 1 hari |
+| `[x]` | Scheduler engine (server-side) | Goroutine reconcile tiap 15s → publish ON/OFF per tipe | 1.5 hari |
+| `[x]` | Toggle MANUAL/AUTO per output | `PUT /control/modes/{node}/{output}` + katalog target auto-discovery | 0.5 hari |
+| `[x]` | Simpan ke MariaDB | Log perintah + status di `mariadb-control` (GORM AutoMigrate) | 0.5 hari |
+| `[x]` | Publish `audit.log` | Setiap perintah terkirim/gagal/acked + event schedule | 0.5 hari |
+| `[x]` | ACL Mosquitto | Aturan `smartfarm/actuator/#` didokumentasikan di `acl.conf` (dev: allow-all) | 0.25 hari |
+| `[x]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Kong route + Prometheus | `/control` via Kong, job `control-service` | 0.5 hari |
 
-**Total estimasi: 3-5 hari**
+**Total estimasi: 5-7 hari — ✅ Selesai (backend + integrasi dashboard + uji end-to-end dengan device).**
+
+### Penambahan (2026-07-12)
+
+- **Persistensi mode pra-emergency:** kolom `prev_mode` di `control_modes` (AutoMigrate). `EnterEmergency` menyimpan mode aktif sebelum emergency; `ResumeNode` mengembalikan mode tersebut (default `AUTO` bila kosong) → **Resume restorasi mode sebelum emergency**, bukan selalu AUTO.
+- **Dashboard Control Panel** (`dashboard/src/components/Dashboard/Pages/ControlPanel.jsx`):
+  - Kartu *Control Mode*: badge status (MANUAL / OTOMATIS · BERJALAN NORMAL / EMERGENCY STOP), toggle Manual⇄Otomatis (disabled saat EMERGENCY), tombol Emergency Stop, tombol Resume (hanya saat EMERGENCY).
+  - Perbaikan bug: `TargetTile` kini menerima prop `nodeMode` → tombol manual ON/OFF/Toggle/level aktif hanya di mode MANUAL.
+  - Editor jadwal: create + **edit** (`PUT /control/schedules/{id}`, prefill form) + toggle enable/disable + delete, dengan **pagination** (PAGE_SIZE=4) agar rapi saat jadwal banyak.
 
 ### Database: `mariadb-control`
 
 | Tabel | Fungsi |
 |---|---|
-| `commands` | Log perintah (id, device_id, command, params, status, created_at, updated_at) |
-| `command_status` | Status tracking (pending, sent, acked, done, failed, timeout) |
+| `control_targets` | Katalog output per node (node_id, output_name, type DIGITAL/PWM, label) |
+| `control_modes` | Mode aktif per output (node_id, output_name, mode MANUAL/AUTO, active_schedule_id) |
+| `schedules` | Definisi otomatis (id, node_id, output_name, type, params JSON, enabled, next_run_at) |
+| `commands` | Log perintah (id, req_id, node_id, target, action, value, source manual/schedule, status, created_at, acked_at) |
+
+Status command: `pending → sent → acked` (via `/confirm`) · atau `timeout` / `failed`.
+
+Contoh `schedules.params` untuk `interval`: `{"on_sec":5,"off_sec":300,"value_on":1,"value_off":0}`
 
 ### Alur Control Command
 
 ```
-Dashboard/API → Kong → Control Service → MariaDB (log)
-                                        → NATS Request-Reply (timeout 500ms)
-                                        → MQTT (cmd/{device_id})
-                                        → ESP32 → ACK via MQTT
-                                        → Control Service update status
-                                        → NATS audit.log
+# MANUAL
+Dashboard/API → Kong → Control Service → MariaDB (log, status=pending)
+                                        → MQTT publish smartfarm/actuator/{node_id} {set_output,req_id}
+ESP32 → MQTT smartfarm/{node_id}/confirm {req_id,status:executed}
+     → Module Service fan-out ke NATS → Control Service korelasi req_id → status=acked
+     → (timeout tanpa confirm → status=failed) → NATS audit.log
+
+# OTOMATIS (server-side scheduler)
+Control Service Scheduler (interval/schedule/threshold/duration/ramp)
+     → saat trigger → publish set_output (ON/OFF) → alur sama seperti MANUAL
 ```
 
 ---
 
-## 🔴 Fase 5 — Alert Service (P2)
+## 🔴 Fase 7 — Alert Service (P2)
 
 > Mengevaluasi data sensor terhadap threshold dan memicu notifikasi.
 
@@ -282,7 +352,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🟡 Fase 5 — Notification Service (P3)
+## 🟡 Fase 8 — Notification Service (P3)
 
 > Mengirim notifikasi ke pengguna berdasarkan alert yang dipicu.
 
@@ -310,7 +380,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🔴 Fase 8 — Audit Service (P2 — QUICK WIN)
+## 🔴 Fase 9 — Audit Service (P2 — QUICK WIN)
 
 > Mencatat semua aktivitas sistem untuk keperluan audit dan troubleshooting.
 
@@ -336,23 +406,71 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🟢 Fase 6 — Stream Service (P3)
+## 🟢 Fase 5 — Stream Service (P3 — SELESAI)
 
-> Manajemen streaming video dari kamera ESP32-CAM.
+> Manajemen streaming video dari kamera ESP32-CAM / CCTV via MediaMTX, capture snapshot & recording ke MinIO, dan playback HLS/WebRTC di dashboard.
 
+### Infrastruktur Pendukung
+| Komponen | Fungsi |
+|---|---|
+| `mediamtx` | RTSP pull (`:8554`) → HLS (`:8888`) / WebRTC (`:8889`); API `:9997` (internal `iot-net`). Path diregistrasi dinamis oleh Stream Service (`sourceOnDemand`). |
+| `minio` + `minio-setup` | Object storage bucket `stream` untuk snapshot & cover recording |
+| `mariadb-stream` | Metadata stream & snapshot (`streams`, `snapshots`) via GORM AutoMigrate |
+| `nginx` (dashboard) | Serve dashboard di `/app` + proxy player MediaMTX (`/live/{name}/`) |
+
+### Checklist Implementasi
 | Status | Item | Deskripsi |
 |---|---|---|
-| `[ ]` | Integrasi MediaMTX | Konfigurasi RTSP/HLS/WebRTC |
-| `[ ]` | Metadata stream di `mariadb-stream` | Informasi stream per device |
-| `[ ]` | Upload snapshot ke `minio-stream` | Capture periodik dari stream |
-| `[ ]` | REST endpoint `GET /streams` | Daftar stream aktif |
-| `[ ]` | REST endpoint `GET /streams/:id/snapshot` | Ambil snapshot terbaru |
+| `[x]` | Scaffold Go service | Struktur `internal/` (config, model, repository, service, handler, client/mediamtx, client/minio, middleware) |
+| `[x]` | `GET /streams` | List stream + status live (MediaMTX source state) + URL playback |
+| `[x]` | `POST /streams` | Register CCTV/ESP32-CAM (name, device_label, location, source_rtsp opsional → `CCTV_RTSP_URL`) → register path MediaMTX |
+| `[x]` | `GET /streams/{id}` | Detail stream + URL HLS/WebRTC |
+| `[x]` | `PUT /streams/{id}` | Update label/location/enabled/name/source (re-register path MediaMTX) |
+| `[x]` | `DELETE /streams/{id}` | Unregister path + hapus row DB |
+| `[x]` | `POST /streams/{id}/snapshot` | Capture frame → upload MinIO (`kind=snapshot`) |
+| `[x]` | `GET /snapshots` | List snapshot/recording (`?kind=`) |
+| `[x]` | `GET /snapshots/{id}` · `DELETE /snapshots/{id}` | Get/delete snapshot |
+| `[x]` | `POST /streams/{id}/record/start` | Mulai rekam MediaMTX |
+| `[x]` | `POST /streams/{id}/record/stop` | Stop rekam → cover snapshot (`kind=recording`) |
+| `[x]` | Integrisi MediaMTX client | Register/update/remove path via API `:9997` |
+| `[x]` | Integrisi MinIO client | Upload/download object bucket `stream` |
+| `[x]` | JWT middleware | Proteksi endpoint (Operator/Admin untuk mutasi) |
+| `[x]` | Prometheus `/metrics` | `stream_http_requests_total` + scrape job `stream-service` |
+| `[x]` | `Dockerfile` + healthcheck | Multi-stage + `/health` |
+| `[x]` | Kong route | `/streams`, `/snapshots` via Kong + reverse proxy player MediaMTX |
+
+### Dashboard
+| Status | Halaman | Route | Akses |
+|---|---|---|---|
+| `[x]` | Live View | `/live` | Semua role (player MediaMTX iframe HLS/WebRTC + manajemen stream) |
+| `[x]` | Snapshot | `/snapshot` | Semua role (galeri snapshot & recording dari MinIO) |
+
+### Database: `mariadb-stream`
+| Tabel | Fungsi |
+|---|---|
+| `streams` | Metadata stream (id, name=path MediaMTX, device_label, location, source_rtsp, enabled) |
+| `snapshots` | Capture frame/recording cover (stream_id, object_key, url, content_type, size, kind) |
 
 ---
 
-## 🟢 Fase 7 — ML / Vision API (P3)
+## 🟢 Monitor Service (P3 — SELESAI)
 
-> Deteksi objek dan anomali visual menggunakan YOLOv8.
+> CLI ringan yang mengambil `docker stats` (CPU, memori, net IO, block IO, PIDs, status) untuk pemantauan resource container, dikonsumsi halaman **Version & Security → Service/Container Versions** di dashboard.
+
+| Status | Item | Deskripsi |
+|---|---|---|
+| `[x]` | Scaffold Go CLI | `services/monitor/main.go` — parse `docker ps` + `docker stats --no-stream` |
+| `[x]` | Agregasi metric container | CPU%, MemUsage/MemLimit, MemPerc, NetIO (Rx/Tx), BlockIO (R/W), PIDs, Status |
+| `[x]` | Sorting & output terformat | Tabel ringkasan resource per container |
+| `[x]` | `Dockerfile` | Build image `monitor` (di-orchestrate compose) |
+
+> **Catatan:** Monitor Service adalah tool observability operasional (bukan HTTP service); melengkapi Prometheus/exporter untuk visibility resource di level container.
+
+---
+
+## 🟢 Fase 6 — ML / Vision API (P3)
+
+> Deteksi objek dan anomali visual menggunakan YOLOv8. (Belum diimplementasi — service `vision-api` terpisah ada di repo Aeroponik-Docker, belum terintegrasi ke microservice ini.)
 
 | Status | Item | Deskripsi |
 |---|---|---|
@@ -364,7 +482,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🟡 Fase 9 — Dashboard (Lengkap) [P3]
+## 🟡 Fase 10 — Dashboard (Lengkap) [P3]
 
 > Frontend React untuk seluruh fitur sistem.
 
@@ -374,11 +492,13 @@ Module Service → NATS telemetry.ingest → Alert Service
 | `[x]` | Manajemen Akun (Admin) | Tabel user, toggle aktif/nonaktif, ubah role, hapus |
 | `[x]` | Module Management | CRUD module, pair/unpair node, node config |
 | `[x]` | Analytics page | Line chart, selector node + metric, range selector |
-| `[ ]` | **Device Management (integrasi penuh)** | File `DeviceManagement.jsx` sudah ada, NodeConfigPage sudah ada, NodeDetailPanel sudah ada — tinggal integrasi sidebar & routing |
-| `[ ]` | Tampilan telemetri real-time | Via WebSocket ke WS-Gateway |
+| `[x]` | **Control Panel** | Mode arbitration (Manual/Otomatis/Emergency/Resume), manual override (ON/OFF/Toggle/level), editor jadwal (create/edit/toggle/delete) + pagination |
+| `[x]` | **Live View** | Player MediaMTX (HLS/WebRTC iframe) + manajemen stream (create/edit/delete) |
+| `[x]` | **Snapshot** | Galeri snapshot & recording dari MinIO (capture/delete) |
+| `[x]` | **Telemetri Real-time** | Via WebSocket ke WS-Gateway (`NodeDetailPanel`) |
+| `[x]` | **System Notifications** | Via WebSocket `/ws/system-status` (NotificationContext) |
 | `[ ]` | Tampilan alert & history | Integrasi dengan Alert Service |
 | `[ ]` | Panel kontrol device | Integrasi dengan Control Service |
-| `[ ]` | Koneksi ke WS-Gateway dengan JWT auth | Autentikasi WebSocket |
 
 ### Halaman Dashboard (Saat Ini)
 
@@ -390,13 +510,15 @@ Module Service → NATS telemetry.ingest → Alert Service
 | User Management | `/users` | ✅ | Admin only |
 | Device Management | (via Module) | ✅ | Semua role |
 | Node Config | (via Device Management) | ✅ | Semua role |
-| Telemetri Real-time | (belum) | ⬜ | - |
+| Telemetri Real-time | (Node Detail WS) | ✅ | Semua role |
+| Live View | `/live` | ✅ | Semua role |
+| Snapshot | `/snapshot` | ✅ | Semua role |
+| Control Panel | `/control` | ✅ | Operator/Admin |
 | Alert & History | (belum) | ⬜ | - |
-| Control Panel | (belum) | ⬜ | - |
 
 ---
 
-## 🟢 Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
+## 🟢 Fase 11 — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
 
 > Melayani akses data untuk mahasiswa/peneliti via REST API. Memungkinkan import langsung ke Python pandas, R, Excel, dan tools analisis data lainnya.
 
@@ -528,7 +650,7 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 10 — OTA Service (P4)
+## ⬜ Fase 12 — OTA Service (P4)
 
 > Update firmware ESP32 Over-The-Air.
 
@@ -541,7 +663,7 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 11 — Prometheus Metrics Service (P4)
+## ⬜ Fase 13 — Prometheus Metrics Service (P4)
 
 > Service aggregator metrik via NATS (menggantikan scrape langsung).
 
@@ -556,7 +678,7 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 12 — Cloudflare Tunnel (P4)
+## ⬜ Fase 14 — Cloudflare Tunnel (P4)
 
 > Akses publik yang aman ke sistem.
 
@@ -575,17 +697,18 @@ df = pd.read_parquet("data.parquet")
 | 1 | Auth | Go | MariaDB | ✅ Selesai | P1 |
 | 2 | Module | Go | MariaDB + TimescaleDB + Redis | ✅ Selesai | P1 |
 | 3 | Analytics | Go | TimescaleDB | ✅ Selesai | P2 |
-| 4 | WS-Gateway | Go | - | 🟡 Sebagian | P2 |
-| 5 | Control | Go | MariaDB | ⬜ Belum | **P1** |
-| 6 | Alert | Go | MariaDB + Redis | ⬜ Belum | **P1** |
-| 7 | Audit | Go | MariaDB | ⬜ Belum | **P1** |
-| 8 | Notification | Go | MariaDB + Redis | ⬜ Belum | P2 |
-| 9 | Export / Data API | Go/Python | TimescaleDB (read) + Redis | ⬜ Belum | P3 |
-| 10 | Stream | Go | MariaDB + MinIO | ⬜ Belum | P3 |
-| 11 | ML/Vision | Python | MariaDB + MinIO | ⬜ Belum | P3 |
-| 12 | OTA | Go | MariaDB + MinIO | ⬜ Belum | P4 |
-| 13 | Webhook | Go | MariaDB | ⬜ Belum | P4 |
-| 14 | Prometheus Metrics | Go | - | ⬜ Belum | P4 |
+| 4 | WS-Gateway | Go | - | ✅ Selesai | P2 |
+| 5 | Control | Go | MariaDB | ✅ Selesai | P1 |
+| 6 | Stream | Go | MariaDB + MinIO | ✅ Selesai | P3 |
+| 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 |
+| 8 | ML/Vision | Python | MariaDB + MinIO | ⬜ Belum | P3 |
+| 9 | Alert | Go | MariaDB + Redis | ⬜ Belum | **P1** |
+| 10 | Notification | Go | MariaDB + Redis | ⬜ Belum | P2 |
+| 11 | Audit | Go | MariaDB | ⬜ Belum | **P1** |
+| 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis | ⬜ Belum | P3 |
+| 13 | OTA | Go | MariaDB + MinIO | ⬜ Belum | P4 |
+| 14 | Webhook | Go | MariaDB | ⬜ Belum | P4 |
+| 15 | Prometheus Metrics | Go | - | ⬜ Belum | P4 |
 
 ---
 
@@ -593,13 +716,12 @@ df = pd.read_parquet("data.parquet")
 
 | Minggu | Fokus | Service | Deliverable |
 |--------|-------|---------|-------------|
-| **Minggu 1** | 🔴 P1 | Control Service | ESP32 bisa dikontrol dari dashboard |
-| **Minggu 2** | 🔴 P1 | Alert Service + Audit Service | Threshold evaluation + audit log aktif |
-| **Minggu 3** | 🟡 P2 | Notification Service + WS JWT Auth | Notifikasi Telegram/Email + WS aman |
-| **Minggu 4** | 🟡 P2 | Dashboard Device Management | Halaman device management full |
-| **Minggu 5** | 🟢 P3 | Stream Service | Streaming video dari ESP32-CAM |
-| **Minggu 6-7** | 🟢 P3 | ML / Vision API | Deteksi hama/penyakit via YOLOv8 |
-| **Minggu 8+** | ⬜ P4 | OTA + Metrics Service + Cloudflare | OTA update, pipeline metrik, deployment |
+| **Minggu 1** | 🟢 P3 | Stream Service + Monitor Service + Live View/Snapshot | Streaming kamera (MediaMTX HLS/WebRTC) + snapshot/recording MinIO + pemantauan resource container ✅ |
+| **Minggu 2** | 🔴 P1 | Alert Service + Audit Service | Threshold evaluation + audit log aktif (consume `audit.log`) |
+| **Minggu 3** | 🟡 P2 | Notification Service + WS JWT Auth | Notifikasi Telegram/Email/Push + WS aman ✅ (WS sudah) |
+| **Minggu 4** | 🟡 P2 | Dashboard Lengkap (Device Mgmt, realtime, alert) | Halaman dashboard lengkap (realtime & control sudah; alert menyusul) |
+| **Minggu 5** | 🟢 P3 | Export / Data API | Akses data eksternal (pandas/Parquet) |
+| **Minggu 6+** | ⬜ P4 | OTA + Prometheus Metrics + Cloudflare | OTA update, pipeline metrik, deployment |
 
 ---
 
@@ -621,6 +743,9 @@ df = pd.read_parquet("data.parquet")
 | Tanggal | Versi | Perubahan |
 |---------|-------|-----------|
 | 2026-07-11 | 2.0.0 | Sinkronisasi dengan planning.md; update status Fase 2 & 3 selesai; tambah tabel ringkasan, timeline, risiko; perbaiki inkonsistensi penomoran fase; tambah detail database per service |
+| 2026-07-12 | 2.2.0 | **Reorder fase pasca-Fase 4.** Stream Service & ML/Vision API dipindah lebih awal (Fase 5 & 6) sebagai blok fitur vision terpadu; Alert (F7), Notification (F8), Audit (F9), Dashboard (F10), Export (F11), OTA (F12), Prometheus Metrics (F13), Cloudflare (F14) menyusul. Tabel ringkasan, timeline, dan catatan perubahan disesuaikan. |
+| 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). Ringkasan service & tabel halaman dashboard diperbarui. |
+| 2026-07-12 | 2.3.0 | **Fase 5 (Stream Service) SELESAI + Monitor Service SELESAI + WS-Gateway SELESAI.** Stream: MediaMTX (RTSP→HLS/WebRTC), MinIO snapshot/recording, CRUD stream + snapshot/recording via Kong, dashboard Live View & Snapshot. Monitor: CLI `docker stats` untuk halaman Version/Security. WS-Gateway: realtime telemetry (`NodeDetailPanel`) + system-status notifications terhubung ke dashboard. Dashboard realtime/control/live/snapshot ditandai selesai; ringkasan service, timeline, dan tabel halaman diperbarui. |
 
 ---
 

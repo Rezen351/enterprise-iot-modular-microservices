@@ -75,10 +75,10 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 // normalizePath collapses dynamic segments to keep label cardinality bounded.
 func normalizePath(p string) string {
 	known := map[string]bool{
-		"/health":          true,
-		"/metrics":         true,
-		"/modules":         true,
-		"/nodes":           true,
+		"/health":           true,
+		"/metrics":          true,
+		"/modules":          true,
+		"/nodes":            true,
 		"/nodes/discovered": true,
 	}
 	if known[p] {

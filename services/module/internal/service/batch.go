@@ -124,10 +124,10 @@ func (s *ModuleService) flushAndPublish(interval time.Duration) {
 		})
 	}
 	payload, err := json.Marshal(map[string]interface{}{
-		"window":   interval.String(),
-		"rows":     rows,
+		"window":    interval.String(),
+		"rows":      rows,
 		"row_count": len(rows),
-		"ts":       time.Now().UnixMilli(),
+		"ts":        time.Now().UnixMilli(),
 	})
 	if err != nil {
 		log.Printf("[svc] telemetry.batch marshal failed: %v", err)

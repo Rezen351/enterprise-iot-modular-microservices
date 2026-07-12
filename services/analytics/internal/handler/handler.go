@@ -56,7 +56,9 @@ func parseTime(v string) (time.Time, bool) {
 }
 
 // MetricsHandler returns an aggregated time-series for a node/metric.
-//   Query: ?node_id&metric&interval=1h&from&to
+//   Query: ?node_id&metric&interval=1h&from&to&discrete
+//   discrete=true keeps digital/state (0/1) metrics at raw 1-minute resolution
+//   (fine time-bucket, never averaged) instead of the hourly/daily aggregates.
 func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodeID := q.Get("node_id")
@@ -68,6 +70,11 @@ func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	interval := q.Get("interval")
 	if interval == "" {
 		interval = "1h"
+	}
+
+	discrete := false
+	if v := q.Get("discrete"); v != "" {
+		discrete, _ = strconv.ParseBool(v)
 	}
 
 	to := time.Now().UTC()
@@ -89,7 +96,7 @@ func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp, err := h.svc.QuerySeries(r.Context(), nodeID, metric, from, to, interval)
+	resp, err := h.svc.QuerySeries(r.Context(), nodeID, metric, from, to, interval, discrete)
 	if err != nil {
 		log.Printf("[handler] query series failed: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})

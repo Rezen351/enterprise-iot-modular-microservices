@@ -32,8 +32,8 @@ func (s *Service) IngestBatch(ctx context.Context, rows []model.BatchRow) error 
 }
 
 // QuerySeries proxies to the store with resolved time bounds.
-func (s *Service) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string) (*model.SeriesResponse, error) {
-	return s.store.QuerySeries(ctx, nodeID, metric, from, to, interval)
+func (s *Service) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string, discrete bool) (*model.SeriesResponse, error) {
+	return s.store.QuerySeries(ctx, nodeID, metric, from, to, interval, discrete)
 }
 
 // QuerySummary proxies to the store with resolved time bounds.

@@ -208,8 +208,8 @@ func (r *Repository) GetModuleIDByNode(ctx context.Context, nodeID string) (*str
 
 func (r *Repository) ListNodeTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, node_id, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at
-		 FROM node_tags WHERE node_id = ? ORDER BY source_key`, nodeID)
+		`SELECT id, node_id, kind, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at
+		 FROM node_tags WHERE node_id = ? AND kind IN ('sensor','') ORDER BY source_key`, nodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -217,10 +217,37 @@ func (r *Repository) ListNodeTags(ctx context.Context, nodeID string) ([]model.N
 	out := []model.NodeTag{}
 	for rows.Next() {
 		var t model.NodeTag
+		var kind, sourceKey string
 		var created, updated time.Time
-		if err := rows.Scan(&t.ID, &t.NodeID, &t.SourceKey, &t.TagName, &t.DisplayName, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
+		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
 			return nil, err
 		}
+		t.Kind, t.SourceKey = kind, sourceKey
+		t.CreatedAt, t.UpdatedAt = created, updated
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// ListActuatorTags returns only actuator (kind="actuator") tags for a node — the
+// controllable outputs the user explicitly mapped.
+func (r *Repository) ListActuatorTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, node_id, kind, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at
+		 FROM node_tags WHERE node_id = ? AND kind = 'actuator' ORDER BY source_key`, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.NodeTag{}
+	for rows.Next() {
+		var t model.NodeTag
+		var kind, sourceKey string
+		var created, updated time.Time
+		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
+			return nil, err
+		}
+		t.Kind, t.SourceKey = kind, sourceKey
 		t.CreatedAt, t.UpdatedAt = created, updated
 		out = append(out, t)
 	}
@@ -237,13 +264,16 @@ func (r *Repository) UpsertNodeTag(ctx context.Context, t *model.NodeTag) error 
 	if t.DataType == "" {
 		t.DataType = "float"
 	}
+	if t.Kind == "" {
+		t.Kind = "sensor"
+	}
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO node_tags (id, node_id, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO node_tags (id, node_id, source_key, kind, tag_name, display_name, unit, data_type, enabled, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 ON DUPLICATE KEY UPDATE
 		   tag_name = VALUES(tag_name), display_name = VALUES(display_name),
 		   unit = VALUES(unit), data_type = VALUES(data_type), enabled = VALUES(enabled), updated_at = VALUES(updated_at)`,
-		t.ID, t.NodeID, t.SourceKey, t.TagName, t.DisplayName, t.Unit, t.DataType, t.Enabled, t.CreatedAt, t.UpdatedAt)
+		t.ID, t.NodeID, t.SourceKey, t.Kind, t.TagName, t.DisplayName, t.Unit, t.DataType, t.Enabled, t.CreatedAt, t.UpdatedAt)
 	return err
 }
 

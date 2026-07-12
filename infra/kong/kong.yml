@@ -129,6 +129,45 @@ upstreams:
       - target: analytics:8080
         weight: 100
 
+  - name: control-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: control:8080
+        weight: 100
+
+  - name: stream-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: stream:8080
+        weight: 100
+
+  # MediaMTX HLS upstream — Kong strips /hls and forwards to mediamtx:8888.
+  # No active healthcheck: MediaMTX returns 404 on "/" which would otherwise
+  # mark the target unhealthy. Passive checks (default) still apply.
+  - name: mediamtx-hls-upstream
+    algorithm: round-robin
+    targets:
+      - target: mediamtx:8888
+        weight: 100
+
 # ─── Services ─────────────────────────────────────────────────────────
 services:
   # Auth Service
@@ -248,8 +287,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 600
-              hour: 10000
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true
 
@@ -272,7 +311,110 @@ services:
         plugins:
           - name: rate-limiting
             config:
+              minute: 600
+              hour: 20000
+              policy: local
+              fault_tolerant: true
+              error_message: "Batas permintaan analytics tercapai. Coba lagi nanti."
+
+  # Control Service — device command dispatch (manual + scheduled)
+  # JWT/RBAC (operator/admin) divalidated by Control Service middleware.
+  - name: control-service
+    host: control-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: control-routes
+        paths:
+          - /control
+          - /control/commands
+          - /control/targets
+          - /control/outputs
+          - /control/schedules
+          - /control/modes
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
               minute: 120
               hour: 2000
               policy: local
               fault_tolerant: true
+
+  # Stream Service — CCTV stream metadata + MediaMTX path registry.
+  # JWT/RBAC (operator/admin for writes) validated by Stream Service middleware.
+  - name: stream-service
+    host: stream-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: stream-routes
+        paths:
+          - /streams
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 120
+              hour: 2000
+              policy: local
+              fault_tolerant: true
+      - name: stream-snapshots-routes
+        paths:
+          - /snapshots
+        methods:
+          - GET
+          - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 120
+              hour: 2000
+              policy: local
+              fault_tolerant: true
+
+  # MediaMTX HLS — proxied through Kong so dashboards play HLS via the gateway.
+  # /hls/{name}/index.m3u8 -> mediamtx:8888/{name}/index.m3u8
+  - name: mediamtx-hls-service
+    host: mediamtx-hls-upstream
+    port: 8888
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: stream-hls
+        paths:
+          - /hls
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 5000
+              policy: local
+              fault_tolerant: true
+

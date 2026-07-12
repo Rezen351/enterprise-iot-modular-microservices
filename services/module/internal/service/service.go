@@ -267,6 +267,48 @@ func (s *ModuleService) DeleteNodeTag(ctx context.Context, nodeID, id string) er
 	return s.repo.DeleteNodeTag(ctx, nodeID, id)
 }
 
+// ─── Actuator tag mapping (control outputs, separate from sensor telemetry) ──
+
+// GetActuatorTags returns the actuator (kind="actuator") tags for a node.
+func (s *ModuleService) GetActuatorTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
+	return s.repo.ListActuatorTags(ctx, nodeID)
+}
+
+// CreateActuatorTag attaches a single controllable output to a friendly tag.
+// sourceKey is the firmware output name (e.g. "pump"); tagName is the DB tag.
+func (s *ModuleService) CreateActuatorTag(ctx context.Context, nodeID string, req model.NodeTagRequest) (*model.NodeTag, error) {
+	if req.SourceKey == "" {
+		return nil, errors.New("source_key (firmware output name) is required")
+	}
+	tagName := req.TagName
+	if tagName == "" {
+		tagName = req.SourceKey
+	}
+	dataType := req.DataType
+	if dataType == "" {
+		dataType = "int"
+	}
+	t := &model.NodeTag{
+		NodeID:      nodeID,
+		Kind:        "actuator",
+		SourceKey:   req.SourceKey,
+		TagName:     tagName,
+		DisplayName: req.DisplayName,
+		Unit:        req.Unit,
+		DataType:    dataType,
+		Enabled:     true,
+	}
+	if err := s.repo.UpsertNodeTag(ctx, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// DeleteActuatorTag removes a single actuator tag.
+func (s *ModuleService) DeleteActuatorTag(ctx context.Context, nodeID, id string) error {
+	return s.repo.DeleteNodeTag(ctx, nodeID, id)
+}
+
 // IngestTelemetry writes a telemetry payload to TimescaleDB using the node's
 // tag mapping. Only enabled, mapped numeric keys are persisted as metrics; the
 // full raw payload is always stored for audit/flexibility.

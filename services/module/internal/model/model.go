@@ -80,14 +80,16 @@ type StatusMessage struct {
 // ─── Telemetry tag mapping (modular acquisition) ──────────────────────────────
 
 // NodeTag is the declarative mapping that attaches an MQTT telemetry key
-// (SourceKey, e.g. "temp") to a database tag (TagName, e.g. "temperature").
-// Editing this mapping — without any code change — re-points firmware sensor
-// names to DB metrics, so telemetry stays consistent when the ESP changes.
+// (SourceKey) to a database tag (TagName). Kind distinguishes sensor telemetry
+// tags (Kind="sensor") from actuator/control tags (Kind="actuator"). Actuator
+// tags are the controllable outputs the user explicitly maps, separate from the
+// sensor telemetry schema.
 type NodeTag struct {
 	ID          string    `json:"id"`
 	NodeID      string    `json:"node_id"`
-	SourceKey   string    `json:"source_key"` // key inside the telemetry JSON payload
-	TagName     string    `json:"tag_name"`   // metric stored in TimescaleDB `telemetry.metric`
+	Kind        string    `json:"kind"`       // sensor | actuator
+	SourceKey   string    `json:"source_key"` // sensor: telemetry key; actuator: firmware output name
+	TagName     string    `json:"tag_name"`   // friendly DB tag
 	DisplayName string    `json:"display_name"`
 	Unit        string    `json:"unit"`
 	DataType    string    `json:"data_type"` // float | int | bool
@@ -99,6 +101,7 @@ type NodeTag struct {
 // NodeTagRequest is the editable shape sent from the dashboard.
 type NodeTagRequest struct {
 	ID          string `json:"id,omitempty"`
+	Kind        string `json:"kind,omitempty"` // sensor | actuator (default sensor)
 	SourceKey   string `json:"source_key"`
 	TagName     string `json:"tag_name"`
 	DisplayName string `json:"display_name"`

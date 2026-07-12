@@ -14,6 +14,9 @@ import UserManagement from './Pages/UserManagement';
 import ModuleManagement from './Pages/DeviceManagement';
 import NodeConfigPage from './Pages/NodeConfigPage';
 import Analytics from './Pages/Analytics';
+import ControlPanel from './Pages/ControlPanel';
+import LiveView from './Pages/LiveView';
+import Snapshot from './Pages/Snapshot';
 
 function DashboardContent({ onLogout }) {
   const { theme, toggleTheme } = useTheme();
@@ -56,6 +59,13 @@ function DashboardContent({ onLogout }) {
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${days[date.getDay()]}`;
   };
 
+  // Switching tabs from the sidebar must also exit the Node Config page,
+  // otherwise nodeConfig stays truthy and renderContent() keeps showing it.
+  const handleSetActiveTab = (tab) => {
+    setNodeConfig(null);
+    setActiveTab(tab);
+  };
+
   const renderContent = () => {
     if (nodeConfig) {
       return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); }} />;
@@ -65,8 +75,14 @@ function DashboardContent({ onLogout }) {
         return <Profile onLogout={onLogout} />;
       case 'module':
         return <ModuleManagement onOpenNodeConfig={setNodeConfig} />;
+      case 'control':
+        return <ControlPanel />;
       case 'analytics':
         return <Analytics />;
+      case 'live':
+        return <LiveView />;
+      case 'snapshot':
+        return <Snapshot />;
       case 'users':
         return isAdmin ? <UserManagement /> : <Profile onLogout={onLogout} />;
       default:
@@ -85,7 +101,7 @@ function DashboardContent({ onLogout }) {
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSetActiveTab}
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
         mobileOpen={mobileSidebarOpen}

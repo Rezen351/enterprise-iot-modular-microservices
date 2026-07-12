@@ -45,8 +45,9 @@ func (gormNode) TableName() string { return "nodes" }
 
 type gormNodeTag struct {
 	ID          string    `gorm:"column:id;type:char(36);primaryKey"`
-	NodeID      string    `gorm:"column:node_id;type:varchar(64);not null;uniqueIndex:uq_node_source"`
-	SourceKey   string    `gorm:"column:source_key;type:varchar(128);not null;uniqueIndex:uq_node_source"`
+	NodeID      string    `gorm:"column:node_id;type:varchar(64);not null;uniqueIndex:uq_node_source_kind"`
+	SourceKey   string    `gorm:"column:source_key;type:varchar(128);not null;uniqueIndex:uq_node_source_kind"`
+	Kind        string    `gorm:"column:kind;type:varchar(16);not null;default:sensor;uniqueIndex:uq_node_source_kind"`
 	TagName     string    `gorm:"column:tag_name;type:varchar(128);not null"`
 	DisplayName string    `gorm:"column:display_name;type:varchar(128)"`
 	Unit        string    `gorm:"column:unit;type:varchar(32)"`

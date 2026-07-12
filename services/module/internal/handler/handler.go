@@ -221,6 +221,47 @@ func (h *Handler) SaveNodeTags(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]any{"node_id": nodeID, "tags": tags})
 }
 
+// GetActuatorTags returns actuator (control output) tags for a node.
+func (h *Handler) GetActuatorTags(w http.ResponseWriter, r *http.Request) {
+	nodeID := chi.URLParam(r, "node_id")
+	tags, err := h.svc.GetActuatorTags(r.Context(), nodeID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to load actuator tags")
+		return
+	}
+	if tags == nil {
+		tags = []model.NodeTag{}
+	}
+	respond(w, http.StatusOK, map[string]any{"node_id": nodeID, "tags": tags})
+}
+
+// CreateActuatorTag attaches a controllable output to a friendly tag.
+func (h *Handler) CreateActuatorTag(w http.ResponseWriter, r *http.Request) {
+	nodeID := chi.URLParam(r, "node_id")
+	var req model.NodeTagRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	tag, err := h.svc.CreateActuatorTag(r.Context(), nodeID, req)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	respond(w, http.StatusCreated, tag)
+}
+
+// DeleteActuatorTag removes a single actuator tag.
+func (h *Handler) DeleteActuatorTag(w http.ResponseWriter, r *http.Request) {
+	nodeID := chi.URLParam(r, "node_id")
+	id := chi.URLParam(r, "id")
+	if err := h.svc.DeleteActuatorTag(r.Context(), nodeID, id); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to delete actuator tag")
+		return
+	}
+	respond(w, http.StatusOK, map[string]string{"message": "actuator tag deleted"})
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 func respond(w http.ResponseWriter, status int, v any) {

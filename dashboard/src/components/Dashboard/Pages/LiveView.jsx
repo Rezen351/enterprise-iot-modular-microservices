@@ -16,7 +16,8 @@ import {
   Camera,
   EyeOff,
   LayoutGrid,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import streamApi from '../../../api/stream';
@@ -110,11 +111,11 @@ function StreamCard({ stream, onEdit, onDelete }) {
     setTimeout(() => setFlash(null), 2600);
   };
 
-  const handleCapture = async () => {
+  const handleCapture = async (detect = false) => {
     setBusy(true);
     try {
-      await streamApi.captureSnapshot(stream.id);
-      notify('Snapshot saved to MinIO', 'ok');
+      await streamApi.captureSnapshot(stream.id, { detect });
+      notify(detect ? 'Snapshot sent to AI vision — saved to GALLERY (DETECTION)' : 'Snapshot saved to MinIO', 'ok');
     } catch (e) {
       notify(e?.message || 'Capture failed', 'err');
     } finally {
@@ -178,12 +179,20 @@ function StreamCard({ stream, onEdit, onDelete }) {
           {canManage() && (
             <>
               <button
-                onClick={handleCapture}
+                onClick={() => handleCapture(false)}
                 disabled={busy}
                 className="h-8 w-8 flex items-center justify-center border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50"
                 title="Capture Snapshot"
               >
                 <Camera className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleCapture(true)}
+                disabled={busy}
+                className="h-8 w-8 flex items-center justify-center border border-violet-500/30 text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"
+                title="Capture & Detect (AI)"
+              >
+                <Sparkles className="w-4 h-4" />
               </button>
               <button
                 onClick={handleRecord}

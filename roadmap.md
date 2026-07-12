@@ -1,7 +1,7 @@
 # 🗺️ Roadmap — IOT-Modular-Microservice
 
-> **Versi:** 2.3.0  
-> **Terakhir diperbarui:** 2026-07-12  
+> **Versi:** 2.6.0  
+> **Terakhir diperbarui:** 2026-07-13  
 > **Status legend:** 🔴 P1 (Kritikal) · 🟡 P2 (Penting) · 🟢 P3 (Normal) · ⬜ P4 (Opsional)  
 > **Progress:** `[ ]` Belum · `[/]` In Progress · `[x]` Selesai
 
@@ -31,7 +31,6 @@
 ### Yang belum dikerjakan:
 | Service | Fase | Prioritas |
 |---------|------|-----------|
-| ML / Vision API | Fase 6 | 🟢 P3 |
 | Alert Service | Fase 7 | 🔴 P1 |
 | Notification Service | Fase 8 | 🟡 P2 |
 | Audit Service | Fase 9 | 🔴 P1 |
@@ -414,7 +413,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 | Komponen | Fungsi |
 |---|---|
 | `mediamtx` | RTSP pull (`:8554`) → HLS (`:8888`) / WebRTC (`:8889`); API `:9997` (internal `iot-net`). Path diregistrasi dinamis oleh Stream Service (`sourceOnDemand`). |
-| `minio` + `minio-setup` | Object storage bucket `stream` untuk snapshot & cover recording |
+| `minio` + `minio-setup` | **Instance MinIO bersama** — bucket `stream` untuk snapshot & cover recording (Stream Service). Bucket lain: `ml-vision` (ML), `ota` (OTA). Access key ter-scoping per service |
 | `mariadb-stream` | Metadata stream & snapshot (`streams`, `snapshots`) via GORM AutoMigrate |
 | `nginx` (dashboard) | Serve dashboard di `/app` + proxy player MediaMTX (`/live/{name}/`) |
 
@@ -428,6 +427,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 | `[x]` | `PUT /streams/{id}` | Update label/location/enabled/name/source (re-register path MediaMTX) |
 | `[x]` | `DELETE /streams/{id}` | Unregister path + hapus row DB |
 | `[x]` | `POST /streams/{id}/snapshot` | Capture frame → upload MinIO (`kind=snapshot`) |
+| `[x]` | `POST /streams/{id}/snapshot?detect=true` | Capture frame → kirim ke ML Vision (`vision-aeroponik`) → simpan hasil deteksi sebagai `kind=detection` (bbox JSON) di tab Gallery DETECTION |
 | `[x]` | `GET /snapshots` | List snapshot/recording (`?kind=`) |
 | `[x]` | `GET /snapshots/{id}` · `DELETE /snapshots/{id}` | Get/delete snapshot |
 | `[x]` | `POST /streams/{id}/record/start` | Mulai rekam MediaMTX |
@@ -443,13 +443,13 @@ Module Service → NATS telemetry.ingest → Alert Service
 | Status | Halaman | Route | Akses |
 |---|---|---|---|
 | `[x]` | Live View | `/live` | Semua role (player MediaMTX iframe HLS/WebRTC + manajemen stream) |
-| `[x]` | Snapshot | `/snapshot` | Semua role (galeri snapshot & recording dari MinIO) |
+| `[x]` | Snapshot | `/snapshot` | Semua role (galeri snapshot, recording & **detection** dari MinIO; tab ALL/SNAPSHOT/RECORDING/DETECTION; toolbar AI Capture untuk admin/operator) |
 
 ### Database: `mariadb-stream`
 | Tabel | Fungsi |
 |---|---|
 | `streams` | Metadata stream (id, name=path MediaMTX, device_label, location, source_rtsp, enabled) |
-| `snapshots` | Capture frame/recording cover (stream_id, object_key, url, content_type, size, kind) |
+| `snapshots` | Capture frame/recording cover + hasil deteksi AI (stream_id, object_key, url, content_type, size, kind; untuk `kind=detection`: model_id, model_name, num_detections, classes, detections JSON bbox, confidence_avg) |
 
 ---
 
@@ -470,15 +470,102 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ## 🟢 Fase 6 — ML / Vision API (P3)
 
-> Deteksi objek dan anomali visual menggunakan YOLOv8. (Belum diimplementasi — service `vision-api` terpisah ada di repo Aeroponik-Docker, belum terintegrasi ke microservice ini.)
+> Deteksi objek visual menggunakan YOLOv8 (Python / FastAPI). Service ini **berdiri sendiri** dari Go microservices dan terintegrasi penuh ke arsitektur: MariaDB (`mariadb-ml`), MinIO bersama (bucket `ml-vision` untuk hasil, bucket `stream` read-only untuk frame sumber), NATS (`detection.result`), Kong (route `/ml`), dan Prometheus (`/metrics`). **Storage:** menulis hasil anotasi ke bucket `ml-vision` di **instance MinIO bersama** (lihat Catatan Keputusan Konsolidasi MinIO).
 
-| Status | Item | Deskripsi |
-|---|---|---|
-| `[ ]` | YOLOv8 inference (Python FastAPI) | Service terpisah dari Go microservices |
-| `[ ]` | Hasil deteksi ke `mariadb-ml` | Metadata deteksi (class, confidence, bounding box) |
-| `[ ]` | Annotated image ke `minio-ml` | Gambar dengan bounding box |
-| `[ ]` | Publish `detection.result` ke NATS | Event untuk dikonsumsi service lain |
-| `[ ]` | REST endpoint `GET /vision/detect` | Trigger deteksi on-demand |
+### Konsep Inti — Model Registry (penggantian model dengan `model_id`)
+
+Model YOLO (mis. `best.pt` hasil training) **didaftarkan** ke registry dan memperoleh `model_id` stabil. Konsumen API memilih model melalui `model_id` saat inferensi; bila dikosongkan, digunakan model `is_default` (aktif). Hal ini memungkinkan **swap model tanpa restart** dan multi-model dalam satu service.
+
+- Weights dapat berasal dari: (a) file yang sudah ada di volume `models/` (`file_path` saat register, default mencari `best.pt`), atau (b) di-upload lewat `POST /ml/models/{id}/weights`.
+- Load YOLO dilakukan **lazy + cache di memory** per `model_id`; update config (threshold/imgsz) atau upload weights memicu reload otomatis.
+- Warmup model default saat startup.
+
+### Checklist Implementasi
+
+| Status | Item | Deskripsi | Estimasi |
+|---|---|---|---|
+| `[x]` | Scaffold Python service | Struktur `app/` (config, database, schemas, security, vision_engine, storage, messaging, metrics, routers) | 1 hari |
+| `[x]` | **Model Registry CRUD** | `POST/GET/PUT/DELETE /ml/models`, `POST /ml/models/{id}/activate`, `POST /ml/models/{id}/weights` (upload `.pt`) | 1.5 hari |
+| `[x]` | YOLOv8 inference (lazy load + cache) | `ultralytics` YOLO, resolusi `model_id` → default, reload otomatis saat config berubah | 1 hari |
+| `[x]` | **`POST /ml/detect`** | Upload 1..N gambar → deteksi (class, confidence, bbox) + gambar teranotasi | 1 hari |
+| `[x]` | `POST /ml/detect/base64` | Inferensi dari image base64 (JSON) | 0.5 hari |
+| `[x]` | `POST /ml/detect/from-stream` | Inferensi dari frame di bucket `stream` (read-only) | 0.5 hari |
+| `[x]` | Hasil deteksi ke `mariadb-ml` | Tabel `vision_detections` (history) + `vision_models` (registry) via SQLAlchemy AutoCreate | 0.5 hari |
+| `[x]` | Annotated image ke bucket `ml-vision` (MinIO bersama) | Original + detected JPEG; `ml-svc-key` scoped rw `ml-vision`, ro `stream` | 0.5 hari |
+| `[x]` | Publish `detection.result` ke NATS | Event (best-effort) untuk service lain (Alert/Analytics/Export) | 0.5 hari |
+| `[x]` | JWT / RBAC middleware | Validasi Bearer JWT (HS256, secret sama dengan Auth); write = admin/operator, read = semua role | 0.5 hari |
+| `[x]` | Prometheus `/metrics` | `vision_inferences_total`, `vision_detections_total`, `vision_inference_seconds`, `vision_models_loaded` + instrumentator FastAPI | 0.5 hari |
+| `[x]` | `GET /health` + `GET /ml/detections` | Healthcheck + history deteksi (paginated) | 0.5 hari |
+| `[x]` | `Dockerfile` multi-stage ringan + `mariadb-ml` + `mysqld-exporter-ml` | Build Python:3.11-slim, healthcheck, volumes `ml-models` | 1 hari |
+| `[x]` | Kong route + Prometheus scrape | Upstream `ml-upstream`, route `/ml`, job `ml-service` + `mariadb-ml` | 0.5 hari |
+
+**Total estimasi: 7-14 hari — ✅ Selesai (backend service + integrasi infra).**
+
+### Database: `mariadb-ml`
+
+| Tabel | Fungsi |
+|---|---|
+| `vision_models` | Registry model: id, name, slug, file_path, class_names, input_size, confidence/iou threshold, status (registered/active/failed/disabled), is_default, metadata JSON |
+| `vision_detections` | History inferensi: detection_uid, model_id, source_type, original/annotated URL, detections JSON (class/conf/bbox), confidence stats, execution_time_ms, status |
+
+### Endpoint Lengkap
+
+| Method | Endpoint | Akses | Deskripsi |
+|--------|----------|-------|-----------|
+| `POST` | `/ml/models` | Admin/Operator | Daftarkan model baru (beri `file_path` atau upload nanti) → dapat `model_id` |
+| `GET` | `/ml/models` | All | List model (`?status=`) |
+| `GET` | `/ml/models/{id}` | All | Detail model (+ flag `loaded`, `num_classes`) |
+| `PUT` | `/ml/models/{id}` | Admin/Operator | Update metadata / threshold / status / `is_default` |
+| `POST` | `/ml/models/{id}/activate` | Admin/Operator | Jadikan model default (aktif) |
+| `POST` | `/ml/models/{id}/weights` | Admin/Operator | Upload weights `.pt` dan ikat ke model |
+| `DELETE` | `/ml/models/{id}` | Admin/Operator | Hapus model dari registry |
+| `GET` | `/ml/models/{id}/count` | All | Jumlah deteksi yang dihasilkan model |
+| `POST` | `/ml/detect` | Admin/Operator | Upload gambar → YOLO → deteksi + URL anotasi (batch) |
+| `POST` | `/ml/detect/base64` | Admin/Operator | Inferensi dari base64 JSON |
+| `POST` | `/ml/detect/from-stream` | Admin/Operator | Inferensi dari object key bucket `stream` |
+| `GET` | `/ml/detections` | All | History deteksi (paginated: `?model_id=&limit=&offset=`) |
+| `GET` | `/ml/detections/{id}` | All | Detail 1 hasil deteksi |
+| `GET` | `/health` | Public | Healthcheck (models_loaded, default_model) |
+| `GET` | `/metrics` | Internal | Prometheus metrics |
+
+### Contoh Penggunaan
+
+```bash
+# 1) Daftarkan model (weights best.pt sudah ada di volume models/)
+curl -X POST http://localhost:8000/ml/models \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"best-ptn","slug":"best-ptn","file_path":"/app/models/best.pt",
+       "confidence_threshold":0.25,"is_default":true}'
+
+# 2) Atau upload weights lewat API (id dari response sebelumnya)
+curl -X POST http://localhost:8000/ml/models/$MODEL_ID/weights \
+  -H "Authorization: Bearer $TOKEN" -F "file=@best.pt"
+
+# 3) User memilih model (model_id) lalu kirim gambar → dianalisis
+curl -X POST http://localhost:8000/ml/detect \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "model_id=$MODEL_ID" -F "files=@tanaman.jpg"
+
+# → {"count":1,"results":[{"detections":[{"class_name":"umbi",
+#     "confidence":0.91,"bbox":{"x1":..,"y1":..,"x2":..,"y2":..}}],
+#     "annotated_url":"http://.../ml/detected/...jpg","execution_time_ms":42.1}]}
+```
+
+### Alur Inference
+
+```
+User (dashboard/API) ──Kong /ml/detect──▶ Vision API
+        │ model_id (atau default)
+        ▼
+  Model Registry ── resolve(model_id) ──▶ YOLO weights (cache memory)
+        │ image (upload / base64 / stream bucket)
+        ▼
+  model.predict() ──▶ detections (class, conf, bbox) + annotated JPEG
+        ├─▶ upload original + detected ──▶ MinIO bucket ml-vision
+        ├─▶ INSERT vision_detections ────▶ mariadb-ml
+        └─▶ publish detection.result ────▶ NATS (JetStream)
+```
 
 ---
 
@@ -656,7 +743,7 @@ df = pd.read_parquet("data.parquet")
 
 | Status | Item | Deskripsi |
 |---|---|---|
-| `[ ]` | Upload firmware ke `minio-ota` | Binary firmware disimpan di MinIO |
+| `[ ]` | Upload firmware ke bucket `ota` (MinIO bersama) | Binary firmware disimpan di MinIO |
 | `[ ]` | Trigger update ke ESP32 via MQTT | Push URL firmware ke device |
 | `[ ]` | Tracking status update | Per device: pending, downloading, installing, done, failed |
 | `[ ]` | Verifikasi checksum firmware | SHA-256 hash untuk integritas |
@@ -699,14 +786,14 @@ df = pd.read_parquet("data.parquet")
 | 3 | Analytics | Go | TimescaleDB | ✅ Selesai | P2 |
 | 4 | WS-Gateway | Go | - | ✅ Selesai | P2 |
 | 5 | Control | Go | MariaDB | ✅ Selesai | P1 |
-| 6 | Stream | Go | MariaDB + MinIO | ✅ Selesai | P3 |
+| 6 | Stream | Go | MariaDB + MinIO (bucket `stream`, shared) | ✅ Selesai | P3 |
 | 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 |
-| 8 | ML/Vision | Python | MariaDB + MinIO | ⬜ Belum | P3 |
+| 8 | ML/Vision | Python | MariaDB + MinIO (bucket `ml-vision`, shared) | ✅ Selesai | P3 |
 | 9 | Alert | Go | MariaDB + Redis | ⬜ Belum | **P1** |
 | 10 | Notification | Go | MariaDB + Redis | ⬜ Belum | P2 |
 | 11 | Audit | Go | MariaDB | ⬜ Belum | **P1** |
 | 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis | ⬜ Belum | P3 |
-| 13 | OTA | Go | MariaDB + MinIO | ⬜ Belum | P4 |
+| 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 |
 | 14 | Webhook | Go | MariaDB | ⬜ Belum | P4 |
 | 15 | Prometheus Metrics | Go | - | ⬜ Belum | P4 |
 
@@ -731,7 +818,7 @@ df = pd.read_parquet("data.parquet")
 |--------|--------|-------------|----------|
 | Core NATS untuk `telemetry.batch` | Kehilangan data saat restart | Tinggi | Upgrade ke JetStream stream |
 | WS tanpa autentikasi | Data real-time bocor | Rendah | ✅ JWT handshake sudah diimplementasikan pada WS-Gateway |
-| 18 instance database | Biaya & kompleksitas operasional | Sedang | Evaluasi apakah semua instance diperlukan; pertimbangkan shared DB untuk service non-kritis |
+| 17 instance database | Biaya & kompleksitas operasional | Sedang | Evaluasi apakah semua instance diperlukan; ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
 | Tidak ada backup database | Data hilang permanen jika container crash | Sedang | Cron job dump SQL + backup ke MinIO/cloud storage |
 | Tidak ada CI/CD | Human error saat build/deploy | Sedang | Setup GitHub Actions untuk auto-build & test |
 | Tidak ada unit test | Regression bug tidak terdeteksi | Tinggi | Target minimal 80% code coverage untuk setiap service |
@@ -746,7 +833,33 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.2.0 | **Reorder fase pasca-Fase 4.** Stream Service & ML/Vision API dipindah lebih awal (Fase 5 & 6) sebagai blok fitur vision terpadu; Alert (F7), Notification (F8), Audit (F9), Dashboard (F10), Export (F11), OTA (F12), Prometheus Metrics (F13), Cloudflare (F14) menyusul. Tabel ringkasan, timeline, dan catatan perubahan disesuaikan. |
 | 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). Ringkasan service & tabel halaman dashboard diperbarui. |
 | 2026-07-12 | 2.3.0 | **Fase 5 (Stream Service) SELESAI + Monitor Service SELESAI + WS-Gateway SELESAI.** Stream: MediaMTX (RTSP→HLS/WebRTC), MinIO snapshot/recording, CRUD stream + snapshot/recording via Kong, dashboard Live View & Snapshot. Monitor: CLI `docker stats` untuk halaman Version/Security. WS-Gateway: realtime telemetry (`NodeDetailPanel`) + system-status notifications terhubung ke dashboard. Dashboard realtime/control/live/snapshot ditandai selesai; ringkasan service, timeline, dan tabel halaman diperbarui. |
+| 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service → **1 instance MinIO bersama** (`minio`) multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream`. Fase 6 ML/Vision diubah ke bucket `ml-vision` (bukan `minio-ml`). Total instance turun 18 → 17. Tabel ringkasan service & risiko disesuaikan. |
+| 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI terpisah: Model Registry (CRUD + upload weights + activate → `model_id` stabil untuk swap model tanpa restart), inference YOLOv8 (lazy load + cache per `model_id`) via `POST /ml/detect` (upload/batch), `/detect/base64`, `/detect/from-stream`, history `GET /ml/detections`. Persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware (HS256, secret sama dengan Auth), Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
+| 2026-07-13 | 2.6.0 | **Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) SELESAI.** `POST /streams/{id}/snapshot?detect=true` capture frame → panggil `POST /ml/detect` (model `vision-aeroponik`) → simpan `kind=detection` (`vision-aeroponik-model-test.pt` auto-seed sebagai default model di startup ML). Stream Service tanda-tangan service JWT sendiri (shared `JWT_SECRET`) untuk panggil ML. Dashboard Gallery: tab DETECTION + toolbar AI Capture (pilih stream + Capture & Detect) dengan overlay bounding box. Hardening: `WriteTimeout` Stream 30s→120s & route Kong `stream-service` 10s→120s (fix 504 upstream timeout). |
 
 ---
+
+## 📝 Catatan Keputusan Arsitektur — Konsolidasi MinIO (2026-07-12)
+
+**Konteks:** Awalnya direncanakan `minio-stream` (snapshot/recording), `minio-ml` (anotasi YOLOv8), `minio-ota` (firmware) sebagai instance terpisah. Muncul usulan: MinIO hanya milik ML, Stream cukup handle API MediaMTX dan menaruh snapshot/recording ke MinIO ML.
+
+**Keputusan:** **Opsi C — 1 instance MinIO bersama, multi-bucket, scoped access key.** Bukan Opsi A (Stream bergantung MinIO ML) dan bukan Opsi B (2+ instance MinIO di host sama).
+
+**Alasan singkat:**
+1. **Urutan deploy & bounded context** — Stream sudah `✅`, ML belum. Stream memproduksi snapshot/recording → harus punya storage sendiri (bucket `stream`) agar tidak bergantung ML.
+2. **Performa** — bottleneck MinIO adalah disk I/O + network, bukan proses. Membelah di host/disk sama malah kontensi. 1 instance + SSD/NVMe lebih dari cukup untuk beban TA.
+3. **Resilience** — SPOF diatasi dengan **erasure-coding multi-drive** pada 1 instance, bukan membelah container di 1 disk.
+4. **Isolasi** — bucket terpisah + access key scoped (`stream`/`ml-vision`/`ota`) memenuhi *Zero-Trust Internal*.
+5. **Efisiensi** — kurangi container & beban backup; menjawab risiko "terlalu banyak instance".
+
+**Skema akhir:**
+```
+minio (1 instance, erasure-coding multi-drive bila memungkinkan)
+ ├─ bucket: stream      owner: Stream Service  (rw: stream-svc-key)
+ ├─ bucket: ml-vision   owner: ML / Vision API (rw: ml-svc-key, ro: stream)
+ └─ bucket: ota         owner: OTA Service     (rw: ota-svc-key)  [Fase 12]
+```
+ML baca frame sumber dari `stream` (key read-only) untuk inferensi; retensi per bucket bisa berbeda.
+
 
 *Perbarui status item saat mulai (`[/]`) dan selesai (`[x]`) mengerjakan masing-masing item. Catat aktivitas harian di [`logs.md`](./logs.md).*

@@ -35,8 +35,10 @@ export const streamApi = {
   remove: (id) => request(`/streams/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 
   // ─── Capture a snapshot of the live feed → MinIO ─────────────────────
-  captureSnapshot: (id) =>
-    request(`/streams/${encodeURIComponent(id)}/snapshot`, { method: 'POST', auth: true }),
+  // opts.detect = true also runs the captured frame through the AI vision model
+  // and stores the detection result in the gallery's DETECTION tab.
+  captureSnapshot: (id, opts = {}) =>
+    request(`/streams/${encodeURIComponent(id)}/snapshot${opts.detect ? '?detect=true' : ''}`, { method: 'POST', auth: true }),
 
   // ─── Recording control (MediaMTX record on/off) ─────────────────────
   startRecording: (id) =>

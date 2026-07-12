@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/stream/internal/client/mediamtx"
+	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	"github.com/almuzky/iot/services/stream/internal/client/minio"
 	"github.com/almuzky/iot/services/stream/internal/config"
 	"github.com/almuzky/iot/services/stream/internal/handler"
@@ -44,12 +45,13 @@ func main() {
 
 	// ─── Wire dependencies ──────────────────────────────────────────────
 	repo := repository.New(db)
-	media := mediamtx.New(cfg.MediaMTXAPIURL).WithHTTPURL(cfg.MediaMTXHTTPURL)
+	media := mediamtx.New(cfg.MediaMTXAPIURL).WithHTTPURL(cfg.MediaMTXHTTPURL).WithRTSPURL(cfg.MediaMTXRTSPURL)
 	minioClient, err := minio.New(cfg.MinIOEndpoint, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIOUseSSL, cfg.MinIOStreamBucket)
 	if err != nil {
 		log.Printf("[startup] minio unavailable (snapshots disabled): %v", err)
 	}
-	svc := service.New(repo, media, minioClient, cfg.KongPublicURL, cfg.CCTVRTSPURL)
+	mlClient := mlclient.New(cfg.MLBaseURL, cfg.MLVisionModelID, cfg.JWTSecret)
+	svc := service.New(repo, media, minioClient, mlClient, cfg.KongPublicURL, cfg.CCTVRTSPURL)
 	h := handler.New(svc)
 
 	// ─── Router ──────────────────────────────────────────────────────────
@@ -105,9 +107,13 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		// Snapshot capture pulls a frame via ffmpeg (may retry on a cold source)
+		// and, with ?detect=true, also runs ML inference. Keep this comfortably
+		// above ffmpeg's retry budget (~27s) plus model load + inference so the
+		// response is never aborted mid-write (which would surface as a Kong 504).
+		WriteTimeout: 120 * time.Second,
+		IdleTimeout:  150 * time.Second,
 	}
 
 	quit := make(chan os.Signal, 1)

@@ -299,6 +299,7 @@ services:
       JWT_SECRET: "${JWT_SECRET}"
       MODULE_URL: "http://module:8080"
       ACK_TIMEOUT_SECONDS: "${ACK_TIMEOUT_SECONDS:-8}"
+      TIMEZONE: "${TIMEZONE:-Asia/Jakarta}"
     depends_on:
       mariadb-control:
         condition: service_healthy
@@ -375,6 +376,35 @@ services:
       - iot-net
 
   # ────────────────────────────────────
+  # GRAFANA — Visualisasi & Service Health Dashboard
+  # Auto-provision datasource Prometheus + dashboard via volume mount.
+  # ────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./volumes/grafana:/var/lib/grafana
+    ports:
+      # Bound to localhost only — do not expose the Grafana admin UI publicly.
+      - "127.0.0.1:3000:3000"   # Grafana UI
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ────────────────────────────────────
   # MONITOR — Docker Compose Resource Monitor
   # CLI tool to check CPU, RAM, Network, and Disk usage
   # ────────────────────────────────────
@@ -403,7 +433,7 @@ services:
     environment:
       DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-auth:3306)/"
     volumes:
-      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+      - ./infra/mysqld-exporter/my.auth.cnf:/.my.cnf:ro
     depends_on:
       mariadb-auth:
         condition: service_healthy
@@ -417,7 +447,7 @@ services:
     environment:
       DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-control:3306)/"
     volumes:
-      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+      - ./infra/mysqld-exporter/my.control.cnf:/.my.cnf:ro
     depends_on:
       mariadb-control:
         condition: service_healthy
@@ -431,9 +461,36 @@ services:
     environment:
       DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-module:3306)/"
     volumes:
-      - ./infra/mysqld-exporter/my.cnf:/.my.cnf:ro
+      - ./infra/mysqld-exporter/my.module.cnf:/.my.cnf:ro
     depends_on:
       mariadb-module:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # MariaDB Stream
+  mysqld-exporter-stream:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-stream:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.stream.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-stream:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  mysqld-exporter-ml:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-ml:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.ml.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-ml:
         condition: service_healthy
     networks:
       - iot-net
@@ -552,6 +609,30 @@ services:
       - iot-net
 
   # ──────────────────────────────────────
+  # MariaDB for ML / Vision API (model registry + detection history)
+  # ──────────────────────────────────────
+  mariadb-ml:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_ML}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-ml:/var/lib/mysql
+      - ./infra/mariadb/ml/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
   # MediaMTX — RTSP/WebRTC/HLS server (CCTV pull + playback)
   # API internal-only (iot-net); HLS proxied via Kong, WebRTC host-direct.
   # ──────────────────────────────────────
@@ -601,7 +682,59 @@ services:
         condition: service_healthy
     entrypoint: >
       sh -c "mc alias set m local ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
-             mc mb -p m/stream; mc mb -p m/ml; mc mb -p m/ota"
+             mc mb -p m/stream; mc mb -p m/ml; mc mb -p m/ota; mc mb -p m/ml-result &&
+             mc anonymous set download m/ml-result"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # CCTV CAPTURE CRON — external data-collection job (NOT a microservice)
+  # Every 8h it checks the pump/load telemetry; when the pump is OFF or the
+  # output load is 0 (no misting), it grabs a CCTV frame via ffmpeg, runs
+  # inference through the ML service API, and stores the frame + result in the
+  # `ml-result` MinIO bucket.
+  # ──────────────────────────────────────
+  cctv-capture:
+    build:
+      context: ./services/cctv-capture
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      CAPTURE_INTERVAL_HOURS: "${CCTV_CAPTURE_INTERVAL_HOURS}"
+      CAPTURE_STREAMS: "${CCTV_CAPTURE_STREAMS}"
+      PUMP_PATHS: "${CCTV_PUMP_PATHS}"
+      LOAD_PATHS: "${CCTV_LOAD_PATHS}"
+      NODE_IDS: "${CCTV_NODE_IDS}"
+      CONDITION_MODE: "${CCTV_CONDITION_MODE}"
+      SKIP_WHEN_TELEMETRY_MISSING: "${CCTV_SKIP_WHEN_TELEMETRY_MISSING}"
+      ML_BASE_URL: "${CCTV_ML_BASE_URL}"
+      ML_API_TOKEN: "${CCTV_ML_API_TOKEN}"
+      AUTH_BASE_URL: "${CCTV_AUTH_BASE_URL}"
+      AUTH_USERNAME: "${CCTV_AUTH_USERNAME}"
+      AUTH_PASSWORD: "${CCTV_AUTH_PASSWORD}"
+      MODEL_ID: "${CCTV_MODEL_ID}"
+      MINIO_RESULT_BUCKET: "${CCTV_MINIO_RESULT_BUCKET}"
+      MIRROR_ANNOTATED: "${CCTV_MIRROR_ANNOTATED}"
+      REDIS_ADDR: "redis-module:6379"
+      REDIS_PASSWORD: ""
+      REDIS_DB: "0"
+      MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
+      CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}/minio"
+      LOG_LEVEL: "INFO"
+    depends_on:
+      minio:
+        condition: service_healthy
+      ml:
+        condition: service_started
+      redis-module:
+        condition: service_started
+      mediamtx:
+        condition: service_started
     networks:
       - iot-net
 
@@ -618,6 +751,7 @@ services:
       DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-stream:3306)/${MYSQL_DATABASE_STREAM}?parseTime=true&charset=utf8mb4"
       MEDIAMTX_API_URL: "http://mediamtx:9997"
       MEDIAMTX_HTTP_URL: "http://mediamtx:8888"
+      MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
       CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
       KONG_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}"
       JWT_SECRET: "${JWT_SECRET}"
@@ -626,16 +760,62 @@ services:
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
       MINIO_USE_SSL: "false"
       MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
+      ML_BASE_URL: "http://ml:8080"
+      ML_VISION_MODEL_ID: "vision-aeroponik"
     depends_on:
       mariadb-stream:
         condition: service_healthy
       mediamtx:
+        condition: service_started
+      ml:
         condition: service_started
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # ML SERVICE — YOLO model registry + inference (Python / FastAPI)
+  # Reads source frames from `stream` bucket (read-only) and writes annotated
+  # results to the `ml` bucket on the shared MinIO instance.
+  # ──────────────────────────────────────
+  ml:
+    build:
+      context: ./services/ml
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb-ml:3306/${MYSQL_DATABASE_ML}?charset=utf8mb4"
+      JWT_SECRET: "${JWT_SECRET}"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_USE_SSL: "false"
+      MINIO_ML_BUCKET: "${MINIO_ML_BUCKET}"
+      MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
+      MINIO_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}/minio"
+      NATS_URL: "nats://nats:4222"
+      NATS_SUBJECT_DETECTION: "detection.result"
+    volumes:
+      # Persisted, pre-seeded with best.pt (your trained YOLO weights).
+      - ./volumes/ml-models:/app/models
+    depends_on:
+      mariadb-ml:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').status==200 else 1)" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - iot-net
 

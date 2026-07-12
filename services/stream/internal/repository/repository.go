@@ -142,14 +142,15 @@ func scanRows(s scanner) (*model.Stream, error) {
 
 // ─── Snapshots ───────────────────────────────────────────────────────────────
 
-const snapshotSelect = `SELECT id, stream_id, stream_name, object_key, url, content_type, size, kind, created_at FROM snapshots`
+const snapshotSelect = `SELECT id, stream_id, stream_name, object_key, url, content_type, size, kind, model_id, model_name, num_detections, classes, detections, confidence_avg, created_at FROM snapshots`
 
 // CreateSnapshot inserts a snapshot/recording metadata row.
 func (r *Repository) CreateSnapshot(ctx context.Context, s *model.Snapshot) (*model.Snapshot, error) {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO snapshots (id, stream_id, stream_name, object_key, url, content_type, size, kind, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.ID, s.StreamID, s.StreamName, s.ObjectKey, s.URL, s.ContentType, s.Size, s.Kind, s.CreatedAt)
+		`INSERT INTO snapshots (id, stream_id, stream_name, object_key, url, content_type, size, kind, model_id, model_name, num_detections, classes, detections, confidence_avg, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.ID, s.StreamID, s.StreamName, s.ObjectKey, s.URL, s.ContentType, s.Size, s.Kind,
+		s.ModelID, s.ModelName, s.NumDetections, s.Classes, s.Detections, s.ConfidenceAvg, s.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -173,9 +174,9 @@ func (r *Repository) ListSnapshots(ctx context.Context, kind string) ([]model.Sn
 	out := []model.Snapshot{}
 	for rows.Next() {
 		var s model.Snapshot
-		var streamID, streamName, objectKey, url, contentType, kind sql.NullString
-		var size int64
-		if err := rows.Scan(&s.ID, &streamID, &streamName, &objectKey, &url, &contentType, &size, &kind, &s.CreatedAt); err != nil {
+		var streamID, streamName, objectKey, url, contentType, kind, modelID, modelName, classes, detections sql.NullString
+		var size, numDetections int64
+		if err := rows.Scan(&s.ID, &streamID, &streamName, &objectKey, &url, &contentType, &size, &kind, &modelID, &modelName, &numDetections, &classes, &detections, &s.ConfidenceAvg, &s.CreatedAt); err != nil {
 			return nil, err
 		}
 		s.StreamID = streamID.String
@@ -185,6 +186,11 @@ func (r *Repository) ListSnapshots(ctx context.Context, kind string) ([]model.Sn
 		s.ContentType = contentType.String
 		s.Size = size
 		s.Kind = kind.String
+		s.ModelID = modelID.String
+		s.ModelName = modelName.String
+		s.NumDetections = int(numDetections)
+		s.Classes = classes.String
+		s.Detections = detections.String
 		if s.Kind == "" {
 			s.Kind = "snapshot"
 		}
@@ -197,9 +203,9 @@ func (r *Repository) ListSnapshots(ctx context.Context, kind string) ([]model.Sn
 func (r *Repository) GetSnapshot(ctx context.Context, id string) (*model.Snapshot, error) {
 	row := r.db.QueryRowContext(ctx, snapshotSelect+` WHERE id = ?`, id)
 	var s model.Snapshot
-	var streamID, streamName, objectKey, url, contentType, kind sql.NullString
-	var size int64
-	if err := row.Scan(&s.ID, &streamID, &streamName, &objectKey, &url, &contentType, &size, &kind, &s.CreatedAt); err != nil {
+	var streamID, streamName, objectKey, url, contentType, kind, modelID, modelName, classes, detections sql.NullString
+	var size, numDetections int64
+	if err := row.Scan(&s.ID, &streamID, &streamName, &objectKey, &url, &contentType, &size, &kind, &modelID, &modelName, &numDetections, &classes, &detections, &s.ConfidenceAvg, &s.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -212,6 +218,11 @@ func (r *Repository) GetSnapshot(ctx context.Context, id string) (*model.Snapsho
 	s.ContentType = contentType.String
 	s.Size = size
 	s.Kind = kind.String
+	s.ModelID = modelID.String
+	s.ModelName = modelName.String
+	s.NumDetections = int(numDetections)
+	s.Classes = classes.String
+	s.Detections = detections.String
 	if s.Kind == "" {
 		s.Kind = "snapshot"
 	}

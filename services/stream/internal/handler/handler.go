@@ -113,10 +113,13 @@ func (h *Handler) DeleteStream(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]string{"message": "stream deleted"})
 }
 
-// CaptureSnapshot grabs the current frame and stores it in MinIO.
+// CaptureSnapshot grabs the current frame and stores it in MinIO. When the
+// `detect` query param is "true" the frame is also sent to the AI vision model
+// and the detection result is stored as a "detection" snapshot.
 func (h *Handler) CaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	view, err := h.svc.CaptureSnapshot(r.Context(), id)
+	detect := r.URL.Query().Get("detect") == "true" || r.URL.Query().Get("detect") == "1"
+	view, err := h.svc.CaptureSnapshot(r.Context(), id, detect)
 	if err != nil {
 		respondError(w, http.StatusBadGateway, err.Error())
 		return

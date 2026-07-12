@@ -1,7 +1,7 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 2.2.0  
-> **Tanggal:** 2026-07-12  
+> **Versi Dokumen:** 2.6.0  
+> **Tanggal:** 2026-07-13  
 > **Status:** 🟢 Fase 1-5 + Monitor Service Selesai — Fase 4 (Control) & Fase 5 (Stream) Selesai  
 > **Penulis:** Tim TA
 
@@ -22,7 +22,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 | Prinsip | Deskripsi | Implementasi dalam Sistem |
 |---|---|---|
 | **Single Responsibility** | Setiap service hanya bertanggung jawab atas satu domain bisnis | Auth Service hanya menangani autentikasi, Module Service hanya menangani data sensor & device onboarding, Analytics Service hanya menangani agregasi data — tidak ada overlap tanggung jawab |
-| **Database Isolation** | Setiap service memiliki database sendiri, tidak ada sharing database antar service | 18 instance database terpisah untuk 13 service, masing-masing dengan kredensial unik |
+| **Database Isolation** | Setiap service memiliki database sendiri, tidak ada sharing database antar service | 17 instance database terpisah untuk 13 service (MinIO dikonsolidasi jadi 1 instance bersama multi-bucket), masing-masing dengan kredensial unik |
 | **Bounded Context** | Setiap service memiliki model data dan bahasa domain sendiri | Service Auth berbicara tentang "user" dan "role", Module Service berbicara tentang "sensor" dan "telemetry", Control Service berbicara tentang "command" dan "device" |
 | **Independen Deployable** | Setiap service dapat di-build, di-deploy, dan di-scale secara independen | Masing-masing service memiliki Dockerfile sendiri, go.mod mandiri, dan port internal yang terisolasi |
 | **Resilience by Design** | Kegagalan satu service tidak boleh mengganggu service lain | NATS event bus dengan JetStream persistence, saga pattern dengan compensating transaction, dan dead letter queue untuk menangani kegagalan |
@@ -40,7 +40,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 
 ### Batasan dan Trade-off
 
-- **Kompleksitas Operasional:** 18 instance database dan 13+ service membutuhkan monitoring dan orkestrasi yang lebih kompleks dibandingkan monolit.
+- **Kompleksitas Operasional:** 17 instance database dan 13+ service membutuhkan monitoring dan orkestrasi yang lebih kompleks dibandingkan monolit.
 - **Network Overhead:** Komunikasi antar-service via NATS menambah latency dibandingkan pemanggilan fungsi langsung dalam monolit.
 - **Data Consistency:** Eventual consistency adalah konsekuensi dari arsitektur terdistribusi — transaksi yang membutuhkan strong consistency harus menggunakan saga pattern dengan compensating transaction.
 - **Debugging Complexity:** Melacak alur transaksi yang melintasi beberapa service membutuhkan tool observability yang memadai (distributed tracing, centralized logging).
@@ -55,9 +55,9 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 
 - **Device Layer:** ESP32 mengirim data sensor via MQTT ke Mosquitto broker
 - **Ingestion Layer:** Module Service menerima data dari Mosquitto, menyimpan ke database (MariaDB + TimescaleDB), dan mempublikasikan ke NATS
-- **Processing Layer:** Analytics Service, Stream Service (MediaMTX + MinIO), dan (future) ML/Vision API memproses data secara real-time
+- **Processing Layer:** Analytics Service, Stream Service (MediaMTX + MinIO *bucket `stream`*), dan (future) ML/Vision API (MinIO *bucket `ml-vision`* di instance MinIO bersama) memproses data secara real-time
 - **Control Layer:** Control Service mengirim perintah balik ke ESP32 melalui MQTT
-- **Streaming Layer:** Stream Service + MediaMTX (RTSP→HLS/WebRTC) + MinIO (snapshot/recording) untuk kamera CCTV/ESP32-CAM
+- **Streaming Layer:** Stream Service + MediaMTX (RTSP→HLS/WebRTC) + MinIO bersama (bucket `stream`: snapshot/recording) untuk kamera CCTV/ESP32-CAM
 - **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal
 - **Presentation Layer:** Dashboard (React) dan WebSocket Service untuk real-time updates
 - **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
@@ -73,7 +73,7 @@ ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
                                             → NATS (telemetry.ingest + telemetry.batch)
                                                  → Analytics Service → TimescaleDB (analytics)
                                                  → WS-Gateway → WebSocket → Dashboard (realtime telemetry)
-                                                 → Stream Service → MediaMTX (HLS/WebRTC) + MinIO (snapshot/recording)
+                                                  → Stream Service → MediaMTX (HLS/WebRTC) + MinIO bucket `stream` (snapshot/recording)
                                                  → (future) Alert Service
                                                  → (future) Audit Service
 
@@ -105,15 +105,15 @@ User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
 
 Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-nya:
 
-| Service | MariaDB | TimescaleDB | Redis | MinIO | Status |
+| Service | MariaDB | TimescaleDB | Redis | MinIO (instance bersama `minio`) | Status |
 |---|---|---|---|---|---|
 | Auth | `mariadb-auth` | — | — | — | ✅ Running |
 | Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — | ✅ Running |
 | Control | `mariadb-control` | — | — | — | ✅ Running |
-| Stream | `mariadb-stream` | — | — | `minio-stream` | ✅ Running |
+| Stream | `mariadb-stream` | — | — | bucket `stream` | ✅ Running |
 | Alert | `mariadb-alert` | — | `redis-alert` | — | ⬜ Belum |
-| ML / Vision | `mariadb-ml` | — | — | `minio-ml` | ⬜ Belum |
-| OTA | `mariadb-ota` | — | — | `minio-ota` | ⬜ Belum |
+| ML / Vision | `mariadb-ml` | — | — | bucket `ml-vision` | ✅ Running |
+| OTA | `mariadb-ota` | — | — | bucket `ota` | ⬜ Belum |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
 | Export | — | `timescaledb-module` (read) | `redis-export` | — | ⬜ Belum |
 | Notification | `mariadb-notification` | — | `redis-notification` | — | ⬜ Belum |
@@ -121,7 +121,10 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
 | Monitor | — (docker stats) | — | — | — | ✅ Running |
 
-**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 4× Redis · 3× MinIO = **19 instance**
+> **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`, `minio-ota`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml-vision`, `ota`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml-vision`.
+
+**Object storage:** 1× instance MinIO bersama (`minio`, multi-bucket + scoped access key) untuk Stream / ML / OTA.
+**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 4× Redis · 1× MinIO = **17 instance**
 **Sudan berjalan:** 4× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **8 instance**
 
 ---
@@ -156,7 +159,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `notification/` ⬜ — Service notifikasi multi-channel
   - `audit/` ⬜ — Service audit log
   - `webhook/` ⬜ — Service webhook eksternal
-- **`vision-api/`** ⬜ — Service Python untuk YOLOv8 inference
+- **`ml/`** ⬜ — Service Python untuk YOLOv8 inference
 - **`dashboard/`** ✅ — Frontend React untuk antarmuka pengguna
 - **`docs/`** — Dokumentasi kontrak API, NATS subjects, MQTT topics, webhook payload schema
 - **`volumes/`** — Persistent data storage (diabaikan oleh git)
@@ -176,7 +179,7 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
 | `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
 | `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
-| `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
+| `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ✅ Dipublish |
 | `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module) tapi ⬜ belum di-consume |
 | `metrics.health` | Semua service | Prometheus | Pub/Sub | ⬜ Belum (masih scrape langsung) |
 | `webhook.delivery` | Webhook Service | Audit Service | Pub/Sub | ⬜ Belum |
@@ -406,15 +409,33 @@ Skema ini **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply):
 ### ⬜ Fase 6 — Stream Service [P3]
 - Integrasi MediaMTX untuk streaming HLS/WebRTC
 - Metadata stream di `mariadb-stream`
-- Upload snapshot ke `minio-stream`
+- Upload snapshot ke MinIO bersama (bucket `stream`)
 
-### ⬜ Fase 7 — ML / Vision API [P3]
-- YOLOv8 inference service menggunakan Python FastAPI
-- Penyimpanan hasil deteksi ke `mariadb-ml`
-- Upload annotated image ke `minio-ml`
-- Publisher event `detection.result` ke NATS
+### ✅ Fase 6 — ML / Vision API [P3 — SELESAI]
 
-### ⬜ Fase 8 — Audit Service [P2 — QUICK WIN]
+> Service Python/FastAPI yang berdiri sendiri dari Go microservices. Inti: **Model Registry** — model YOLO (mis. `best.pt`) didaftarkan dan memperoleh `model_id` stabil; user memilih `model_id` saat inferensi (atau default bila kosong). Swap model tanpa restart.
+
+- **Model Registry:** `POST/GET/PUT/DELETE /ml/models`, `POST /ml/models/{id}/activate` (jadikan default), `POST /ml/models/{id}/weights` (upload `.pt`). Weights dari volume `models/` (`file_path`, default `best.pt`) atau di-upload via API. Load YOLO **lazy + cache per `model_id`**; reload otomatis saat config/weights berubah.
+- **Inference YOLOv8:** `POST /ml/detect` (upload 1..N gambar → deteksi class/confidence/bbox + gambar teranotasi), `POST /ml/detect/base64`, `POST /ml/detect/from-stream` (frame dari bucket `stream`). Threshold/iou/imgsz dapat di-override per request.
+- **Storage:** original + detected JPEG → MinIO bucket `ml-vision` (instance bersama); baca frame dari bucket `stream` (read-only).
+- **Persistensi:** `mariadb-ml` → `vision_models` (registry) + `vision_detections` (history), dikelola SQLAlchemy AutoCreate.
+- **Events:** publish `detection.result` ke NATS (best-effort) untuk Alert/Analytics/Export.
+- **Keamanan:** JWT/RBAC middleware (HS256, secret sama dengan Auth Service); write = admin/operator, read = semua role.
+- **Observability:** Prometheus `/metrics` (`vision_inferences_total`, `vision_detections_total`, `vision_inference_seconds`, `vision_models_loaded`) + `mariadb-ml` + `mysqld-exporter-ml`.
+ - **Infra:** `Dockerfile` (python:3.11-slim, healthcheck), volume `ml-models` (di-seed `best.pt`), route Kong `/ml`, scrape `ml-service` + `mariadb-ml`.
+ - **Auto-seed model `vision-aeroponik`:** saat startup, ML Service mendaftarkan otomatis `vision-aeroponik-model-test.pt` (id/slug `vision-aeroponik`) sebagai model default bila belum ada di registry — sehingga snapshot detection langsung siap pakai tanpa registrasi manual.
+
+### ✅ Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) [P3 — SELESAI]
+
+> Integrasi end-to-end: capture frame dari Live Stream → dikirim ke ML Vision → hasil deteksi (bounding box, class, confidence) disimpan & ditampilkan di Gallery pada tab **DETECTION** yang terpisah dari tab SNAPSHOT / RECORDING.
+
+- **Stream Service (`?detect=true`):** `POST /streams/{id}/snapshot?detect=true` men-capture frame (simpan sebagai `kind=snapshot`), lalu memanggil `POST /ml/detect` dengan model `vision-aeroponik`. Hasil deteksi disimpan sebagai snapshot `kind=detection` (URL = frame asli; metadata `model_id`, `model_name`, `num_detections`, `classes`, `detections` (JSON bbox), `confidence_avg`). Stream Service menandatangani JWT service sendiri (shared `JWT_SECRET`, role admin/operator) untuk memanggil ML tanpa round-trip ke Auth.
+- **Auth tereduksi:** ML Client di Stream Service membuat service JWT (HS256) — tidak perlu login ke Auth tiap request.
+- **Storage:** deteksi tetap di bucket `stream` (frame asli); kotak digambar di dashboard dari `detections` JSON (tidak bergantung public URL bucket `ml-vision`), sehingga view konsisten lewat proxy `/storage`.
+- **Dashboard Gallery (`/snapshot`):** satu halaman dengan toolbar **AI Capture** (pilih stream + *Capture & Detect*) untuk admin/operator, dan tab **ALL / SNAPSHOT / RECORDING / DETECTION**. Tab DETECTION merender overlay bounding box + ringkasan class & confidence (grid & lightbox).
+- **Hardening timeout:** `WriteTimeout` Stream Service 30s → 120s; route Kong `stream-service` `write_timeout`/`read_timeout` 10s → 120s (fix 504 *upstream timeout* saat capture + inferensi).
+
+Lihat detail lengkap (endpoint + contoh) di `roadmap.md` → **Fase 6 — ML / Vision API**.
 - Subscribe `audit.log` dari NATS
 - Append-only insert ke `mariadb-audit` untuk immutability log
 - Endpoint `GET /audit/logs` (admin only)
@@ -558,7 +579,7 @@ df = pd.read_parquet("data.parquet")
 **Total estimasi: 5-7 hari**
 
 ### ⬜ Fase 10 — OTA Service [P4]
-- Upload firmware binary ke `minio-ota`
+- Upload firmware binary ke MinIO bersama (bucket `ota`)
 - Trigger update ke ESP32 via MQTT
 - Tracking status update per device
 - Verifikasi checksum firmware
@@ -630,8 +651,8 @@ df = pd.read_parquet("data.parquet")
 | 🟡 P2 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna |
 | 🟡 P2 | Fase 3 | WS-Gateway JWT Auth | ✅ Selesai | Celah keamanan WS sudah ditutup |
 | 🟡 P2 | Fase 9 | Dashboard Device Management | 2-3 hari | File sudah ada, tinggal integrasi |
-| 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | Fitur lanjutan, tidak menghalangi operasi dasar |
-| 🟢 P3 | Fase 7 | ML / Vision API | 7-14 hari | Memerlukan dataset dan training model |
+| 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | ✅ Selesai |
+| 🟢 P3 | Fase 6 | ML / Vision API | 7-14 hari | ✅ Selesai — Model Registry + YOLOv8 inference + MinIO/NATS |
 | ⬜ P4 | Fase 10 | OTA Service | 5-7 hari | Fitur opsional |
 | ⬜ P4 | Fase 11 | Prometheus Metrics Service | 3-5 hari | Refactoring pipeline metrik |
 | ⬜ P4 | Fase 12 | Cloudflare Tunnel | 1-2 hari | Deployment ke production |
@@ -640,7 +661,7 @@ df = pd.read_parquet("data.parquet")
 
 ## ✅ Kriteria Selesai
 
-- Semua service dan 18 instance database dalam status `healthy` setelah `docker compose up -d`
+- Semua service dan 17 instance database dalam status `healthy` setelah `docker compose up -d`
 - Tidak ada service yang mengakses database milik service lain (verifikasi via environment variables dan network policy)
 - End-to-end flow ESP32 → Module → NATS → WebSocket → Dashboard berjalan ✅
 - End-to-end flow Module → Analytics → Dashboard berjalan ✅
@@ -674,7 +695,7 @@ df = pd.read_parquet("data.parquet")
 |---|---|---|
 | Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | Upgrade ke JetStream stream |
 | WS tanpa autentikasi | Data real-time bisa diakses siapa saja | ✅ Sudah: JWT handshake di WS-Gateway |
-| 18 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal |
+| 17 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal — ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
 | Tidak ada backup strategy | Data hilang jika container crash | Tambah volume backup atau cron job dump SQL |
 | Tidak ada CI/CD | Manual build & deploy rawan human error | Setup GitHub Actions atau GitLab CI sederhana |
 
@@ -686,3 +707,30 @@ df = pd.read_parquet("data.parquet")
 |---------|-------|-----------|
 | 2026-07-11 | 2.0.0 | Sinkronisasi dengan roadmap.md; update status Fase 2 & 3 selesai; tambah ringkasan, timeline, risiko |
 | 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). `mariadb-control` & `services/control` ditandai Running/✅ |
+| 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service (`minio-stream`/`minio-ml`/`minio-ota`) → **1 instance MinIO bersama** (`minio`) dengan multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream` (tidak bergantung ML). Total instance turun 19 → 17. Update tabel Database-per-Service, topologi, diagram alur, dan risiko instance. |
+| 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI mandiri: Model Registry (CRUD + upload weights + activate → `model_id` untuk swap model), inference YOLOv8 (`/ml/detect` upload/base64/from-stream) dengan lazy-load + cache per `model_id`, persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware, Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
+| 2026-07-13 | 2.6.0 | **Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) SELESAI.** Capture snapshot Live Stream (`POST /streams/{id}/snapshot?detect=true`) di-stream-kan ke ML Vision (`vision-aeroponik`); hasil deteksi disimpan sebagai `kind=detection` & ditampilkan di Gallery tab **DETECTION** dengan overlay bounding box. ML Client Stream Service menandatangani service JWT sendiri (shared `JWT_SECRET`). Auto-seed model `vision-aeroponik` di startup ML. Hardening timeout: `WriteTimeout` Stream 30s→120s & route Kong `stream-service` 10s→120s (fix 504 upstream timeout). |
+
+---
+
+## 📝 Catatan Keputusan Arsitektur — Konsolidasi MinIO (2026-07-12)
+
+**Konteks:** Semula direncanakan instance MinIO terpisah per service (`minio-stream` untuk snapshot/recording, `minio-ml` untuk hasil anotasi YOLOv8, `minio-ota` untuk firmware). Muncul usulan alternatif: MinIO hanya milik ML, dan Stream cukup menangani API MediaMTX lalu menaruh snapshot/recording ke MinIO-nya ML.
+
+**Keputusan:** Ambil **Opsi C — 1 instance MinIO bersama, multi-bucket, scoped access key.** Bukan Opsi A (Stream bergantung MinIO ML) dan bukan Opsi B (2+ instance MinIO di host yang sama).
+
+**Alasan:**
+1. **Urutan deploy & bounded context.** Stream Service sudah `✅` dan live; ML/Vision belum dibuat. Jika Stream menulis ke MinIO ML, Stream tidak bisa jalan sebelum ML di-deploy (regresi prinsip *Independen Deployable*). Stream memproduksi snapshot/recording → harus tetap punya storage sendiri (bucket `stream`).
+2. **Performa.** Bottleneck MinIO adalah disk I/O + bandwidth network, bukan proses MinIO. Membelah jadi 2 instance di host/disk sama justru menambah kontensi (2 proses berebut resource), bukan isolasi. Satu instance dengan disk SSD/NVMe lebih dari cukup untuk beban TA ini (beberapa kamera, object level GB–ratusan GB). MinIO dirancang untuk throughput puluhan GB/s.
+3. **Resilience.** Kelemahan satu instance = SPOF object storage. Mitigasinya **bukan** membelah container di 1 host, tapi menjalankan 1 MinIO dalam **mode distributed / erasure-coding multi-drive** (mis. 4 drive) di host yang sama. Itu lebih tangguh daripada 2 container di 1 disk.
+4. **Isolasi tetap terjaga.** Buckets terpisah + access key ter-scoping (`stream-svc-key` → rw `stream`; `ml-svc-key` → rw `ml-vision` + ro `stream`; `ota-svc-key` → rw `ota`) memenuhi prinsip *Zero-Trust Internal*, setara dengan isolasi per-instance.
+5. **Efisiensi operasional.** Mengurangi jumlah container & beban backup, menjawab risiko "terlalu banyak instance" yang sudah tercatat di dokumen.
+
+**Skema akhir:**
+```
+minio (1 instance, erasure-coding multi-drive bila memungkinkan)
+ ├─ bucket: stream      owner: Stream Service   (rw: stream-svc-key)
+ ├─ bucket: ml-vision   owner: ML / Vision API  (rw: ml-svc-key, ro: stream)
+ └─ bucket: ota         owner: OTA Service      (rw: ota-svc-key)  [Fase 12]
+```
+ML membaca frame sumber dari `stream` (key read-only) untuk inferensi, tanpa Stream harus mengirim file ke ML. Retensi per bucket bisa berbeda (snapshot/recording pendek, model/annotated panjang).

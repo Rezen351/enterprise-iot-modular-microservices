@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/stream/internal/client/mediamtx"
+	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	miniosvc "github.com/almuzky/iot/services/stream/internal/client/minio"
 	"github.com/almuzky/iot/services/stream/internal/model"
 	"github.com/almuzky/iot/services/stream/internal/repository"
@@ -28,12 +30,13 @@ type StreamService struct {
 	repo     *repository.Repository
 	media    *mediamtx.Client
 	minio    *miniosvc.Client
+	ml       *mlclient.Client
 	kongURL  string
 	cctvRTSP string
 }
 
-func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, kongURL, cctvRTSP string) *StreamService {
-	return &StreamService{repo: repo, media: media, minio: minioClient, kongURL: kongURL, cctvRTSP: cctvRTSP}
+func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP string) *StreamService {
+	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP}
 }
 
 // CreateStream inserts the DB row then registers the path in MediaMTX.
@@ -205,8 +208,12 @@ func isDuplicateErr(err error) bool {
 // ─── Snapshots & Recordings ───────────────────────────────────────────────────
 
 // CaptureSnapshot grabs the current frame of a stream from MediaMTX, uploads it
-// to the MinIO stream bucket, and stores the metadata row. Returns the view.
-func (s *StreamService) CaptureSnapshot(ctx context.Context, id string) (*model.SnapshotView, error) {
+// to the MinIO stream bucket, and stores the metadata row. When detect is true
+// the captured frame is additionally sent to the AI vision model; the raw frame
+// is stored as a regular snapshot and the detection result (with inline
+// bounding boxes) is stored as a separate "detection" snapshot so the gallery
+// can render it in its own tab.
+func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect bool) (*model.SnapshotView, error) {
 	if s.minio == nil {
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
 	}
@@ -226,6 +233,7 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string) (*model.
 		return nil, fmt.Errorf("%w: %v", ErrMinIO, err)
 	}
 
+	// Always persist the plain snapshot (the original frame, viewable in /storage).
 	snap := &model.Snapshot{
 		ID:          uuid.New().String(),
 		StreamID:    st.ID,
@@ -240,7 +248,48 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string) (*model.
 	if _, err := s.repo.CreateSnapshot(ctx, snap); err != nil {
 		return nil, err
 	}
-	return toSnapshotView(snap), nil
+
+	if !detect {
+		return toSnapshotView(snap), nil
+	}
+
+	// Run AI vision detection on the captured frame.
+	if s.ml == nil {
+		return nil, fmt.Errorf("%w: AI vision client not configured", ErrMinIO)
+	}
+	result, derr := s.ml.Detect(ctx, data, fmt.Sprintf("%s_%s.jpg", st.Name, uuid.New().String()))
+	if derr != nil {
+		// The plain snapshot is already stored; surface the detection error so
+		// the dashboard can tell the user detection failed.
+		return nil, fmt.Errorf("ai vision detection failed: %w", derr)
+	}
+	if result == nil {
+		return nil, fmt.Errorf("ai vision returned no result")
+	}
+
+	classesJSON, _ := json.Marshal(result.Classes)
+	detJSON, _ := json.Marshal(result.Detections)
+	detSnap := &model.Snapshot{
+		ID:            uuid.New().String(),
+		StreamID:      st.ID,
+		StreamName:    st.Name,
+		ObjectKey:     key,
+		URL:           url, // original frame; the dashboard overlays the boxes
+		ContentType:   ct,
+		Size:          int64(len(data)),
+		Kind:          "detection",
+		ModelID:       result.ModelID,
+		ModelName:     result.ModelName,
+		NumDetections: result.NumDetections,
+		Classes:       string(classesJSON),
+		Detections:    string(detJSON),
+		ConfidenceAvg: result.ConfidenceAvg,
+		CreatedAt:     time.Now(),
+	}
+	if _, err := s.repo.CreateSnapshot(ctx, detSnap); err != nil {
+		return nil, err
+	}
+	return toSnapshotView(detSnap), nil
 }
 
 // ListSnapshots returns snapshots/recordings newest-first (optional kind filter).
@@ -333,12 +382,18 @@ func (s *StreamService) StopRecording(ctx context.Context, id string) (*model.Sn
 
 func toSnapshotView(s *model.Snapshot) *model.SnapshotView {
 	return &model.SnapshotView{
-		ID:         s.ID,
-		StreamID:   s.StreamID,
-		StreamName: s.StreamName,
-		URL:        s.URL,
-		Kind:       s.Kind,
-		Size:       s.Size,
-		CreatedAt:  s.CreatedAt,
+		ID:            s.ID,
+		StreamID:      s.StreamID,
+		StreamName:    s.StreamName,
+		URL:           s.URL,
+		Kind:          s.Kind,
+		Size:          s.Size,
+		CreatedAt:     s.CreatedAt,
+		ModelID:       s.ModelID,
+		ModelName:     s.ModelName,
+		NumDetections: s.NumDetections,
+		Classes:       s.Classes,
+		Detections:    s.Detections,
+		ConfidenceAvg: s.ConfidenceAvg,
 	}
 }

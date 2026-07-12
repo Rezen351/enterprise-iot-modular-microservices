@@ -14,8 +14,12 @@ type Config struct {
 	// MediaMTX Control API (internal iot-net). Used to register/remove paths.
 	MediaMTXAPIURL string
 
-	// MediaMTX HTTP/HLS server (internal iot-net). Serves /{name}/snapshot.
+	// MediaMTX HTTP/HLS server (internal iot-net). Serves /{name}/index.m3u8.
 	MediaMTXHTTPURL string
+
+	// MediaMTX RTSP server (internal iot-net). Used by ffmpeg to grab a single
+	// frame for snapshots, e.g. rtsp://mediamtx:8554.
+	MediaMTXRTSPURL string
 
 	// Default RTSP source used when a stream is created without an explicit URL.
 	CCTVRTSPURL string
@@ -33,6 +37,12 @@ type Config struct {
 	MinIOSecretKey   string
 	MinIOUseSSL      bool
 	MinIOStreamBucket string
+
+	// ML / Vision service — used to run AI detection on captured snapshots.
+	// The stream service mints its own service JWT (shared JWT secret) so it can
+	// call the ML inference endpoint without a round-trip through Auth.
+	MLBaseURL      string
+	MLVisionModelID string
 }
 
 // Load reads configuration from environment variables with dev-friendly defaults.
@@ -42,6 +52,7 @@ func Load() (*Config, error) {
 		DBDSN:          getEnv("DB_DSN", "app:app1234@tcp(mariadb-stream:3306)/stream_db?parseTime=true&charset=utf8mb4"),
 		MediaMTXAPIURL: getEnv("MEDIAMTX_API_URL", "http://mediamtx:9997"),
 		MediaMTXHTTPURL: getEnv("MEDIAMTX_HTTP_URL", "http://mediamtx:8888"),
+		MediaMTXRTSPURL: getEnv("MEDIAMTX_RTSP_URL", "rtsp://mediamtx:8554"),
 		CCTVRTSPURL:    getEnv("CCTV_RTSP_URL", ""),
 		KongPublicURL:  getEnv("KONG_PUBLIC_URL", "http://localhost:8000"),
 		JWTSecret:      getEnv("JWT_SECRET", ""),
@@ -50,6 +61,8 @@ func Load() (*Config, error) {
 		MinIOSecretKey:    getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		MinIOUseSSL:       getEnvBool("MINIO_USE_SSL", false),
 		MinIOStreamBucket: getEnv("MINIO_STREAM_BUCKET", "stream"),
+		MLBaseURL:         getEnv("ML_BASE_URL", "http://ml:8080"),
+		MLVisionModelID:   getEnv("ML_VISION_MODEL_ID", "vision-aeroponik"),
 	}
 	return cfg, nil
 }

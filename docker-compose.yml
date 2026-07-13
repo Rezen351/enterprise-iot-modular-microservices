@@ -86,6 +86,7 @@ services:
   # ──────────────────────────────────────
   nats:
     image: nats:2.10-alpine # sama persis dengan scratch, + shell tools (wget untuk healthcheck)
+    restart: unless-stopped
     command: [ "-c", "/etc/nats/nats.conf" ]
     volumes:
       - ./infra/nats/nats.conf:/etc/nats/nats.conf:ro
@@ -103,6 +104,7 @@ services:
   # ──────────────────────────────────────
   mosquitto:
     image: eclipse-mosquitto:2
+    restart: unless-stopped
     volumes:
       - ./infra/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./infra/mosquitto/config/acl.conf:/mosquitto/config/acl.conf:ro
@@ -681,8 +683,8 @@ services:
       minio:
         condition: service_healthy
     entrypoint: >
-      sh -c "mc alias set m local ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
-             mc mb -p m/stream; mc mb -p m/ml; mc mb -p m/ota; mc mb -p m/ml-result &&
+      sh -c "mc alias set m http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
+             mc mb -p m/stream; mc mb -p m/mlbucket; mc mb -p m/ota; mc mb -p m/ml-result &&
              mc anonymous set download m/ml-result"
     networks:
       - iot-net
@@ -719,6 +721,8 @@ services:
       REDIS_PASSWORD: ""
       REDIS_DB: "0"
       MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
+      MEDIAMTX_API_URL: "http://mediamtx:9997"
+      STREAM_BASE_URL: "http://stream:8080"
       CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
       MINIO_ENDPOINT: "minio:9000"
       MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
@@ -761,7 +765,7 @@ services:
       MINIO_USE_SSL: "false"
       MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
       ML_BASE_URL: "http://ml:8080"
-      ML_VISION_MODEL_ID: "vision-aeroponik"
+      ML_VISION_MODEL_ID: ""
     depends_on:
       mariadb-stream:
         condition: service_healthy

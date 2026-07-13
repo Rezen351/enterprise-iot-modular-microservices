@@ -91,6 +91,17 @@ scrape_configs:
         target_label: instance
         replacement: "stream-service"
 
+  # ML SERVICE — YOLO model registry + inference metrics
+  - job_name: "ml-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["ml:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "ml-service"
+
   # Kong API Gateway — exposes metrics on port 8001 (admin API)
   - job_name: "kong"
     metrics_path: /metrics
@@ -136,6 +147,28 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-module"
+
+  # MariaDB Stream — via mysqld-exporter
+  - job_name: "mariadb-stream"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-stream:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-stream"
+
+  # MariaDB ML / Vision — via mysqld-exporter
+  - job_name: "mariadb-ml"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-ml:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-ml"
 
   # Redis (Module cache) — via redis-exporter
   - job_name: "redis-module"

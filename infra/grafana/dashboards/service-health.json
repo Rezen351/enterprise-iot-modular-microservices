@@ -1,0 +1,3897 @@
+{
+  "uid": "service-health",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Overview",
+      "type": "row",
+      "description": "Kesehatan keseluruhan stack layanan.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "title": "Services UP",
+      "type": "stat",
+      "description": "Target Prometheus sehat (up==1).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up == 1)",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Services DOWN",
+      "type": "stat",
+      "description": "Target gagal di-scrape (up==0).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up == 0)",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Total Targets",
+      "type": "stat",
+      "description": "Total target yang di-scrape Prometheus.",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3274D9",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up)",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Avg Request Rate",
+      "type": "stat",
+      "description": "Total throughput semua service (req/s).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3274D9",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate({__name__=~\".*_http_requests_total\"}[2m]))",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Avg p95 Latency",
+      "type": "stat",
+      "description": "Latensi p95 agregat semua service.",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3274D9",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Avg Error Rate",
+      "type": "stat",
+      "description": "Persentase request 4xx/5xx agregat.",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate({__name__=~\".*_http_requests_total\",status=~\"4..|5..\"}[2m])) / sum(rate({__name__=~\".*_http_requests_total\"}[2m])) * 100",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Service Status & Health",
+      "type": "row",
+      "description": "Status, durasi scrape, dan jumlah sample per target.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "panels": []
+    },
+    {
+      "id": 9,
+      "title": "Target Status",
+      "type": "table",
+      "description": "Status semua target (1=UP, 0=DOWN).",
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 0,
+        "y": 5
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "up"
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "DOWN",
+                        "color": "red"
+                      },
+                      "1": {
+                        "text": "UP",
+                        "color": "green"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "up",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Request Rate by Service",
+      "type": "timeseries",
+      "description": "Throughput per service secara live.",
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "reqps",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (job) (rate({__name__=~\".*_http_requests_total\"}[2m]))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "HTTP Traffic",
+      "type": "row",
+      "description": "Throughput, error, latensi, dan beban request per service mikro.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
+      "title": "HTTP Request Rate (req/s)",
+      "type": "timeseries",
+      "description": "Request per detik per service.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "reqps",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (job) (rate({__name__=~\".*_http_requests_total\"}[2m]))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "HTTP Error Rate (4xx+5xx, %)",
+      "type": "timeseries",
+      "description": "Persentase request gagal per service.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (job) (rate({__name__=~\".*_http_requests_total\",status=~\"4..|5..\"}[2m])) / sum by (job) (rate({__name__=~\".*_http_requests_total\"}[2m])) * 100",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "HTTP Latency (p50 / p95 / p99)",
+      "type": "timeseries",
+      "description": "Distribusi latensi HTTP per service.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "s",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "legendFormat": "p50 {{job}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "legendFormat": "p95 {{job}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "legendFormat": "p99 {{job}}",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "HTTP Requests In-Flight",
+      "type": "timeseries",
+      "description": "Jumlah request sedang diproses per service.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "{__name__=~\".*_http_requests_in_flight\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Service Resource Usage",
+      "type": "row",
+      "description": "Penggunaan memori, CPU, goroutine, dan FD per service (Go runtime).",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "panels": []
+    },
+    {
+      "id": 17,
+      "title": "Memory (RSS)",
+      "type": "timeseries",
+      "description": "Resident set size per service.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "bytes",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "CPU Usage (%)",
+      "type": "timeseries",
+      "description": "CPU time per service (rate).",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_cpu_seconds_total[2m]) * 100",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Goroutines",
+      "type": "timeseries",
+      "description": "Jumlah goroutine (indikator beban/koroutine leak).",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "go_goroutines",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Open File Descriptors (%)",
+      "type": "timeseries",
+      "description": "Rasio FD terbuka terhadap maksimum.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_open_fds / process_max_fds * 100",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Databases \u2014 MariaDB",
+      "type": "row",
+      "description": "Koneksi, query throughput, dan error koneksi per instance MariaDB.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "panels": []
+    },
+    {
+      "id": 22,
+      "title": "Connections",
+      "type": "timeseries",
+      "description": "Koneksi aktif per instance MariaDB.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 49
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "mysql_global_status_threads_connected",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Queries / sec (QPS)",
+      "type": "timeseries",
+      "description": "Query per detik per instance.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 49
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(mysql_global_status_queries[2m])",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Slow Queries / sec",
+      "type": "timeseries",
+      "description": "Query lambat per detik.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 49
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(mysql_global_status_slow_queries[2m])",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Aborted Connects / sec",
+      "type": "timeseries",
+      "description": "Koneksi tertolak per detik (indikasi masalah auth/limit).",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 49
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(mysql_global_status_aborted_connects[2m])",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "title": "Cache \u2014 Redis",
+      "type": "row",
+      "description": "Memori, hit-rate, throughput, dan koneksi Redis (cache Module).",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "panels": []
+    },
+    {
+      "id": 27,
+      "title": "Memory Used vs Max",
+      "type": "timeseries",
+      "description": "Memori terpakai vs batas maxmemory.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 58
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "bytes",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "redis_memory_used_bytes",
+          "legendFormat": "used",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "redis_memory_max_bytes",
+          "legendFormat": "max",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "title": "Cache Hit Rate (%)",
+      "type": "timeseries",
+      "description": "Rasio cache hit Redis.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 58
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(redis_keyspace_hits_total[2m])) / (sum(rate(redis_keyspace_hits_total[2m])) + sum(rate(redis_keyspace_misses_total[2m]))) * 100",
+          "legendFormat": "hit-rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "title": "Operations / sec",
+      "type": "timeseries",
+      "description": "Perintah Redis diproses per detik.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 58
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(redis_commands_processed_total[2m])",
+          "legendFormat": "ops/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "Connected Clients",
+      "type": "timeseries",
+      "description": "Klien Redis terhubung.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 58
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "redis_connected_clients",
+          "legendFormat": "clients",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "TimescaleDB / PostgreSQL",
+      "type": "row",
+      "description": "Koneksi, transaksi (TPS), dan cache hit ratio per instance TimescaleDB.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "title": "Connections (backends)",
+      "type": "timeseries",
+      "description": "Jumlah backend/connection aktif.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 67
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "pg_stat_database_numbackends",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Transactions / sec (TPS)",
+      "type": "timeseries",
+      "description": "Commit & rollback per detik.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 67
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (instance) (rate(pg_stat_database_xact_commit[2m]))",
+          "legendFormat": "commit {{instance}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (instance) (rate(pg_stat_database_xact_rollback[2m]))",
+          "legendFormat": "rollback {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "title": "Cache Hit Ratio (%)",
+      "type": "timeseries",
+      "description": "Rasio cache hit blok database.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 67
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(pg_stat_database_blks_hit[2m])) / (sum(rate(pg_stat_database_blks_hit[2m])) + sum(rate(pg_stat_database_blks_read[2m]))) * 100",
+          "legendFormat": "hit-ratio",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "title": "Messaging \u2014 NATS & MQTT",
+      "type": "row",
+      "description": "Broker pesan: koneksi, JetStream, dan throughput NATS & Mosquitto.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 75
+      },
+      "panels": []
+    },
+    {
+      "id": 36,
+      "title": "NATS Connections & JetStream",
+      "type": "timeseries",
+      "description": "Koneksi NATS dan state JetStream.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 76
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "gnatsd_varz_connections",
+          "legendFormat": "nats_connections",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "jetstream_server_total_streams",
+          "legendFormat": "jetstream_streams",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "jetstream_server_total_consumers",
+          "legendFormat": "jetstream_consumers",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "jetstream_server_total_messages",
+          "legendFormat": "jetstream_messages",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "title": "NATS Msg Rate",
+      "type": "timeseries",
+      "description": "Throughput pesan NATS masuk/keluar.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 76
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(gnatsd_varz_in_msgs[2m])",
+          "legendFormat": "in_msgs/s",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(gnatsd_varz_out_msgs[2m])",
+          "legendFormat": "out_msgs/s",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "title": "MQTT Clients & Subscriptions",
+      "type": "timeseries",
+      "description": "Klien & subscription aktif MQTT.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 84
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "broker_clients_connected",
+          "legendFormat": "clients_connected",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "broker_subscriptions_count",
+          "legendFormat": "subscriptions",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "broker_retained_messages_count",
+          "legendFormat": "retained",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "title": "MQTT Msg Rate & Bytes",
+      "type": "timeseries",
+      "description": "Throughput pesan & byte MQTT.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 84
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ops",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(broker_messages_received[2m])",
+          "legendFormat": "msg_recv/s",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(broker_messages_sent[2m])",
+          "legendFormat": "msg_sent/s",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(broker_bytes_received[2m])",
+          "legendFormat": "bytes_recv/s",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(broker_bytes_sent[2m])",
+          "legendFormat": "bytes_sent/s",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "title": "API Gateway \u2014 Kong",
+      "type": "row",
+      "description": "Traffic, latensi, bandwidth, dan kesehatan upstream Kong.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 92
+      },
+      "panels": []
+    },
+    {
+      "id": 41,
+      "title": "Requests / sec",
+      "type": "timeseries",
+      "description": "Total request melalui Kong.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 93
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "reqps",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(kong_http_requests_total[2m]))",
+          "legendFormat": "requests/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "title": "Latency p99 (ms)",
+      "type": "timeseries",
+      "description": "Latensi p99 request & upstream Kong.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 93
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "ms",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(kong_request_latency_ms_bucket[2m])))",
+          "legendFormat": "request_p99",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(kong_upstream_latency_ms_bucket[2m])))",
+          "legendFormat": "upstream_p99",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "title": "Bandwidth",
+      "type": "timeseries",
+      "description": "Throughput bandwidth Kong (egress/ingress).",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 93
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "Bps",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(kong_bandwidth_bytes[2m])",
+          "legendFormat": "{{direction}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "title": "Upstream Target Health",
+      "type": "table",
+      "description": "Kesehatan tiap target upstream Kong (1=sehat).",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 101
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "up"
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "UNHEALTHY",
+                        "color": "red"
+                      },
+                      "1": {
+                        "text": "HEALTHY",
+                        "color": "green"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "address"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "upstream"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kong_upstream_target_health",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "title": "Datastore Reachable",
+      "type": "timeseries",
+      "description": "Apakah datastore Kong (DB) dapat dijangkau (1=ya).",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 101
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "kong_datastore_reachable",
+          "legendFormat": "kong",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "title": "Service Detail (pilih service \u2193)",
+      "type": "row",
+      "description": "Panel interaktif \u2014 pilih satu/multi service dari variabel di atas untuk drill-down.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 109
+      },
+      "panels": []
+    },
+    {
+      "id": 47,
+      "title": "Request Rate",
+      "type": "timeseries",
+      "description": "Request rate service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 110
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "reqps",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate({__name__=~\".*_http_requests_total\", job=~\"$service\"}[2m]))",
+          "legendFormat": "req/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "description": "Error rate service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 110
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate({__name__=~\".*_http_requests_total\",status=~\"4..|5..\", job=~\"$service\"}[2m])) / sum(rate({__name__=~\".*_http_requests_total\", job=~\"$service\"}[2m])) * 100",
+          "legendFormat": "err%",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "title": "p95 Latency",
+      "type": "timeseries",
+      "description": "Latensi p95 service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 110
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "s",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\", job=~\"$service\"}[2m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "title": "Memory (RSS)",
+      "type": "timeseries",
+      "description": "Memori service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 110
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "bytes",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_resident_memory_bytes{job=~\"$service\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "title": "CPU (%)",
+      "type": "timeseries",
+      "description": "CPU service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 118
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_cpu_seconds_total{job=~\"$service\"}[2m]) * 100",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "title": "Goroutines",
+      "type": "timeseries",
+      "description": "Goroutine service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 118
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "short",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "go_goroutines{job=~\"$service\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "title": "Open FDs (%)",
+      "type": "timeseries",
+      "description": "FD terbuka service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 118
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "custom": {
+          "drawStyle": "line",
+          "lineWidth": 2,
+          "fillOpacity": 12,
+          "pointSize": 2,
+          "showPoints": "never",
+          "spanNulls": true,
+          "axisCenteredZero": false,
+          "axisColorMode": "text",
+          "axisLabel": "",
+          "axisPlacement": "auto",
+          "barAlignment": 0,
+          "gradientMode": "none",
+          "thresholdsStyle": {
+            "mode": "none"
+          },
+          "lineInterpolation": "linear",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "stacking": {
+            "group": "A",
+            "mode": "none"
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "unit": "percent",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_open_fds{job=~\"$service\"} / process_max_fds{job=~\"$service\"} * 100",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "title": "Service UP?",
+      "type": "stat",
+      "description": "Status 1=UP / 0=DOWN untuk service terpilih.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 118
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "up{job=~\"$service\"}",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "iot",
+    "microservice",
+    "service-health",
+    "monitoring"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "label": "Service",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(up{job=~\".*-service\"}, job)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Service Health \u2014 IOT Modular Microservice",
+  "uid": "service-health-iot",
+  "version": 2,
+  "weekStart": ""
+}

@@ -17,10 +17,17 @@ import Analytics from './Pages/Analytics';
 import ControlPanel from './Pages/ControlPanel';
 import LiveView from './Pages/LiveView';
 import Snapshot from './Pages/Snapshot';
+import Monitor from './Pages/Monitor';
 
 function DashboardContent({ onLogout }) {
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return sessionStorage.getItem('dashboard_active_tab') || 'monitor';
+    } catch {
+      return 'monitor';
+    }
+  });
   const [nodeConfig, setNodeConfig] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -64,11 +71,12 @@ function DashboardContent({ onLogout }) {
   const handleSetActiveTab = (tab) => {
     setNodeConfig(null);
     setActiveTab(tab);
+    try { sessionStorage.setItem('dashboard_active_tab', tab); } catch { }
   };
 
   const renderContent = () => {
     if (nodeConfig) {
-      return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); }} />;
+      return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); try { sessionStorage.setItem('dashboard_active_tab', 'module'); } catch { } }} />;
     }
     switch (activeTab) {
       case 'profile':
@@ -81,6 +89,8 @@ function DashboardContent({ onLogout }) {
         return <Analytics />;
       case 'live':
         return <LiveView />;
+      case 'monitor':
+        return <Monitor />;
       case 'snapshot':
         return <Snapshot />;
       case 'users':
@@ -176,7 +186,7 @@ function DashboardContent({ onLogout }) {
         </header>
 
         {/* Content Page View */}
-        <main className="flex-1 overflow-y-auto pt-14 sm:pt-16 lg:pt-20 main-content-area">
+        <main className="flex-1 overflow-y-auto pt-2 sm:pt-2 lg:pt-2 main-content-area">
           <div className="p-3 sm:p-4 lg:p-6">
             {renderContent()}
           </div>

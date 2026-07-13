@@ -249,8 +249,8 @@ services:
           # Rate-limit untuk route terlindungi
           - name: rate-limiting
             config:
-              minute: 60
-              hour: 500
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true
 
@@ -326,8 +326,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 600
-              hour: 20000
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true
               error_message: "Batas permintaan analytics tercapai. Coba lagi nanti."
@@ -431,8 +431,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 60
-              hour: 1000
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true
 
@@ -456,8 +456,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 300
-              hour: 5000
+              minute: 120
+              hour: 2000
               policy: local
               fault_tolerant: true
 

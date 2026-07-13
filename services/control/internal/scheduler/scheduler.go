@@ -26,6 +26,7 @@ type Dispatcher interface {
 type Engine struct {
 	disp           Dispatcher
 	reloadInterval time.Duration
+	loc            *time.Location // timezone used for window/schedule evaluation
 
 	mu      sync.Mutex
 	runners map[string]*runner // key: schedule ID
@@ -36,10 +37,16 @@ type runner struct {
 	sig    string // signature to detect definition changes
 }
 
-func New(disp Dispatcher) *Engine {
+// New builds the engine. loc is the timezone used to interpret schedule/window
+// HH:MM boundaries; pass time.UTC if no specific zone is configured.
+func New(disp Dispatcher, loc *time.Location) *Engine {
+	if loc == nil {
+		loc = time.UTC
+	}
 	return &Engine{
 		disp:           disp,
 		reloadInterval: 15 * time.Second,
+		loc:            loc,
 		runners:        make(map[string]*runner),
 	}
 }
@@ -196,7 +203,7 @@ func (e *Engine) runTimeOfDay(ctx context.Context, sc model.Schedule) {
 	defer t.Stop()
 	last := -1 // last dispatched value (-1 = none)
 	eval := func() {
-		now := time.Now()
+		now := time.Now().In(e.loc)
 		if !dayActive(p.Days, int(now.Weekday())) {
 			return
 		}
@@ -332,11 +339,20 @@ func (e *Engine) runWindowPulse(ctx context.Context, sc model.Schedule) {
 		}
 	}
 
+	// Guarantee the output reflects the window even if the runner starts while
+	// outside it (e.g. actuator left ON by an earlier run or manual override).
+	startNow := time.Now().In(e.loc)
+	if !dayActive(p.Days, int(startNow.Weekday())) || !inWindow(startNow, p.OnAt, p.OffAt) {
+		e.dispatch(ctx, sc, valOff)
+		lastVal = valOff
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case now := <-t.C:
+			now = now.In(e.loc)
 			if !dayActive(p.Days, int(now.Weekday())) {
 				if windowOn {
 					leaveWindow()

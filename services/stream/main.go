@@ -108,10 +108,11 @@ func main() {
 		Addr:         ":" + cfg.Port,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
-		// Snapshot capture pulls a frame via ffmpeg (may retry on a cold source)
-		// and, with ?detect=true, also runs ML inference. Keep this comfortably
-		// above ffmpeg's retry budget (~27s) plus model load + inference so the
-		// response is never aborted mid-write (which would surface as a Kong 504).
+		// Snapshot capture pulls a frame from MediaMTX's HTTP snapshot endpoint
+		// (may retry on a cold on-demand source) and, with ?detect=true, also runs
+		// ML inference. Keep this comfortably above the retry budget plus model
+		// load + inference so the response is never aborted mid-write (which would
+		// surface as a Kong 504).
 		WriteTimeout: 120 * time.Second,
 		IdleTimeout:  150 * time.Second,
 	}

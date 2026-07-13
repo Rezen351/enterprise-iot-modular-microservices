@@ -77,6 +77,13 @@ class ModelRegistry:
             m = session.get(VisionModel, model_id)
             return self._row_to_dict(m) if m else None
 
+    def get_model_by_slug(self, slug: str) -> Optional[dict]:
+        with SessionLocal() as session:
+            m = session.execute(
+                select(VisionModel).where(VisionModel.slug == slug)
+            ).scalars().first()
+            return self._row_to_dict(m) if m else None
+
     def create_model(self, data) -> dict:
         model_id = str(uuid.uuid4())
         with SessionLocal() as session:
@@ -254,7 +261,7 @@ class ModelRegistry:
     def resolve(self, model_id: Optional[str]) -> tuple[dict, object]:
         """Resolve (meta, loaded_model). Picks default when id is None."""
         if model_id:
-            meta = self.get_model(model_id)
+            meta = self.get_model(model_id) or self.get_model_by_slug(model_id)
             if not meta:
                 raise FileNotFoundError(f"Model '{model_id}' not found in registry")
             if meta["status"] == "disabled":

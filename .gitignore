@@ -12,3 +12,10 @@ dashboard/dist/
 Thumbs.db
 .idea/
 *.log
+
+# Python
+__pycache__/
+*.pyc
+
+# ML model weights (store in the models volume, not the repo)
+*.pt

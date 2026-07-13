@@ -23,6 +23,12 @@ type Config struct {
 	// tag-mapping (actuator outputs are tags, same schema as sensors).
 	ModuleURL string
 
+	// Timezone — IANA location (e.g. "Asia/Jakarta") used to evaluate
+	// schedule/window times. The scheduler interprets HH:MM windows in this
+	// zone, NOT the container's local time. Defaults to "UTC" so behaviour is
+	// explicit; set TIMEZONE to match the operator's local time.
+	Timezone string
+
 	// JWT — same secret as Auth Service so this service can validate access tokens.
 	JWTSecret string
 
@@ -43,6 +49,7 @@ func Load() (*Config, error) {
 		MQTTClientID:      getEnv("MQTT_CLIENT_ID", "control-svc"),
 		MQTTTopicPrefix:   getEnv("MQTT_TOPIC_PREFIX", "smartfarm"),
 		JWTSecret:         getEnv("JWT_SECRET", ""),
+		Timezone:          getEnv("TIMEZONE", "UTC"),
 		AckTimeoutSeconds: getEnvInt("ACK_TIMEOUT_SECONDS", 8),
 		ModuleURL:         getEnv("MODULE_URL", "http://module:8080"),
 	}

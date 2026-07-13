@@ -1,3 +1,7 @@
 -- auth_db seed data is managed entirely by the Go auth service (migrate.go).
 -- Do NOT add DDL (CREATE TABLE) or DML (INSERT) here.
 -- This file is intentionally empty and exists only so Docker volume mount does not fail.
+
+-- mysqld-exporter requires PROCESS + SLAVE MONITOR to scrape engine/perf schema.
+GRANT PROCESS, SLAVE MONITOR ON *.* TO 'app'@'%';
+FLUSH PRIVILEGES;

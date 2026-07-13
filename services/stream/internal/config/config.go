@@ -14,11 +14,12 @@ type Config struct {
 	// MediaMTX Control API (internal iot-net). Used to register/remove paths.
 	MediaMTXAPIURL string
 
-	// MediaMTX HTTP/HLS server (internal iot-net). Serves /{name}/index.m3u8.
+	// MediaMTX HTTP/HLS server (internal iot-net). Serves /{name}/index.m3u8
+	// and the single-frame snapshot endpoint /live/{name}/snapshot.
 	MediaMTXHTTPURL string
 
-	// MediaMTX RTSP server (internal iot-net). Used by ffmpeg to grab a single
-	// frame for snapshots, e.g. rtsp://mediamtx:8554.
+	// MediaMTX RTSP server (internal iot-net). Legacy/compat only; snapshots
+	// now use the HTTP snapshot endpoint instead of pulling RTSP via ffmpeg.
 	MediaMTXRTSPURL string
 
 	// Default RTSP source used when a stream is created without an explicit URL.
@@ -62,7 +63,7 @@ func Load() (*Config, error) {
 		MinIOUseSSL:       getEnvBool("MINIO_USE_SSL", false),
 		MinIOStreamBucket: getEnv("MINIO_STREAM_BUCKET", "stream"),
 		MLBaseURL:         getEnv("ML_BASE_URL", "http://ml:8080"),
-		MLVisionModelID:   getEnv("ML_VISION_MODEL_ID", "vision-aeroponik"),
+		MLVisionModelID:   getEnv("ML_VISION_MODEL_ID", ""),
 	}
 	return cfg, nil
 }

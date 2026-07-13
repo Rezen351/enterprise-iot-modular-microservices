@@ -4,3 +4,7 @@
 -- before the Stream Service runs its migration. Do NOT add DDL/DML here.
 CREATE DATABASE IF NOT EXISTS stream_db;
 USE stream_db;
+
+-- mysqld-exporter requires PROCESS + SLAVE MONITOR to scrape engine/perf schema.
+GRANT PROCESS, SLAVE MONITOR ON *.* TO 'app'@'%';
+FLUSH PRIVILEGES;

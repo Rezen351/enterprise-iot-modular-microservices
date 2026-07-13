@@ -8,23 +8,64 @@ import {
   BarChart3,
   SlidersHorizontal,
   Video,
-  Camera
+  Camera,
+  Activity,
+  Scan
 } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, isAdmin = false }) {
-  const menuItems = [
+  const mainMenuItems = [
+    { id: 'monitor', label: 'MONITOR', icon: Activity },
     { id: 'analytics', label: 'ANALYTICS', icon: BarChart3 },
     { id: 'control', label: 'CONTROL', icon: SlidersHorizontal },
     { id: 'module', label: 'MODULE', icon: Server },
     { id: 'live', label: 'LIVE', icon: Video },
-    { id: 'snapshot', label: 'SNAPSHOT', icon: Camera },
+    { id: 'snapshot', label: 'GALLERY', icon: Camera },
   ];
 
+  const userMenuItems = [];
   if (isAdmin) {
-    menuItems.push({ id: 'users', label: 'Account', icon: ShieldCheck });
+    userMenuItems.push({ id: 'users', label: 'Account', icon: ShieldCheck });
   }
+  userMenuItems.push({ id: 'profile', label: 'PROFILE', icon: User });
 
-  menuItems.push({ id: 'profile', label: 'PROFILE', icon: User });
+  const renderMenuItem = (item) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => {
+          setActiveTab(item.id);
+          if (setMobileOpen) setMobileOpen(false);
+        }}
+        className={`w-full flex items-center transition-all duration-200 group relative ${collapsed ? 'lg:justify-center lg:h-14 lg:px-0 px-4 h-16 gap-5 text-left' : 'gap-5 px-5 h-16 text-left'
+          } ${isActive
+            ? 'bg-emerald-500 text-black font-black '
+            : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/20 border border-transparent'
+          }`}
+        title={collapsed ? item.label : undefined}
+      >
+        <Icon
+          className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-black' : 'text-emerald-500'
+            } w-6 h-6`}
+        />
+
+        <span className={`text-sm font-black tracking-[0.1em] font-display truncate uppercase ${collapsed ? 'lg:hidden inline' : 'inline'
+          }`}>
+          {item.label}
+        </span>
+
+        {/* Tooltip for collapsed sidebar */}
+        {collapsed && (
+          <div className="absolute left-full ml-5 px-3 py-1.5 bg-black/95 border border-emerald-500/30 text-emerald-400 text-[11px] font-black opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 whitespace-nowrap z-50 lg:block hidden uppercase tracking-widest">
+            {item.label}
+          </div>
+        )}
+      </button>
+    );
+  };
 
   return (
     <>
@@ -42,7 +83,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
           }`}
       >
         {/* Top Branding Section */}
-        <div className="p-6 border-b border-emerald-500/10 flex items-center justify-between h-24">
+        <div className="px-6 border-b border-emerald-500/10 flex items-center justify-between h-14 sm:h-16 lg:h-20">
           {/* Collapsed State Logo (Desktop Only) */}
           <div className={`mx-auto animate-fadeIn ${collapsed ? 'lg:flex hidden' : 'hidden'
             }`}>
@@ -67,44 +108,14 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
         </div>
 
         {/* Navigation Menu */}
-        <nav className={`flex-1 py-8 space-y-4 ${collapsed ? 'lg:px-3 px-5' : 'px-5'}`}>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+        <nav className={`flex-1 py-8 flex flex-col justify-between overflow-y-auto ${collapsed ? 'lg:px-3 px-5' : 'px-5'}`}>
+          <div className="space-y-4">
+            {mainMenuItems.map(renderMenuItem)}
+          </div>
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (setMobileOpen) setMobileOpen(false);
-                }}
-                className={`w-full flex items-center  transition-all duration-200 group relative ${collapsed ? 'lg:justify-center lg:h-14 lg:px-0 px-4 h-16 gap-5 text-left' : 'gap-5 px-5 h-16 text-left'
-                  } ${isActive
-                    ? 'bg-emerald-500 text-black font-black '
-                    : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/20 border border-transparent'
-                  }`}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon
-                  className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-black' : 'text-emerald-500'
-                    } w-6 h-6`}
-                />
-
-                <span className={`text-sm font-black tracking-[0.1em] font-display truncate uppercase ${collapsed ? 'lg:hidden inline' : 'inline'
-                  }`}>
-                  {item.label}
-                </span>
-
-                {/* Tooltip for collapsed sidebar */}
-                {collapsed && (
-                  <div className="absolute left-full ml-5 px-3 py-1.5 bg-black/95 border border-emerald-500/30 text-emerald-400 text-[11px] font-black  opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 whitespace-nowrap z-50  lg:block hidden uppercase tracking-widest">
-                    {item.label}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+          <div className="mt-auto pt-6 border-t border-emerald-500/10 space-y-4">
+            {userMenuItems.map(renderMenuItem)}
+          </div>
         </nav>
 
         {/* Collapse Toggle Footer */}

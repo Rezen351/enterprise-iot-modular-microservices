@@ -5,9 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image/jpeg"
 	"io"
 	"log"
+	"math"
 	"net/http"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -21,23 +25,34 @@ import (
 //   - PATCH  /v3/config/paths/patch/{name}  — update a path (e.g. record on/off)
 //
 // The HTTP/HLS server (separate port) serves single-frame snapshots at
-// /{name}/snapshot, used for snapshot capture.
+// /live/{name}/snapshot, used for snapshot capture.
 type Client struct {
-	baseURL  string // Control API (v3), e.g. http://mediamtx:9997
-	httpURL  string // HTTP/HLS server, e.g. http://mediamtx:8888
-	httpCl   *http.Client
+	baseURL string // Control API (v3), e.g. http://mediamtx:9997
+	httpURL string // HTTP/HLS server, e.g. http://mediamtx:8888 (snapshot source)
+	rtspURL string // RTSP server, e.g. rtsp://mediamtx:8554 (legacy/compat only)
+	httpCl  *http.Client
 }
 
 func New(baseURL string) *Client {
 	return &Client{
 		baseURL: baseURL,
+		rtspURL: "rtsp://mediamtx:8554",
 		httpCl:  &http.Client{Timeout: 15 * time.Second},
 	}
 }
 
-// WithHTTPURL sets the MediaMTX HTTP/HLS server base URL used for snapshots.
+// WithHTTPURL sets the MediaMTX HTTP/HLS server base URL.
 func (c *Client) WithHTTPURL(u string) *Client {
 	c.httpURL = u
+	return c
+}
+
+// WithRTSPURL sets the MediaMTX RTSP base URL (legacy/compat only; snapshots
+// use the HTTP snapshot endpoint).
+func (c *Client) WithRTSPURL(u string) *Client {
+	if u != "" {
+		c.rtspURL = u
+	}
 	return c
 }
 
@@ -69,8 +84,8 @@ func (c *Client) AddPath(ctx context.Context, name, source string) error {
 	body, _ := json.Marshal(addPathConf{
 		Source:                    source,
 		SourceOnDemand:            true,
-		SourceOnDemandStartTimeout: "10s",
-		SourceOnDemandCloseAfter:  "10s",
+		SourceOnDemandStartTimeout: "20s",
+		SourceOnDemandCloseAfter:  "15s",
 		Record:                    false,
 	})
 	url := fmt.Sprintf("%s/v3/config/paths/add/%s", c.baseURL, name)
@@ -181,37 +196,144 @@ func (c *Client) SetRecord(ctx context.Context, name string, enabled bool) error
 	return c.do(ctx, http.MethodPatch, url, body)
 }
 
-// CaptureSnapshot grabs the current frame of a path from MediaMTX's HTTP
-// server (/${name}/snapshot). It follows redirects and returns the JPEG bytes
-// plus the content type. Returns an error if the stream is not currently
-// producing frames (MediaMTX answers with 500 in that case).
+// snapshotAttempts is how many times we retry a snapshot before giving up.
+// Paths are registered with sourceOnDemand, so the first frame may not be ready
+// immediately; reading the RTSP relay triggers source startup, so retrying with
+// backoff waits for the stream to become live.
+//
+// The total worst-case budget (attempts × ffmpegTimeout + backoff) stays well
+// below the stream server's http WriteTimeout (see main.go) so the response is
+// never aborted mid-write (which would surface as a Kong 504).
+const snapshotAttempts = 3
+
+// ffmpegTimeout bounds a single ffmpeg capture attempt.
+const ffmpegTimeout = 8 * time.Second
+
+// minSnapshotBytes rejects tiny/partial frames. A real 1080p JPEG frame is tens
+// of KB; a garbled first-GOP frame is a few KB. Below this we retry, but accept
+// any non-empty frame on the final attempt so a legitimately simple/dark scene
+// is still captured.
+const minSnapshotBytes = 20 * 1024
+
+// CaptureSnapshot grabs a single frame from the MediaMTX RTSP relay
+// (rtsp://mediamtx:8554/{name}) using ffmpeg and encodes it as JPEG.
+//
+// MediaMTX has no built-in HTTP snapshot endpoint, so we pull one frame from the
+// RTSP output — this also triggers the on-demand source. Returns the JPEG bytes
+// plus content type, retrying with backoff to tolerate an idle source, and
+// rejecting uniform gray/placeholder frames (source "ready" but no real video).
 func (c *Client) CaptureSnapshot(ctx context.Context, name string) ([]byte, string, error) {
-	if c.httpURL == "" {
-		return nil, "", fmt.Errorf("mediamtx HTTP URL not configured")
+	if c.rtspURL == "" {
+		return nil, "", fmt.Errorf("mediamtx RTSP URL not configured")
 	}
-	url := fmt.Sprintf("%s/%s/snapshot", c.httpURL, name)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	src := fmt.Sprintf("%s/%s", strings.TrimRight(c.rtspURL, "/"), name)
+
+	backoff := 1 * time.Second
+	var lastErr error
+	for attempt := 0; attempt < snapshotAttempts; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, "", fmt.Errorf("mediamtx snapshot cancelled: %w", ctx.Err())
+			case <-time.After(backoff):
+			}
+			backoff *= 2
+			if backoff > 2*time.Second {
+				backoff = 2 * time.Second
+			}
+		}
+
+		data, err := c.ffmpegFrame(ctx, src)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		// Reject tiny frames — the source is likely not live yet. A real frame
+		// on the final attempt is still accepted.
+		if len(data) < minSnapshotBytes && attempt != snapshotAttempts-1 {
+			lastErr = fmt.Errorf("mediamtx snapshot produced incomplete frame (%d bytes) — stream may not be live", len(data))
+			continue
+		}
+		// Reject uniform gray/placeholder frames (source ready but no real video).
+		if isBlankFrame(data) && attempt != snapshotAttempts-1 {
+			lastErr = fmt.Errorf("mediamtx snapshot is blank/grey (no real video)")
+			continue
+		}
+		return data, "image/jpeg", nil
+	}
+	return nil, "", lastErr
+}
+
+// ffmpegFrame runs ffmpeg to read one frame from an RTSP source and returns the
+// JPEG bytes written to stdout.
+func (c *Client) ffmpegFrame(ctx context.Context, src string) ([]byte, error) {
+	runCtx, cancel := context.WithTimeout(ctx, ffmpegTimeout)
+	defer cancel()
+
+	args := []string{
+		"-hide_banner", "-loglevel", "error",
+		"-rtsp_transport", "tcp",
+		"-i", src,
+		// Output-seek ~1s: decode and discard the initial GOP so we skip the
+		// gray/partial HEVC frames produced before the first clean keyframe.
+		"-ss", "1",
+		"-frames:v", "1",
+		"-q:v", "2",
+		"-an",
+		"-f", "image2",
+		"-c:v", "mjpeg",
+		"pipe:1",
+	}
+	cmd := exec.CommandContext(runCtx, "ffmpeg", args...)
+	var out, stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		msg := bytes.TrimSpace(stderr.Bytes())
+		log.Printf("[mediamtx] ffmpeg snapshot %q failed: %v: %s", src, err, msg)
+		return nil, fmt.Errorf("ffmpeg snapshot failed (stream may not be live): %s", msg)
+	}
+	return out.Bytes(), nil
+}
+
+// isBlankFrame reports whether the JPEG is effectively a uniform gray/color
+// placeholder (e.g. MediaMTX serving a no-signal frame). It samples the image
+// at a coarse grid and checks per-channel variance plus unique-color count.
+func isBlankFrame(data []byte) bool {
+	img, err := jpeg.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, "", err
+		// Cannot decode — treat as blank to avoid storing garbage.
+		return true
 	}
-	resp, err := c.httpCl.Do(req)
-	if err != nil {
-		return nil, "", fmt.Errorf("mediamtx snapshot request: %w", err)
+	b := img.Bounds()
+	const step = 16
+	var sum, sumSq [3]float64
+	var n int
+	seen := map[[3]uint8]struct{}{}
+	for y := b.Min.Y; y < b.Max.Y; y += step {
+		for x := b.Min.X; x < b.Max.X; x += step {
+			r, g, bl, _ := img.At(x, y).RGBA()
+			pr := uint8(r >> 8)
+			pg := uint8(g >> 8)
+			pb := uint8(bl >> 8)
+			sum[0] += float64(pr)
+			sum[1] += float64(pg)
+			sum[2] += float64(pb)
+			sumSq[0] += float64(pr) * float64(pr)
+			sumSq[1] += float64(pg) * float64(pg)
+			sumSq[2] += float64(pb) * float64(pb)
+			n++
+			seen[[3]uint8{pr, pg, pb}] = struct{}{}
+		}
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("mediamtx snapshot failed (status %d) — stream may not be live", resp.StatusCode)
+	if n == 0 {
+		return true
 	}
-	ct := resp.Header.Get("Content-Type")
-	if ct == "" || len(ct) < 5 || ct[:5] != "image" {
-		return nil, "", fmt.Errorf("mediamtx snapshot returned non-image content (%q)", ct)
+	var variance float64
+	for c := 0; c < 3; c++ {
+		mean := sum[c] / float64(n)
+		variance += sumSq[c]/float64(n) - mean*mean
 	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, "", err
-	}
-	if len(data) == 0 {
-		return nil, "", fmt.Errorf("mediamtx snapshot returned empty body")
-	}
-	return data, ct, nil
+	stddev := math.Sqrt(variance / 3)
+	return stddev < 12.0 || len(seen) < 60
 }

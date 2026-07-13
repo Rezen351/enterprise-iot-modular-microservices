@@ -1,0 +1,5 @@
+[client]
+user=app
+password=app1234
+host=mariadb-module
+port=3306

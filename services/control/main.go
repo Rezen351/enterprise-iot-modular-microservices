@@ -87,7 +87,13 @@ func main() {
 	// ─── Scheduler engine (server-side automatic control) ───────────────
 	bgCtx, bgCancel := context.WithCancel(context.Background())
 	defer bgCancel()
-	engine := scheduler.New(svc)
+	schedLoc, err := time.LoadLocation(cfg.Timezone)
+	if err != nil {
+		log.Printf("WARN: invalid TIMEZONE %q (%v) — falling back to UTC for schedule windows", cfg.Timezone, err)
+		schedLoc = time.UTC
+	}
+	log.Printf("scheduler timezone: %s", schedLoc)
+	engine := scheduler.New(svc, schedLoc)
 	go engine.Run(bgCtx)
 
 	// ─── Command timeout sweep ──────────────────────────────────────────

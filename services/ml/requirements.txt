@@ -1,0 +1,32 @@
+# =============================================================================
+# ML / Vision API — runtime dependencies
+# YOLOv8 (ultralytics) + FastAPI + MariaDB + MinIO + NATS
+# CPU build of PyTorch is intentionally used for the TA development target.
+# =============================================================================
+
+# ─── Web framework ───────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ─── Inference (YOLOv8) ─────────────────────────────────────────────────────
+torch==2.5.1
+torchvision==0.20.1
+ultralytics==8.3.40
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+Pillow==11.0.0
+
+# ─── Persistence ────────────────────────────────────────────────────────────
+SQLAlchemy==2.0.36
+PyMySQL==1.1.1
+
+# ─── Object storage ─────────────────────────────────────────────────────────
+minio==7.2.10
+
+# ─── Messaging (NATS JetStream) ─────────────────────────────────────────────
+nats-py==2.9.0
+
+# ─── Observability ──────────────────────────────────────────────────────────
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0

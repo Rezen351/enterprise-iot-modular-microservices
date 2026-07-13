@@ -37,9 +37,11 @@ CREATE INDEX IF NOT EXISTS idx_rollup_metric_time
 -- Unique constraint on (time, node_id, metric) enables idempotent upserts
 -- (ON CONFLICT DO UPDATE) when the same batch is delivered more than once.
 -- TimescaleDB requires the unique constraint to include the partitioning
--- column (time), which this does.
-ALTER TABLE metrics_rollup
-    ADD CONSTRAINT uq_rollup_time_node_metric UNIQUE (time, node_id, metric);
+-- column (time), which this does. Created as a UNIQUE INDEX (IF NOT EXISTS)
+-- so the bootstrap script is safe to re-run (e.g. container restart / upgrade)
+-- without aborting on the already-existing constraint.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_rollup_time_node_metric
+    ON metrics_rollup (time, node_id, metric);
 
 -- ─── Continuous Aggregates ────────────────────────────────────────────
 -- Hourly rollup: sum/count for accurate averages, min/max over window,
@@ -86,7 +88,22 @@ SELECT add_continuous_aggregate_policy('metrics_daily',
     schedule_interval => INTERVAL '1 day',
     if_not_exists     => TRUE);
 
--- ─── Retention ─────────────────────────────────────────────────────────
--- Raw 1-min rollups kept 30 days; continuous aggregates are dropped with
--- the underlying chunks automatically.
-SELECT add_retention_policy('metrics_rollup', INTERVAL '30 days', if_not_exists => TRUE);
+-- ─── Compression (tiered, cheap long-term history) ─────────────────────
+-- Continuous aggregates store the long-term history. Compressing their
+-- materialized chunks keeps 5–10 years of hourly/daily data storage-cheap.
+ALTER MATERIALIZED VIEW metrics_hourly SET (timescaledb.compress);
+ALTER MATERIALIZED VIEW metrics_daily  SET (timescaledb.compress);
+
+SELECT add_compression_policy('metrics_hourly', INTERVAL '7 days', if_not_exists => TRUE);
+SELECT add_compression_policy('metrics_daily',  INTERVAL '7 days', if_not_exists => TRUE);
+
+-- ─── Retention (tiered) ─────────────────────────────────────────────────
+-- Raw 1-min rollups kept 30 days; continuous aggregates carry the long-term
+-- history with *independent* retention windows:
+--   • hourly : 1 year  (365 days)  — medium-range drill-down
+--   • daily  : 10 years (3650 days) — permanent, research-grade history
+-- Raw chunks dropped by the rollup retention policy do NOT remove already
+-- materialized aggregate data, so the long history survives independently.
+SELECT add_retention_policy('metrics_rollup', INTERVAL '30 days',  if_not_exists => TRUE);
+SELECT add_retention_policy('metrics_hourly', INTERVAL '365 days',  if_not_exists => TRUE);
+SELECT add_retention_policy('metrics_daily',  INTERVAL '3650 days', if_not_exists => TRUE);

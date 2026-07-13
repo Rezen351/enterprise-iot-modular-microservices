@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -160,4 +162,82 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Get("/analytics/metrics", h.MetricsHandler)
 	r.Get("/analytics/summary", h.SummaryHandler)
 	r.Get("/analytics/nodes", h.NodesHandler)
+	r.Get("/analytics/export", h.ExportHandler)
+}
+
+// ExportHandler streams a CSV export of aggregated telemetry for research use.
+//   Query: ?node_id&metric&resolution=day&from&to
+//   resolution: raw | hour | day  (default day — best for long-range research)
+// The CSV carries bucket, node_id, metric, count, sum, min, max, avg, last so
+// a researcher can recompute their own aggregates from the exported history.
+func (h *Handler) ExportHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	nodeID := q.Get("node_id")
+	metric := q.Get("metric")
+	if nodeID == "" || metric == "" {
+		badRequest(w, "node_id and metric are required")
+		return
+	}
+	resolution := q.Get("resolution")
+	if resolution == "" {
+		resolution = "day"
+	}
+
+	to := time.Now().UTC()
+	from := to.Add(-24 * time.Hour)
+	if v := q.Get("to"); v != "" {
+		if t, ok := parseTime(v); ok {
+			to = t
+		} else {
+			badRequest(w, "invalid 'to' (use RFC3339 or unix seconds)")
+			return
+		}
+	}
+	if v := q.Get("from"); v != "" {
+		if t, ok := parseTime(v); ok {
+			from = t
+		} else {
+			badRequest(w, "invalid 'from' (use RFC3339 or unix seconds)")
+			return
+		}
+	}
+
+	rows, err := h.svc.ExportSeries(r.Context(), nodeID, metric, from, to, resolution)
+	if err != nil {
+		log.Printf("[handler] export failed: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "export failed"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition",
+		fmt.Sprintf("attachment; filename=telemetry_%s_%s_%s_%s.csv",
+			nodeID, metric, from.Format("20060102"), to.Format("20060102")))
+	w.WriteHeader(http.StatusOK)
+
+	cw := csv.NewWriter(w)
+	if err := cw.Write([]string{"bucket", "node_id", "metric", "count", "sum", "min", "max", "avg", "last"}); err != nil {
+		log.Printf("[handler] csv header write failed: %v", err)
+		return
+	}
+	for _, r := range rows {
+		if err := cw.Write([]string{
+			r.Bucket.UTC().Format(time.RFC3339),
+			r.NodeID,
+			r.Metric,
+			strconv.Itoa(r.Count),
+			strconv.FormatFloat(r.Sum, 'f', -1, 64),
+			strconv.FormatFloat(r.Min, 'f', -1, 64),
+			strconv.FormatFloat(r.Max, 'f', -1, 64),
+			strconv.FormatFloat(r.Avg, 'f', -1, 64),
+			strconv.FormatFloat(r.Last, 'f', -1, 64),
+		}); err != nil {
+			log.Printf("[handler] csv row write failed: %v", err)
+			return
+		}
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		log.Printf("[handler] csv flush failed: %v", err)
+	}
 }

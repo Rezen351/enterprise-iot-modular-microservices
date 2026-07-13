@@ -45,3 +45,8 @@ func (s *Service) QuerySummary(ctx context.Context, nodeID, metric string, from,
 func (s *Service) ListNodes(ctx context.Context) ([]model.NodeMetric, error) {
 	return s.store.ListNodes(ctx)
 }
+
+// ExportSeries proxies to the store for bulk CSV research export.
+func (s *Service) ExportSeries(ctx context.Context, nodeID, metric string, from, to time.Time, resolution string) ([]model.ExportRow, error) {
+	return s.store.ExportSeries(ctx, nodeID, metric, from, to, resolution)
+}

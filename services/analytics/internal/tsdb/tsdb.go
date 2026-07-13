@@ -201,6 +201,59 @@ func (s *Store) QuerySummary(ctx context.Context, nodeID, metric string, from, t
 	}, nil
 }
 
+// resolutionSource maps a requested export resolution to its source table and
+// time column (raw 1-min rollup, hourly, or daily continuous aggregate).
+func resolutionSource(resolution string) (table, timeCol string) {
+	switch strings.ToLower(resolution) {
+	case "raw":
+		return "metrics_rollup", "time"
+	case "hour":
+		return "metrics_hourly", "bucket"
+	default: // "day" and anything unrecognized falls back to daily history
+		return "metrics_daily", "bucket"
+	}
+}
+
+// ExportSeries returns the full aggregated rows (count/sum/min/max/avg/last)
+// for a node/metric over a window at the requested resolution. It is intended
+// for bulk research export (CSV): avg is recomputed as sum/NULLIF(count,0) so
+// it is consistent across the raw hypertable and the continuous aggregates
+// (which do not store avg).
+func (s *Store) ExportSeries(ctx context.Context, nodeID, metric string, from, to time.Time, resolution string) ([]model.ExportRow, error) {
+	table, timeCol := resolutionSource(resolution)
+	q := `SELECT ` + timeCol + `, node_id, metric, count, sum, min, max,
+	             (sum / NULLIF(count, 0)), last
+	      FROM ` + table + `
+	      WHERE node_id = $1 AND metric = $2 AND ` + timeCol + ` BETWEEN $3 AND $4
+	      ORDER BY ` + timeCol
+	rows, err := s.pool.Query(ctx, q, nodeID, metric, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]model.ExportRow, 0)
+	for rows.Next() {
+		var r model.ExportRow
+		var cnt int64
+		var sm, mn, mx, av, ls float64
+		if err := rows.Scan(&r.Bucket, &r.NodeID, &r.Metric, &cnt, &sm, &mn, &mx, &av, &ls); err != nil {
+			return nil, err
+		}
+		r.Count = int(cnt)
+		r.Sum = sm
+		r.Min = mn
+		r.Max = mx
+		r.Avg = av
+		r.Last = ls
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ListNodes returns every node that has telemetry and the metrics available.
 func (s *Store) ListNodes(ctx context.Context) ([]model.NodeMetric, error) {
 	rows, err := s.pool.Query(ctx,

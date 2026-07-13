@@ -341,8 +341,9 @@ Setiap event saga memiliki struktur payload yang konsisten:
 - Subscribe `telemetry.batch` dari NATS **JetStream** (durable consumer `analytics-batch`, replay otomatis saat restart)
 - Upsert agregat ke `metrics_rollup` di `timescaledb-analytics` (Database-per-Service)
 - Continuous aggregate: `metrics_hourly`, `metrics_daily` dengan auto-refresh
-- Data Retention Policy: raw 30d, hourly 365d, daily 730d
-- REST API via Kong: `/analytics/metrics`, `/analytics/summary`, `/analytics/nodes`
+- Data Retention Policy (berjenjang): raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, `metrics_daily` **3650 hari (10 tahun)**
+- Compression policy 7 hari pada `metrics_hourly` & `metrics_daily` (storage murah untuk history panjang)
+- REST API via Kong: `/analytics/metrics`, `/analytics/summary`, `/analytics/nodes`, `/analytics/export` (CSV bulk download riset — `?node_id&metric&resolution=day|hour|raw&from&to`)
 - Dashboard halaman Analytics dengan Line chart (Chart.js), selector node + metric, range 1h/6h/24h/7d/30d
 - Prometheus target UP
 
@@ -484,6 +485,8 @@ Export Service (Go/Python FastAPI)
 | `GET` | `/export/v1/audit` | Audit log (admin only) | CSV, JSON |
 | `GET` | `/export/v1/discover` | List semua tabel & kolom yang tersedia | JSON |
 
+> **Keputusan (Opsi A — 2026-07-13):** Ekspor agregat telemetri untuk riset mahasiswa **tidak** dibuat sebagai service `export/` terpisah, melainkan diimplementasikan langsung di Analytics Service sebagai `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`). Daily aggregate (retensi 10 tahun + kompresi) sudah cukup untuk penelitian jangka panjang (termasuk range 5+ tahun); service `export/` terpisah (alerts/commands/audit/Parquet) tetap tertunda.
+
 #### Parameter Query
 
 | Parameter | Tipe | Default | Deskripsi |
@@ -564,7 +567,7 @@ df = pd.read_parquet("data.parquet")
 | `[ ]` | Koneksi ke TimescaleDB (module + analytics) | Read-only query pool | 0.5 hari |
 | `[ ]` | Koneksi ke MariaDB (module + auth) | Read-only query untuk metadata | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/telemetry` | Query + streaming CSV/JSON/Parquet | 1 hari |
-| `[ ]` | Endpoint `/export/v1/telemetry/aggregate` | Query continuous aggregate | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/telemetry/aggregate` | **Delivered via Analytics Service `GET /analytics/export`** (CSV, resolusi day/hour/raw) — lihat catatan Opsi A | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/nodes` | Metadata node & module | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/alerts` | History alert | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
@@ -710,6 +713,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service (`minio-stream`/`minio-ml`/`minio-ota`) → **1 instance MinIO bersama** (`minio`) dengan multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream` (tidak bergantung ML). Total instance turun 19 → 17. Update tabel Database-per-Service, topologi, diagram alur, dan risiko instance. |
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI mandiri: Model Registry (CRUD + upload weights + activate → `model_id` untuk swap model), inference YOLOv8 (`/ml/detect` upload/base64/from-stream) dengan lazy-load + cache per `model_id`, persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware, Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
 | 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck.** (1) Module Service: hilangkan N+1 query di hot-path telemetry — tag mapping & module id di-cache in-memory (TTL 2m, invalidasi saat pair/unpair/edit tag) dan `TouchNode` di-batch (1× UPDATE per node per 30 detik via `StartTouchFlusher`) sehingga tiap reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB. (2) `telemetry.batch` di-upgrade dari Core NATS ke **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` di Analytics → window agregat 1-menit tidak lagi hilang saat Analytics restart (replay otomatis, ack eksplisit). Kedua service lolos `go build` + `go vet`. |
+| 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, `metrics_daily` **3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Perbaikan idempotensi bootstrap: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, dan ekspor CSV range 4 tahun). |
 
 ---
 

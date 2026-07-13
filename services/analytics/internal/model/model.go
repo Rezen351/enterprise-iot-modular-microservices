@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // BatchRow is a single per-(node, metric) aggregate produced by the Module
 // Service every batch window (1 minute) and published on telemetry.batch.
 type BatchRow struct {
@@ -61,4 +63,19 @@ type NodeMetric struct {
 // NodesResponse lists nodes with telemetry and their available metrics.
 type NodesResponse struct {
 	Nodes []NodeMetric `json:"nodes"`
+}
+
+// ExportRow is one aggregated sample returned by the CSV export endpoint.
+// It carries the full statistical payload (not just `last`) so researchers
+// can compute their own aggregates from the exported history.
+type ExportRow struct {
+	Bucket time.Time `json:"bucket"`
+	NodeID string    `json:"node_id"`
+	Metric string    `json:"metric"`
+	Count  int       `json:"count"`
+	Sum    float64   `json:"sum"`
+	Min    float64   `json:"min"`
+	Max    float64   `json:"max"`
+	Avg    float64   `json:"avg"`
+	Last   float64   `json:"last"`
 }

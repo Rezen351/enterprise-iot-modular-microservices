@@ -69,6 +69,33 @@ func main() {
 		log.Println("NATS connected")
 	}
 
+	// ─── NATS JetStream (durable telemetry.batch) ────────────────────
+	// The batch publisher emits one aggregate per minute on telemetry.batch.
+	// Publishing via JetStream (with a durable consumer in Analytics) means a
+	// restart/blip of Analytics no longer drops the window permanently.
+	var jsPub service.JetStreamPublisher
+	if natsConn != nil {
+		if js, jerr := natsConn.JetStream(); jerr == nil {
+			_, serr := js.AddStream(&nats.StreamConfig{
+				Name:     "TELEMETRY_BATCH",
+				Subjects: []string{"telemetry.batch"},
+				Retention: nats.LimitsPolicy,
+				Storage:  nats.FileStorage,
+				MaxAge:   24 * time.Hour,
+				MaxMsgs:  1_000_000,
+				Replicas: 1,
+			})
+			if serr != nil {
+				log.Printf("WARN: NATS JetStream stream ensure failed: %v — batch falls back to core NATS", serr)
+			} else {
+				jsPub = &jsBatchPublisher{js: js}
+				log.Println("NATS JetStream stream TELEMETRY_BATCH ready")
+			}
+		} else {
+			log.Printf("WARN: NATS JetStream init failed: %v — batch falls back to core NATS", jerr)
+		}
+	}
+
 	// ─── Wire dependencies ─────────────────────────────────────────────
 	repo := repository.New(db)
 	var natsPub service.NATSPublisher
@@ -85,7 +112,7 @@ func main() {
 		log.Println("timescaledb connected")
 	}
 
-	svc := service.New(repo, statusCache, natsPub, tsStore)
+	svc := service.New(repo, statusCache, natsPub, jsPub, tsStore)
 	h := handler.New(svc)
 
 	// ─── MQTT subscriber (device onboarding + publish live to NATS) ───
@@ -106,6 +133,9 @@ func main() {
 	bgCtx, bgCancel := context.WithCancel(context.Background())
 	defer bgCancel()
 	go svc.StartBatchPublisher(bgCtx, time.Minute)
+	// Batched TouchNode flusher: collapses per-message last_seen writes into one
+	// UPDATE per node per interval (default 30s).
+	go svc.StartTouchFlusher(bgCtx, 30*time.Second)
 
 	// ─── Router ────────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -188,4 +218,15 @@ func openDB(dsn string) (*sql.DB, error) {
 		time.Sleep(3 * time.Second)
 	}
 	return nil, fmt.Errorf("database unreachable after 10 attempts: %w", err)
+}
+
+// jsBatchPublisher adapts a NATS JetStream context to the service's
+// JetStreamPublisher interface so telemetry.batch is published durably.
+type jsBatchPublisher struct {
+	js nats.JetStreamContext
+}
+
+func (p *jsBatchPublisher) Publish(subject string, data []byte) error {
+	_, err := p.js.Publish(subject, data)
+	return err
 }

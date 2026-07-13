@@ -133,9 +133,22 @@ func (s *ModuleService) flushAndPublish(interval time.Duration) {
 		log.Printf("[svc] telemetry.batch marshal failed: %v", err)
 		return
 	}
-	if err := s.nats.Publish("telemetry.batch", payload); err != nil {
-		log.Printf("[nats] publish telemetry.batch failed: %v", err)
+	// Prefer JetStream so the batch survives an Analytics outage/restart (durable
+	// replay). Fall back to core NATS (best-effort, no replay) only if JetStream
+	// is unavailable.
+	if s.js != nil {
+		if err := s.js.Publish("telemetry.batch", payload); err != nil {
+			log.Printf("[nats] publish telemetry.batch (js) failed: %v", err)
+			return
+		}
+		log.Printf("[nats] published telemetry.batch (%d aggregates)", len(rows))
 		return
 	}
-	log.Printf("[nats] published telemetry.batch (%d aggregates)", len(rows))
+	if s.nats != nil {
+		if err := s.nats.Publish("telemetry.batch", payload); err != nil {
+			log.Printf("[nats] publish telemetry.batch failed: %v", err)
+			return
+		}
+		log.Printf("[nats] published telemetry.batch (%d aggregates)", len(rows))
+	}
 }

@@ -1,6 +1,6 @@
 # 🗺️ Roadmap — IOT-Modular-Microservice
 
-> **Versi:** 2.6.0  
+> **Versi:** 2.7.0  
 > **Terakhir diperbarui:** 2026-07-13  
 > **Status legend:** 🔴 P1 (Kritikal) · 🟡 P2 (Penting) · 🟢 P3 (Normal) · ⬜ P4 (Opsional)  
 > **Progress:** `[ ]` Belum · `[/]` In Progress · `[x]` Selesai
@@ -159,7 +159,7 @@
 | `[x]` | Simpan ke TimescaleDB | Insert ke hypertable `telemetry` (node_id, module_id, metric, value, raw) |
 | `[x]` | Cache ke Redis | Nilai terbaru per node (`node:latest:{id}`, TTL) |
 | `[x]` | Publish NATS `telemetry.ingest` | Per reading (ke WS-Gateway/alert/analytics) |
-| `[x]` | Publish NATS `telemetry.batch` | Setiap 1 menit (agregat count/sum/min/max/avg/last) — **⚠️ via Core NATS, bukan JetStream** |
+| `[x]` | Publish NATS `telemetry.batch` | Setiap 1 menit (agregat count/sum/min/max/avg/last) — **✅ via JetStream** (stream `TELEMETRY_BATCH`, replay otomatis) |
 
 ### Database Module Service
 
@@ -177,7 +177,7 @@
 
 | Status | Item | Detail |
 |---|---|---|
-| `[x]` | Subscribe `telemetry.batch` dari NATS | Core NATS, mirror pola ws-gateway |
+| `[x]` | Subscribe `telemetry.batch` dari NATS | **JetStream** durable consumer `analytics-batch` (replay otomatis saat restart, ack eksplisit) |
 | `[x]` | Upsert agregat ke `metrics_rollup` | Di `timescaledb-analytics` (Database-per-Service) — ON CONFLICT (time, node_id, metric) |
 | `[x]` | Continuous aggregate `metrics_hourly` | `time_bucket('1h', time)` — refresh policy 1 jam |
 | `[x]` | Continuous aggregate `metrics_daily` | `time_bucket('1d', time)` — refresh policy 1 hari |
@@ -816,7 +816,7 @@ df = pd.read_parquet("data.parquet")
 
 | Risiko | Dampak | Probabilitas | Mitigasi |
 |--------|--------|-------------|----------|
-| Core NATS untuk `telemetry.batch` | Kehilangan data saat restart | Tinggi | Upgrade ke JetStream stream |
+| Core NATS untuk `telemetry.batch` | Kehilangan data saat restart | Tinggi | ✅ Selesai (2026-07-13): upgrade ke JetStream — stream `TELEMETRY_BATCH` (file storage, retention 24h) + durable consumer `analytics-batch`, replay otomatis |
 | WS tanpa autentikasi | Data real-time bocor | Rendah | ✅ JWT handshake sudah diimplementasikan pada WS-Gateway |
 | 17 instance database | Biaya & kompleksitas operasional | Sedang | Evaluasi apakah semua instance diperlukan; ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
 | Tidak ada backup database | Data hilang permanen jika container crash | Sedang | Cron job dump SQL + backup ke MinIO/cloud storage |
@@ -835,7 +835,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.3.0 | **Fase 5 (Stream Service) SELESAI + Monitor Service SELESAI + WS-Gateway SELESAI.** Stream: MediaMTX (RTSP→HLS/WebRTC), MinIO snapshot/recording, CRUD stream + snapshot/recording via Kong, dashboard Live View & Snapshot. Monitor: CLI `docker stats` untuk halaman Version/Security. WS-Gateway: realtime telemetry (`NodeDetailPanel`) + system-status notifications terhubung ke dashboard. Dashboard realtime/control/live/snapshot ditandai selesai; ringkasan service, timeline, dan tabel halaman diperbarui. |
 | 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service → **1 instance MinIO bersama** (`minio`) multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream`. Fase 6 ML/Vision diubah ke bucket `ml-vision` (bukan `minio-ml`). Total instance turun 18 → 17. Tabel ringkasan service & risiko disesuaikan. |
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI terpisah: Model Registry (CRUD + upload weights + activate → `model_id` stabil untuk swap model tanpa restart), inference YOLOv8 (lazy load + cache per `model_id`) via `POST /ml/detect` (upload/batch), `/detect/base64`, `/detect/from-stream`, history `GET /ml/detections`. Persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware (HS256, secret sama dengan Auth), Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
-| 2026-07-13 | 2.6.0 | **Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) SELESAI.** `POST /streams/{id}/snapshot?detect=true` capture frame → panggil `POST /ml/detect` (model `vision-aeroponik`) → simpan `kind=detection` (`vision-aeroponik-model-test.pt` auto-seed sebagai default model di startup ML). Stream Service tanda-tangan service JWT sendiri (shared `JWT_SECRET`) untuk panggil ML. Dashboard Gallery: tab DETECTION + toolbar AI Capture (pilih stream + Capture & Detect) dengan overlay bounding box. Hardening: `WriteTimeout` Stream 30s→120s & route Kong `stream-service` 10s→120s (fix 504 upstream timeout). |
+| 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck (2 item).** (1) Module Service: cache in-memory (TTL 2m) untuk tag mapping + module id per node dan `TouchNode` di-batch via `StartTouchFlusher` (1× UPDATE/node/30 detik) → tiap telemetry reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB (menghilangkan N+1 di hot-path). (2) `telemetry.batch` di-upgrade Core NATS → **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` → window agregat 1-menit replay otomatis saat Analytics restart (ack eksplisit, redeliver on failure). Kedua service lolos `go build` + `go vet`. |
 
 ---
 

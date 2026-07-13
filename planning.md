@@ -1,8 +1,8 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 2.6.0  
+> **Versi Dokumen:** 2.7.0  
 > **Tanggal:** 2026-07-13  
-> **Status:** 🟢 Fase 1-5 + Monitor Service Selesai — Fase 4 (Control) & Fase 5 (Stream) Selesai  
+> **Status:** 🟢 Fase 1-5 + Monitor Service Selesai — Fase 4 (Control) & Fase 5 (Stream) Selesai + Audit Fix #1/#2 (Module hot-path cache & telemetry.batch JetStream)  
 > **Penulis:** Tim TA
 
 ---
@@ -200,8 +200,8 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 
 | Subject | Tipe | Keterangan |
 |---|---|---|
-| `telemetry.ingest` | Core NATS | Pesan tidak di-buffer; subscriber offline akan kehilangan pesan |
-| `telemetry.batch` | Core NATS | ⚠️ Risiko: Analytics restart → batch hilang. Disarankan upgrade ke JetStream |
+| `telemetry.ingest` | Core NATS | Pesan tidak di-buffer; subscriber offline akan kehilangan pesan (cukup untuk live WS fan-out) |
+| `telemetry.batch` | **JetStream** (stream `TELEMETRY_BATCH`, durable consumer `analytics-batch`) | ✅ Persisten + replay otomatis — Analytics restart tidak lagi menghilangkan window agregat 1-menit |
 | `audit.log` | Core NATS | Pesan audit hilang jika Audit Service belum berjalan |
 | `saga.*` | JetStream (SAGA stream) | Dijamin persistence dengan retry & DLQ |
 
@@ -338,7 +338,7 @@ Setiap event saga memiliki struktur payload yang konsisten:
 - Publish NATS `telemetry.batch` setiap 1 menit (agregat count/sum/min/max/avg/last)
 
 ### ✅ Fase 3 — Analytics Service [P2 — SELESAI]
-- Subscribe `telemetry.batch` dari NATS (core NATS, mirror pola ws-gateway)
+- Subscribe `telemetry.batch` dari NATS **JetStream** (durable consumer `analytics-batch`, replay otomatis saat restart)
 - Upsert agregat ke `metrics_rollup` di `timescaledb-analytics` (Database-per-Service)
 - Continuous aggregate: `metrics_hourly`, `metrics_daily` dengan auto-refresh
 - Data Retention Policy: raw 30d, hourly 365d, daily 730d
@@ -693,7 +693,7 @@ df = pd.read_parquet("data.parquet")
 
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
-| Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | Upgrade ke JetStream stream |
+| Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | ✅ Selesai (2026-07-13): upgrade ke JetStream — stream `TELEMETRY_BATCH` (file storage, retention 24h) + durable consumer `analytics-batch` di Analytics, replay otomatis saat restart |
 | WS tanpa autentikasi | Data real-time bisa diakses siapa saja | ✅ Sudah: JWT handshake di WS-Gateway |
 | 17 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal — ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
 | Tidak ada backup strategy | Data hilang jika container crash | Tambah volume backup atau cron job dump SQL |
@@ -709,7 +709,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). `mariadb-control` & `services/control` ditandai Running/✅ |
 | 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service (`minio-stream`/`minio-ml`/`minio-ota`) → **1 instance MinIO bersama** (`minio`) dengan multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream` (tidak bergantung ML). Total instance turun 19 → 17. Update tabel Database-per-Service, topologi, diagram alur, dan risiko instance. |
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI mandiri: Model Registry (CRUD + upload weights + activate → `model_id` untuk swap model), inference YOLOv8 (`/ml/detect` upload/base64/from-stream) dengan lazy-load + cache per `model_id`, persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware, Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
-| 2026-07-13 | 2.6.0 | **Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) SELESAI.** Capture snapshot Live Stream (`POST /streams/{id}/snapshot?detect=true`) di-stream-kan ke ML Vision (`vision-aeroponik`); hasil deteksi disimpan sebagai `kind=detection` & ditampilkan di Gallery tab **DETECTION** dengan overlay bounding box. ML Client Stream Service menandatangani service JWT sendiri (shared `JWT_SECRET`). Auto-seed model `vision-aeroponik` di startup ML. Hardening timeout: `WriteTimeout` Stream 30s→120s & route Kong `stream-service` 10s→120s (fix 504 upstream timeout). |
+| 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck.** (1) Module Service: hilangkan N+1 query di hot-path telemetry — tag mapping & module id di-cache in-memory (TTL 2m, invalidasi saat pair/unpair/edit tag) dan `TouchNode` di-batch (1× UPDATE per node per 30 detik via `StartTouchFlusher`) sehingga tiap reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB. (2) `telemetry.batch` di-upgrade dari Core NATS ke **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` di Analytics → window agregat 1-menit tidak lagi hilang saat Analytics restart (replay otomatis, ack eksplisit). Kedua service lolos `go build` + `go vet`. |
 
 ---
 

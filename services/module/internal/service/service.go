@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/almuzky/iot/services/module/internal/cache"
@@ -26,6 +27,12 @@ type NATSPublisher interface {
 	Publish(subject string, data []byte) error
 }
 
+// JetStreamPublisher publishes to a JetStream stream with durability. Optional;
+// when nil the batch publisher falls back to core NATS (best-effort, no replay).
+type JetStreamPublisher interface {
+	Publish(subject string, data []byte) error
+}
+
 // statusTTL: nodes not seen within this window are considered stale in Redis.
 const statusTTL = 90 * time.Second
 
@@ -36,12 +43,83 @@ type ModuleService struct {
 	repo  *repository.Repository
 	cache *cache.StatusCache
 	nats  NATSPublisher
+	js    JetStreamPublisher
 	ts    *tsdb.Store
 	batch *telemetryBatcher
+
+	// nodeMetaCache caches the per-node tag mapping + module id so the hot-path
+	// telemetry ingest does not hit MariaDB for every reading. Entries carry a
+	// short TTL and are invalidated when the mapping changes (pair/unpair/tags).
+	metaMu    sync.Mutex
+	metaCache map[string]*nodeMeta
+
+	// touchPending batches TouchNode (last_seen refresh) DB writes: a busy node
+	// no longer triggers a MariaDB UPDATE on every MQTT message. Flushed by
+	// StartTouchFlusher.
+	touchMu      sync.Mutex
+	touchPending map[string]struct{}
 }
 
-func New(repo *repository.Repository, c *cache.StatusCache, nats NATSPublisher, ts *tsdb.Store) *ModuleService {
-	return &ModuleService{repo: repo, cache: c, nats: nats, ts: ts, batch: newTelemetryBatcher()}
+func New(repo *repository.Repository, c *cache.StatusCache, nats NATSPublisher, js JetStreamPublisher, ts *tsdb.Store) *ModuleService {
+	return &ModuleService{
+		repo:         repo,
+		cache:        c,
+		nats:         nats,
+		js:           js,
+		ts:           ts,
+		batch:        newTelemetryBatcher(),
+		metaCache:    make(map[string]*nodeMeta),
+		touchPending: make(map[string]struct{}),
+	}
+}
+
+// nodeMeta is a cached tag-mapping + module id for a single node.
+type nodeMeta struct {
+	tags     []model.NodeTag
+	moduleID string
+	expires  time.Time
+}
+
+// nodeMetaTTL bounds how stale the cached tag mapping may be. Mapping changes
+// are rare (admin edits / pairing), so a short TTL plus explicit invalidation
+// keeps the cache both fast and correct.
+const nodeMetaTTL = 2 * time.Minute
+
+// getNodeMeta returns the sensor tag mapping and module id for a node, using
+// the in-memory cache and falling back to MariaDB on a miss. This converts the
+// previous per-reading N+1 (ListNodeTags + GetModuleIDByNode) into ~0 DB reads
+// between cache refreshes.
+func (s *ModuleService) getNodeMeta(ctx context.Context, nodeID string) ([]model.NodeTag, string, error) {
+	s.metaMu.Lock()
+	if e, ok := s.metaCache[nodeID]; ok && time.Now().Before(e.expires) {
+		tags, moduleID := e.tags, e.moduleID
+		s.metaMu.Unlock()
+		return tags, moduleID, nil
+	}
+	s.metaMu.Unlock()
+
+	tags, err := s.repo.ListNodeTags(ctx, nodeID)
+	if err != nil {
+		return nil, "", err
+	}
+	moduleIDStr := ""
+	if mid, err2 := s.repo.GetModuleIDByNode(ctx, nodeID); err2 == nil && mid != nil {
+		moduleIDStr = *mid
+	}
+	s.metaMu.Lock()
+	s.metaCache[nodeID] = &nodeMeta{tags: tags, moduleID: moduleIDStr, expires: time.Now().Add(nodeMetaTTL)}
+	s.metaMu.Unlock()
+	return tags, moduleIDStr, nil
+}
+
+// invalidateMeta drops any cached mapping for a node (e.g. after tag/pair edits).
+func (s *ModuleService) invalidateMeta(nodeID string) {
+	if nodeID == "" {
+		return
+	}
+	s.metaMu.Lock()
+	delete(s.metaCache, nodeID)
+	s.metaMu.Unlock()
 }
 
 // ─── Modules ─────────────────────────────────────────────────────────────────
@@ -131,6 +209,7 @@ func (s *ModuleService) Pair(ctx context.Context, nodeID string, req model.PairR
 	if err != nil {
 		return nil, err
 	}
+	s.invalidateMeta(nodeID)
 	s.publishAudit("node.paired", map[string]string{"node_id": nodeID, "module_id": req.ModuleID})
 	return n, nil
 }
@@ -143,6 +222,7 @@ func (s *ModuleService) Unpair(ctx context.Context, nodeID string) (*model.Node,
 	if err != nil {
 		return nil, err
 	}
+	s.invalidateMeta(nodeID)
 	s.publishAudit("node.unpaired", map[string]string{"node_id": nodeID})
 	return n, nil
 }
@@ -153,6 +233,7 @@ func (s *ModuleService) DeleteNode(ctx context.Context, nodeID string) error {
 		return ErrNodeNotFound
 	}
 	if err == nil {
+		s.invalidateMeta(nodeID)
 		s.publishAudit("node.deleted", map[string]string{"node_id": nodeID})
 	}
 	return err
@@ -215,15 +296,58 @@ func (s *ModuleService) HandleStatus(ctx context.Context, nodeID string, msg mod
 }
 
 // TouchNode records that a node is alive because an MQTT payload arrived.
-// Refreshes last_seen_at and marks it online — drives the dashboard "last seen".
+// Instead of writing to MariaDB immediately, it marks the node as "pending a
+// touch"; StartTouchFlusher persists these in batches, so a node sending
+// telemetry every few seconds only triggers one UPDATE every flush interval.
 func (s *ModuleService) TouchNode(nodeID string) {
 	if nodeID == "" {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	s.touchMu.Lock()
+	s.touchPending[nodeID] = struct{}{}
+	s.touchMu.Unlock()
+}
+
+// StartTouchFlusher periodically persists pending TouchNode writes to MariaDB.
+// On context cancellation it performs one final flush so no "last seen" update
+// is lost on shutdown.
+func (s *ModuleService) StartTouchFlusher(ctx context.Context, interval time.Duration) {
+	if interval <= 0 {
+		interval = 30 * time.Second
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			s.flushTouch()
+			return
+		case <-ticker.C:
+			s.flushTouch()
+		}
+	}
+}
+
+// flushTouch writes a single UPDATE for each node touched since the last flush.
+func (s *ModuleService) flushTouch() {
+	s.touchMu.Lock()
+	if len(s.touchPending) == 0 {
+		s.touchMu.Unlock()
+		return
+	}
+	nodes := make([]string, 0, len(s.touchPending))
+	for id := range s.touchPending {
+		nodes = append(nodes, id)
+	}
+	s.touchPending = make(map[string]struct{})
+	s.touchMu.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := s.repo.TouchNode(ctx, nodeID); err != nil {
-		log.Printf("[svc] touch node %s failed: %v", nodeID, err)
+	for _, id := range nodes {
+		if err := s.repo.TouchNode(ctx, id); err != nil {
+			log.Printf("[svc] batched touch node %s failed: %v", id, err)
+		}
 	}
 }
 
@@ -259,11 +383,13 @@ func (s *ModuleService) SaveNodeTags(ctx context.Context, nodeID string, reqs []
 			return err
 		}
 	}
+	s.invalidateMeta(nodeID)
 	return nil
 }
 
 // DeleteNodeTag removes a single tag-mapping row.
 func (s *ModuleService) DeleteNodeTag(ctx context.Context, nodeID, id string) error {
+	s.invalidateMeta(nodeID)
 	return s.repo.DeleteNodeTag(ctx, nodeID, id)
 }
 
@@ -325,15 +451,14 @@ func (s *ModuleService) IngestTelemetry(ctx context.Context, nodeID string, payl
 		return
 	}
 
-	tags, err := s.repo.ListNodeTags(ctx, nodeID)
+	tags, moduleIDStr, err := s.getNodeMeta(ctx, nodeID)
 	if err != nil {
 		log.Printf("[svc] list node tags failed node=%s: %v", nodeID, err)
 		return
 	}
-	moduleID, _ := s.repo.GetModuleIDByNode(ctx, nodeID)
-	moduleIDStr := ""
-	if moduleID != nil {
-		moduleIDStr = *moduleID
+	var moduleIDPtr *string
+	if moduleIDStr != "" {
+		moduleIDPtr = &moduleIDStr
 	}
 
 	for _, t := range tags {
@@ -350,7 +475,7 @@ func (s *ModuleService) IngestTelemetry(ctx context.Context, nodeID string, payl
 		if !ok {
 			continue // non-numeric (e.g. string) is kept only in raw
 		}
-		if err := s.ts.WriteReading(ctx, nodeID, moduleID, t.TagName, f, payload); err == nil {
+		if err := s.ts.WriteReading(ctx, nodeID, moduleIDPtr, t.TagName, f, payload); err == nil {
 			s.publishTelemetry(nodeID, t.TagName, f)
 			s.batch.add(nodeID, moduleIDStr, t.TagName, f, time.Now().UnixMilli())
 		}

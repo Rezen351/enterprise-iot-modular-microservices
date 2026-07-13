@@ -219,7 +219,7 @@ function NodeDetailPanel({ node, onClose }) {
                 {connState === 'error' || connState === 'closed' ? (
                   <><AlertTriangle className="w-8 h-8 text-red-400/70" /><p className="text-xs font-bold uppercase tracking-wider">{wsError || 'Connection closed'}</p></>
                 ) : (
-                  <><div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[11px] font-bold uppercase tracking-wider animate-pulse">Menunggu payload...</p></>
+                  <><div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[11px] font-bold uppercase tracking-wider animate-pulse">Waiting for payload...</p></>
                 )}
               </div>
             )}

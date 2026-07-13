@@ -186,8 +186,8 @@ function TargetTile({ tag, allTargets, onCommand, nodeMode }) {
       {!allowManual && (
         <p className="text-[10px] text-slate-500">
           {nodeMode === 'EMERGENCY'
-            ? 'Emergency stop aktif — semua output dipaksa OFF. Klik Resume untuk mengaktifkan kembali.'
-            : 'Mode Otomatis — jadwal mengendalikan output. Switch ke Manual untuk override langsung.'}
+            ? 'Emergency stop active — all outputs forced OFF. Click Resume to re-enable.'
+            : 'Automatic Mode — schedule controls outputs. Switch to Manual for direct override.'}
         </p>
       )}
     </div>
@@ -197,7 +197,7 @@ function TargetTile({ tag, allTargets, onCommand, nodeMode }) {
 // ─── Node control-mode arbitration card ────────────────────────────────────
 const MODE_BADGE = {
   MANUAL:    { label: 'MANUAL',                cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30', Icon: ShieldAlert },
-  AUTO:      { label: 'OTOMATIS · BERJALAN NORMAL', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', Icon: PlayCircle },
+  AUTO:      { label: 'AUTOMATIC · RUNNING NORMALLY', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', Icon: PlayCircle },
   EMERGENCY: { label: 'EMERGENCY STOP',        cls: 'bg-red-500/15 text-red-400 border-red-500/30', Icon: AlertTriangle },
 };
 
@@ -240,7 +240,7 @@ function ModeControl({ nodeMode, busy, hasTargets, onSetMode, onEmergencyStop, o
                 : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-black'
             }`}
           >
-            <PlayCircle className="w-4 h-4" /> Otomatis
+            <PlayCircle className="w-4 h-4" /> Automatic
           </button>
         </div>
 
@@ -380,14 +380,14 @@ function ScheduleForm({ nodeId, targets, onCreate, onUpdate, busy, editSched, on
       {isEdit && (
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-400">
-            <Pencil className="w-3.5 h-3.5" /> Edit Jadwal
+            <Pencil className="w-3.5 h-3.5" /> Edit Schedule
           </div>
           <button
             onClick={onCancelEdit}
             disabled={busy}
             className="h-7 px-2 flex items-center gap-1 bg-slate-500/10 border border-slate-500/20 text-slate-300 hover:bg-slate-500/20 text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
           >
-            <X className="w-3.5 h-3.5" /> Batal
+            <X className="w-3.5 h-3.5" /> Cancel
           </button>
         </div>
       )}
@@ -550,7 +550,7 @@ function ControlPanel() {
     setBusy(true);
     try {
       await controlApi.updateSchedule(editId, body);
-      flash('Schedule diperbarui');
+      flash('Schedule updated');
       setEditId(null);
       await loadAll();
     } catch (err) {
@@ -583,7 +583,7 @@ function ControlPanel() {
     setBusy(true);
     try {
       await controlApi.setNodeMode(nodeId, mode);
-      flash(mode === 'MANUAL' ? 'Mode Manual aktif' : 'Mode Otomatis aktif');
+      flash(mode === 'MANUAL' ? 'Manual mode active' : 'Automatic mode active');
       await loadAll();
     } catch (err) {
       flash(err.message || 'Set mode failed', false);
@@ -603,7 +603,7 @@ function ControlPanel() {
           node_id: t.node_id, source_key: t.source_key, tag_name: t.tag_name, label: displayOf(t), output_type: outputTypeOf(t),
         })),
       });
-      flash('Emergency stop aktif');
+      flash('Emergency stop active');
       await loadAll();
     } catch (err) {
       flash(err.message || 'Emergency stop failed', false);
@@ -617,7 +617,7 @@ function ControlPanel() {
     try {
       const res = await controlApi.resumeNode(nodeId);
       const restored = res?.mode || 'AUTO';
-      flash(restored === 'MANUAL' ? 'Kontrol dilanjutkan · Manual' : 'Kontrol dilanjutkan · Otomatis');
+      flash(restored === 'MANUAL' ? 'Control resumed · Manual' : 'Control resumed · Automatic');
       await loadAll();
     } catch (err) {
       flash(err.message || 'Resume failed', false);

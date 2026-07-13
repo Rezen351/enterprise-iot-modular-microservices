@@ -100,7 +100,7 @@ export async function request(path, { method = 'GET', body, auth = false, header
   } catch (netErr) {
     // Network failure (server down, 504 dari gateway, CORS, dll). Ini BUKAN
     // sesi invalid → jangan logout. Beri tahu UI lewat onServerError.
-    const err = new Error('Tidak dapat menghubungi server');
+    const err = new Error('Unable to reach server');
     err.status = 0;
     err.type = 'network';
     err.cause = netErr;

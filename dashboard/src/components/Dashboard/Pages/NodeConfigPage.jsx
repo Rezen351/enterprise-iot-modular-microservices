@@ -309,7 +309,7 @@ function NodeConfigPage({ node, onBack }) {
       setDetectingOutputs(false);
       const keys = Object.keys(found);
       if (keys.length === 0) {
-        setTagError('Tidak ada output terdeteksi dalam 5 detik. Pastikan perangkat mengirim telemetry.outputs.*');
+        setTagError('No output detected within 5 seconds. Ensure the device is sending telemetry.outputs.*');
         return;
       }
       for (const k of keys) {
@@ -378,7 +378,7 @@ function NodeConfigPage({ node, onBack }) {
                 {connState === 'error' || connState === 'closed' ? (
                   <><AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400/70" /><p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{wsError || 'Connection closed'}</p></>
                 ) : (
-                  <><div className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider animate-pulse">Menunggu payload...</p></>
+                  <><div className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider animate-pulse">Waiting for payload...</p></>
                 )}
               </div>
             )}
@@ -485,10 +485,10 @@ function NodeConfigPage({ node, onBack }) {
         <div>
           <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
             <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Actuator Mapping
-            <span className="text-[9px] font-normal text-slate-500 normal-case tracking-normal">— output kontrol → tampil di halaman Control</span>
+            <span className="text-[9px] font-normal text-slate-500 normal-case tracking-normal">— control output → shown on the Control page</span>
           </h4>
           <p className="text-[10px] sm:text-xs text-slate-400 mb-2 sm:mb-3">
-            Firmware memublikasikan output sebagai <b className="text-emerald-300 font-mono">telemetry.outputs.&lt;nama&gt;</b> (mis. <b className="text-emerald-300 font-mono">telemetry.outputs.load1</b>). Petakan ke tag kontrol — key yang disimpan adalah nama output murni (<b className="text-emerald-300 font-mono">load1</b>) yang dikirim ke firmware. Output ter-map muncul sebagai target di menu <b>Control</b>. Pakai <b>Detect Outputs</b> untuk memindai otomatis dari live MQTT.
+            Firmware publishes outputs as <b className="text-emerald-300 font-mono">telemetry.outputs.&lt;name&gt;</b> (e.g. <b className="text-emerald-300 font-mono">telemetry.outputs.load1</b>). Map them to a control tag — the stored key is the raw output name (<b className="text-emerald-300 font-mono">load1</b>) sent back to the firmware. Mapped outputs appear as targets in the <b>Control</b> menu. Use <b>Detect Outputs</b> to auto-scan from live MQTT.
           </p>
           <div className="p-2.5 sm:p-3 border border-emerald-500/15 bg-emerald-500/5 space-y-2 sm:space-y-3 mb-2 sm:mb-3">
             <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-widest">

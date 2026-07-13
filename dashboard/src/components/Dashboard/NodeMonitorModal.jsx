@@ -149,7 +149,7 @@ function NodeMonitorModal({ node, onClose }) {
               ) : (
                 <>
                   <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-[11px] font-bold uppercase tracking-wider animate-pulse">Menunggu payload dari perangkat...</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider animate-pulse">Waiting for payload from device...</p>
                 </>
               )}
             </div>

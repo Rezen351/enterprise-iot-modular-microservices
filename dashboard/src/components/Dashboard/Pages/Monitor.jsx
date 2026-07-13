@@ -585,7 +585,7 @@ function Monitor() {
             <div className="flex flex-col gap-2 border-t border-white/5 pt-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aktuator</label>
               {actuators.length === 0 ? (
-                <div className="text-[10px] text-slate-500">Tidak ada aktuator ditandai.</div>
+                  <div className="text-[10px] text-slate-500">No actuator tagged.</div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {actuators.map((a) => {
@@ -645,7 +645,7 @@ function Monitor() {
         ) : (
           <div className="py-8 flex flex-col items-center justify-center text-slate-600 gap-2">
             <CalendarClock className="w-6 h-6 text-slate-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Tidak ada jadwal aktif</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">No active schedule</span>
           </div>
         )}
       </div>

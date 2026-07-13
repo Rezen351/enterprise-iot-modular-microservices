@@ -205,6 +205,53 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `audit.log` | Core NATS | Pesan audit hilang jika Audit Service belum berjalan |
 | `saga.*` | JetStream (SAGA stream) | Dijamin persistence dengan retry & DLQ |
 
+### ⚠️ Troubleshooting — Live MQTT Monitor "Loading terus" (Kasus 2026-07-13)
+
+**Gejala:** Di halaman Configure Node, panel *Live MQTT Monitor* diam terus menampilkan
+**"Listening for live MQTT payload..."** padahal ESP sudah mengirim telemetry.
+
+**Alur data yang harus utuh:**
+```
+ESP → broker MQTT remote (MQTT_URL, default tcp://192.168.1.103:1884)
+    → Module Service (subscribe smartfarm/#)
+    → PublishLive() publish ke NATS subject "mqtt.{node_id}"
+    → WS-Gateway (subscribe mqtt.{node_id}) → WebSocket → Dashboard
+```
+Teks itu hanya muncul saat WebSocket **sudah `open`** tapi `messages` kosong
+(`dashboard/.../NodeConfigPage.jsx:385`), artinya koneksi berhasil tapi tidak ada
+payload yang sampai ke subject NATS.
+
+**Akar masalah yang ditemukan:** Service `module` **kehilangan koneksi Core NATS**
+(connection putus & tidak auto-recover dengan baik). `PublishLive`
+(`services/module/internal/service/service.go:571`) memanggil `s.nats.Publish(...)`
+tapi `s.nats` sudah terputus → pesan **dibuang diam-diam (tidak ada error log)**.
+Akibatnya subject `mqtt.{node_id}` di NATS kosong → WS-Gateway tidak punya apa-apa
+untuk di-stream.
+
+> Penting: `telemetry.batch` TETAP jalan karena lewat koneksi **JetStream** yang
+> terpisah, bukan Core NATS — ini yang membuat module terlihat "masih terhubung"
+> padahal live stream-nya mati. Jangan gunakan `telemetry.batch` sebagai indikator
+> bahwa live monitor berfungsi.
+
+**Cara diagnosa cepat (end-to-end):**
+1. Pastikan node benar-benar online & publish: `mosquitto_sub -h <MQTT_URL_HOST> -p <PORT> -t 'smartfarm/#'` (broker ada di ENV `MQTT_URL`, BUKAN container `mosquitto` lokal yang hanya untuk dev).
+2. Cek `module` terhubung ke NATS — buka monitoring NATS `http://<nats>:8222/connz`
+   dan pastikan ada client **`module-svc`**. Jika tidak ada → inilah penyebabnya.
+3. Subscribe subject live: `nats sub "mqtt.<NODE_ID>" -s nats://<nats>:4222`.
+   Jika tidak ada pesan padahal ESP kirim → `PublishLive` gagal (koneksi Core NATS mati).
+4. Pastikan WS-Gateway subscribe subject yang benar: `subject = "mqtt." + nodeID`
+   (`services/wsgateway/internal/handler/handler.go:81`).
+
+**Solusi:**
+- **Quick fix:** `docker restart microservices-module-1` → koneksi Core NATS
+  dibangun ulang saat startup, live monitor langsung jalan.
+- **Permanent fix (belum dikerjakan):** tambahkan `nats.SetReconnectHandler` /
+  `SetDisconnectErrHandler` + log di `services/module/main.go`, serta guard
+  `natsPub`/`jsPub` dengan health-check periodik agar publish tidak diam-diam
+  terbuang. Sebagai mitigasi UX, WS-Gateway (`NodeLive`) sebaiknya **replay payload
+  telemetry terakhir** dari DB/cache saat client connect, supaya tidak "loading"
+  bila device report-nya jarang.
+
 ---
 
 ## 🔄 Saga Pattern via NATS
@@ -713,6 +760,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service (`minio-stream`/`minio-ml`/`minio-ota`) → **1 instance MinIO bersama** (`minio`) dengan multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream` (tidak bergantung ML). Total instance turun 19 → 17. Update tabel Database-per-Service, topologi, diagram alur, dan risiko instance. |
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI mandiri: Model Registry (CRUD + upload weights + activate → `model_id` untuk swap model), inference YOLOv8 (`/ml/detect` upload/base64/from-stream) dengan lazy-load + cache per `model_id`, persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware, Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
 | 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck.** (1) Module Service: hilangkan N+1 query di hot-path telemetry — tag mapping & module id di-cache in-memory (TTL 2m, invalidasi saat pair/unpair/edit tag) dan `TouchNode` di-batch (1× UPDATE per node per 30 detik via `StartTouchFlusher`) sehingga tiap reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB. (2) `telemetry.batch` di-upgrade dari Core NATS ke **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` di Analytics → window agregat 1-menit tidak lagi hilang saat Analytics restart (replay otomatis, ack eksplisit). Kedua service lolos `go build` + `go vet`. |
+| 2026-07-13 | 2.9.0 | **Troubleshooting Live MQTT Monitor.** Tambah sub-bab "⚠️ Troubleshooting — Live MQTT Monitor 'Loading terus'" (di bawah *Core NATS vs JetStream*): dokumentasikan gejala dashboard diam di "Listening for live MQTT payload..." padahal ESP kirim, alur data end-to-end, akar masalah (service `module` kehilangan koneksi **Core NATS** sehingga `PublishLive` membuang pesan diam-diam; `telemetry.batch` tetap jalan karena lewat JetStream terpisah), langkah diagnosa (cek client `module-svc` di NATS connz, `nats sub mqtt.<node_id>`), dan solusi (quick fix `docker restart microservices-module-1`; perbaikan permanen reconnect handler + replay last payload di WS-Gateway). Kasus terverifikasi 2026-07-13: restart module mengembalikan live stream (payload telemetry asli mengalir ke `mqtt.ECE334219870`). |
 | 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, `metrics_daily` **3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Perbaikan idempotensi bootstrap: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, dan ekspor CSV range 4 tahun). |
 
 ---

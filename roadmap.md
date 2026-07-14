@@ -155,7 +155,7 @@
 | Status | Item | Deskripsi |
 |---|---|---|
 | `[x]` | MQTT subscriber telemetry | Subscribe `smartfarm/{node}/telemetry` → `IngestTelemetry` |
-| `[x]` | Tag mapping (modular) | Tabel `node_tags` di MariaDB: source_key (dot-path) → tag_name DB, bisa diubah di UI tanpa kode |
+| `[x]` | Tag mapping (modular) | Tabel `node_tags` di MariaDB: source_key (dot-path) → tag_name DB (+ `label` untuk nama tampilan bersih di dashboard, `display_name`, `unit`, `data_type`, `enabled`), bisa diubah di UI tanpa kode |
 | `[x]` | Simpan ke TimescaleDB | Insert ke hypertable `telemetry` (node_id, module_id, metric, value, raw) |
 | `[x]` | Cache ke Redis | Nilai terbaru per node (`node:latest:{id}`, TTL) |
 | `[x]` | Publish NATS `telemetry.ingest` | Per reading (ke WS-Gateway/alert/analytics) |
@@ -184,7 +184,7 @@
 | `[x]` | Data Retention Policy (berjenjang) | Raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, **`metrics_daily` 3650 hari (10 tahun)** |
 | `[x]` | Compression policy | 7 hari pada `metrics_hourly` & `metrics_daily` |
 | `[x]` | `GET /analytics/export` | CSV bulk download riset — `?node_id=&metric=&resolution=day\|hour\|raw&from=&to=` (kolom count/sum/min/max/avg/last) |
-| `[x]` | `GET /analytics/metrics` | Query series: `?node_id=&metric=&from=&to=&interval=` — downsampling otomatis (rollup/hourly/daily) |
+| `[x]` | `GET /analytics/metrics` | Batch query series: `node_id` & `metric` boleh comma-list, respons `series[node_id][metric]` — 1 request untuk banyak metrik (hindari 429 rate-limit Kong); downsampling otomatis (rollup/hourly/daily) |
 | `[x]` | `GET /analytics/summary` | Ringkasan statistik per node/metric & window |
 | `[x]` | `GET /analytics/nodes` | Daftar node yang punya data + metric tersedia |
 | `[x]` | Dashboard halaman Analytics | Line chart (Chart.js), selector node + metric, range 1h/6h/24h/7d/30d |
@@ -840,6 +840,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI terpisah: Model Registry (CRUD + upload weights + activate → `model_id` stabil untuk swap model tanpa restart), inference YOLOv8 (lazy load + cache per `model_id`) via `POST /ml/detect` (upload/batch), `/detect/base64`, `/detect/from-stream`, history `GET /ml/detections`. Persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware (HS256, secret sama dengan Auth), Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
 | 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck (2 item).** (1) Module Service: cache in-memory (TTL 2m) untuk tag mapping + module id per node dan `TouchNode` di-batch via `StartTouchFlusher` (1× UPDATE/node/30 detik) → tiap telemetry reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB (menghilangkan N+1 di hot-path). (2) `telemetry.batch` di-upgrade Core NATS → **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` → window agregat 1-menit replay otomatis saat Analytics restart (ack eksplisit, redeliver on failure). Kedua service lolos `go build` + `go vet`. |
 | 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw 30 hari, hourly 365 hari, **daily 3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Idempotensi bootstrap diperbaiki: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, ekspor CSV range 4 tahun). |
+| 2026-07-14 | 2.10.0 | **Analytics: batch endpoint + label tampilan + scoping modul.** Perbaikan akar masalah dashboard Analytics kosong di timeframe 1 jam: (1) `GET /analytics/metrics` di-upgrade jadi **batch** (`node_id` & `metric` comma-list, respons `series[node_id][metric]`) → 19 metrik dalam 1 request, menghilangkan burst N×M yang memicu 429 rate-limit Kong; (2) scoping modul diperketat (modul tanpa telemetry tetap kosong); (3) hanya metrik ber-tag `enabled=true` yang ditampilkan. Node tag dapat kolom `label` (AutoMigrate GORM, `COALESCE(label,'')` di SELECT) — Analytics menampilkan `label` sebagai judul/legend tiap metrik, fallback `tag_name` lalu source_key. Editor tag (NodeDetailPanel & NodeConfigPage) dapat input `Label`. Lolos `go build` + `go vet` + e2e. |
 
 ---
 

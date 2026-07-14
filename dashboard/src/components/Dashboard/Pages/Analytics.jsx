@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -25,6 +25,7 @@ import {
 import PageHeader from './PageHeader';
 import analyticsApi from '../../../api/analytics';
 import { moduleApi } from '../../../api/module';
+import { useModule } from '../../../context/ModuleContext';
 
 ChartJS.register(
   CategoryScale,
@@ -155,6 +156,7 @@ function StatChip({ label, value }) {
 }
 
 function Analytics() {
+  const { selectedModule } = useModule();
   const [nodes, setNodes] = useState([]);
   const [nodeId, setNodeId] = useState('');
   const [range, setRange] = useState('1h');
@@ -167,19 +169,33 @@ function Analytics() {
 
   useEffect(() => {
     let active = true;
-    analyticsApi
-      .listNodes()
-      .then((data) => {
+    (async () => {
+      try {
+        if (!selectedModule) {
+          setNodes([]);
+          setNodeId('');
+          return;
+        }
+        const [modRes, analyticsRes] = await Promise.all([
+          moduleApi.listNodes({ module_id: selectedModule.id }),
+          analyticsApi.listNodes(),
+        ]);
         if (!active) return;
-        const list = data?.nodes || [];
+        const allNodes = analyticsRes?.nodes || [];
+        const moduleNodeIds = new Set((modRes?.nodes || []).map((n) => n.node_id));
+        // Keep module scoping strict: only show nodes that belong to the
+        // selected module. A module with no telemetry stays empty (it must not
+        // borrow another module's data).
+        const list = allNodes.filter((n) => moduleNodeIds.has(n.node_id));
         setNodes(list);
         if (list.length > 0) setNodeId(list[0].node_id);
-      })
-      .catch((err) => {
+        else setNodeId('');
+      } catch (err) {
         if (active) setError(err.message || 'Failed to load nodes');
-      });
+      }
+    })();
     return () => { active = false; };
-  }, []);
+  }, [selectedModule]);
 
   useEffect(() => {
     if (!nodeId) {
@@ -201,13 +217,46 @@ function Analytics() {
 
   const onNodeChange = (id) => setNodeId(id);
 
+  // Only show metrics that are configured (enabled) on the node. Each node tag
+  // carries an `enabled` flag; metrics whose tag is disabled or absent are
+  // device-internal / not configured and are hidden from charts and legends.
+  const enabledKeys = useMemo(
+    () => new Set(tags.filter((t) => t.enabled).map((t) => t.source_key || t.tag_name)),
+    [tags]
+  );
+  const configuredMetrics = useMemo(() => {
+    const all = nodes.find((n) => n.node_id === nodeId)?.metrics || [];
+    // Until the node's tag configuration has loaded, show everything; once it is
+    // known, restrict to metrics whose tag is enabled (hide unconfigured ones).
+    if (tags.length === 0) return all;
+    return all.filter((m) => enabledKeys.has(m));
+  }, [nodes, nodeId, tags, enabledKeys]);
+
+  // Friendly display name for a metric: use the tag's `label` if set, else the
+  // DB tag name (tag_name), else the raw telemetry key. Keeps the dashboard clean.
+  const tagByKey = useMemo(() => {
+    const m = {};
+    for (const t of tags) {
+      if (t.source_key) m[t.source_key] = t;
+      if (t.tag_name) m[t.tag_name] = t;
+    }
+    return m;
+  }, [tags]);
+  const displayName = useCallback(
+    (metric) => {
+      const t = tagByKey[metric];
+      if (t && (t.label || t.tag_name)) return t.label || t.tag_name;
+      return metric;
+    },
+    [tagByKey]
+  );
+
   const loadData = useCallback(async () => {
     if (!nodeId) {
       setSeriesByMetric({});
       return;
     }
-    const node = nodes.find((n) => n.node_id === nodeId);
-    const metrics = node?.metrics || [];
+    const metrics = configuredMetrics;
     if (metrics.length === 0) {
       setSeriesByMetric({});
       return;
@@ -215,21 +264,17 @@ function Analytics() {
     setLoading(true);
     setError(null);
     try {
-      const results = await Promise.all(
-        metrics.map((m) =>
-          analyticsApi.getMetrics({
-            node_id: nodeId,
-            metric: m,
-            interval: range,
-            // Digital/state metrics stay at raw 1-min resolution (never averaged)
-            // so their on/off transitions survive wide ranges; analog metrics use
-            // the hourly/daily continuous aggregates.
-            ...(booleanSet.has(m) ? { discrete: true } : {}),
-          })
-        )
-      );
+      // One batched request fetches the whole node's telemetry (all metrics)
+      // at once, so we never fire one HTTP call per metric (which tripped
+      // Kong's rate limiter and blanked the chart). Digital/state metrics are
+      // requested with discrete=true to keep 1-minute resolution at wide ranges.
+      const boolMetrics = metrics.filter((m) => booleanSet.has(m));
+      const params = { node_id: nodeId, metric: metrics.join(','), interval: range };
+      if (boolMetrics.length) params.discrete = boolMetrics.join(',');
+      const res = await analyticsApi.getMetrics(params);
+      const series = res?.series?.[nodeId] || {};
       const map = {};
-      metrics.forEach((m, i) => { map[m] = results[i]?.points || []; });
+      metrics.forEach((m) => { map[m] = series[m] || []; });
       setSeriesByMetric(map);
     } catch (err) {
       setError(err.message || 'Failed to load analytics');
@@ -237,34 +282,36 @@ function Analytics() {
     } finally {
       setLoading(false);
     }
-  }, [nodeId, nodes, range, booleanSet]);
+  }, [nodeId, configuredMetrics, range, booleanSet]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   // Classify each metric's *type* from the raw 1h view (range-independent),
   // so a boolean (0/1) metric stays boolean even on aggregated ranges where
   // the hourly/daily cagg would otherwise average it into a fraction (0.33).
+  // One batched request fetches every (configured) metric at 1h.
   useEffect(() => {
     let cancelled = false;
-    const node = nodeId ? nodes.find((n) => n.node_id === nodeId) : null;
-    const metrics = node?.metrics || [];
+    const metrics = configuredMetrics;
     if (!metrics.length) {
       Promise.resolve().then(() => { if (!cancelled) setBooleanSet(new Set()); });
-    } else {
-      Promise.all(
-        metrics.map((m) => analyticsApi.getMetrics({ node_id: nodeId, metric: m, interval: '1h' }))
-      ).then((results) => {
+      return;
+    }
+    analyticsApi
+      .getMetrics({ node_id: nodeId, metric: metrics.join(','), interval: '1h' })
+      .then((res) => {
         if (cancelled) return;
+        const series = res?.series?.[nodeId] || {};
         const set = new Set();
-        metrics.forEach((m, i) => {
-          const pts = results[i]?.points || [];
+        metrics.forEach((m) => {
+          const pts = series[m] || [];
           if (pts.length && pts.every((p) => p.v === 0 || p.v === 1)) set.add(m);
         });
         setBooleanSet(set);
-      }).catch(() => {});
-    }
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
-  }, [nodeId, nodes]);
+  }, [nodeId, configuredMetrics]);
 
   const metrics = Object.keys(seriesByMetric);
   const totalPoints = metrics.reduce((s, m) => s + seriesByMetric[m].length, 0);
@@ -283,7 +330,7 @@ function Analytics() {
   const trendData = {
     labels,
     datasets: analogMetrics.map((m, i) => ({
-      label: m,
+      label: displayName(m),
       data: seriesByMetric[m].map((p) => p.v),
       borderColor: PALETTE[i % PALETTE.length],
       backgroundColor: PALETTE[i % PALETTE.length] + '22',
@@ -309,7 +356,7 @@ function Analytics() {
             const m = c.dataset.label;
             const tag = tags.find((t) => t.source_key === m || t.tag_name === m);
             const unit = tag?.unit ? ` ${tag.unit}` : '';
-            return `${m}: ${fmt(c.parsed.y)}${unit}`;
+            return `${displayName(m)}: ${fmt(c.parsed.y)}${unit}`;
           },
         },
       },
@@ -323,7 +370,7 @@ function Analytics() {
   const stateData = {
     labels,
     datasets: boolMetrics.map((m, i) => ({
-      label: m,
+      label: displayName(m),
       data: seriesByMetric[m].map((p) => p.v),
       borderColor: PALETTE[i % PALETTE.length],
       backgroundColor: PALETTE[i % PALETTE.length] + '22',
@@ -453,7 +500,7 @@ function Analytics() {
                   const pct = pts.length ? Math.round((on / pts.length) * 100) : 0;
                   return (
                     <div key={m} className="flex flex-col gap-1 p-3 border border-emerald-500/15 bg-[#030705]/60">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{m}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{displayName(m)}</span>
                       <span className="text-sm font-black" style={{ color: on > 0 ? '#10b981' : '#64748b' }}>
                         {on > 0 ? 'ON' : 'OFF'} · {pct}%
                       </span>
@@ -471,7 +518,7 @@ function Analytics() {
               const tag = tags.find((t) => t.source_key === m || t.tag_name === m);
               const unit = tag?.unit ? ` ${tag.unit}` : '';
               return (
-                <Card key={m} title={m} icon={Activity}>
+                <Card key={m} title={displayName(m)} icon={Activity}>
                   <div className="grid grid-cols-4 gap-3">
                     <StatChip label="Samples" value={s.count} />
                     <StatChip label="Min" value={fmt(s.min) + unit} />
@@ -491,7 +538,7 @@ function Analytics() {
                 const data = {
                   labels: h.labels,
                   datasets: [{
-                    label: m,
+                    label: displayName(m),
                     data: h.counts,
                     backgroundColor: PALETTE[i % PALETTE.length] + 'cc',
                     borderColor: PALETTE[i % PALETTE.length],
@@ -509,7 +556,7 @@ function Analytics() {
                 };
                 return (
                   <div key={m}>
-                    <div className="text-[10px] font-black uppercase tracking-widest mb-2 text-slate-500">{m}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest mb-2 text-slate-500">{displayName(m)}</div>
                     <div className="h-[180px]">
                       {h.counts.length ? <Bar data={data} options={opt} /> : <div className="text-xs text-slate-500">no data</div>}
                     </div>
@@ -527,14 +574,14 @@ function Analytics() {
                     <tr>
                       <th className="p-2 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">metric</th>
                       {corr.metrics.map((m) => (
-                        <th key={m} className="p-2 text-[10px] font-black uppercase tracking-widest text-slate-500">{shortId(m)}</th>
+                        <th key={m} className="p-2 text-[10px] font-black uppercase tracking-widest text-slate-500">{displayName(m)}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {corr.metrics.map((mi, i) => (
                       <tr key={mi}>
-                        <td className="p-2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-slate-500">{shortId(mi)}</td>
+                        <td className="p-2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-slate-500">{displayName(mi)}</td>
                         {corr.metrics.map((mj, j) => {
                           const v = corr.matrix[i][j];
                           return (
@@ -542,7 +589,7 @@ function Analytics() {
                               key={mj}
                               className="p-2 text-center font-black tabular-nums whitespace-nowrap"
                               style={{ backgroundColor: corrColor(v), color: Math.abs(v) > 0.5 ? '#0b0f0a' : '#e2e8f0' }}
-                              title={`${mi} ↔ ${mj}: ${v.toFixed(2)}`}
+                              title={`${displayName(mi)} ↔ ${displayName(mj)}: ${v.toFixed(2)}`}
                             >
                               {v.toFixed(2)}
                             </td>

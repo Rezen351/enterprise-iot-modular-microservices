@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/analytics/internal/model"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -32,9 +33,16 @@ func (s *Store) Close() { s.pool.Close() }
 // (ON CONFLICT) so redelivered NATS batches do not duplicate data.
 func (s *Store) UpsertRollup(ctx context.Context, row model.BatchRow) error {
 	// Align the rollup timestamp to the start of the batch minute (UTC).
-	bucket := time.UnixMilli(row.LastTS).UTC().Truncate(time.Minute)
-	if row.LastTS == 0 {
-		bucket = time.Now().UTC().Truncate(time.Minute)
+	now := time.Now().UTC()
+	bucket := now.Truncate(time.Minute)
+	if row.LastTS != 0 {
+		bucket = time.UnixMilli(row.LastTS).UTC().Truncate(time.Minute)
+		// Clamp future-skewed device clocks so a fast node clock cannot push
+		// the rollup outside the dashboard's "now" query window (which would
+		// hide recent telemetry in short timeframes like 1 HOUR).
+		if bucket.After(now.Add(5 * time.Minute)) {
+			bucket = now.Truncate(time.Minute)
+		}
 	}
 	var moduleID *string
 	if row.ModuleID != "" {
@@ -65,16 +73,15 @@ func (s *Store) UpsertRollup(ctx context.Context, row model.BatchRow) error {
 	return err
 }
 
-// sourceForInterval picks the materialized view (or raw hypertable) that best
-// matches the requested resolution to keep payloads small.
+// sourceForDuration picks the materialized view (or raw hypertable) that best
+// matches the requested resolution window to keep payloads small.
 //
 // The value column is `last` (the most recent raw sample in the bucket) rather
 // than `avg`. Averaging a boolean metric would turn a toggling 0/1 signal into
 // a fraction (e.g. 0.45), which is not a meaningful "state". Using `last`
 // preserves discrete 0/1 states for digital inputs while still giving a
 // representative latest sample for analog metrics.
-func sourceForInterval(interval string) (table string, agg string) {
-	d := parseInterval(interval)
+func sourceForDuration(d time.Duration) (table string, agg string) {
 	switch {
 	case d <= time.Hour:
 		return "metrics_rollup", "last"
@@ -85,14 +92,50 @@ func sourceForInterval(interval string) (table string, agg string) {
 	}
 }
 
-// QuerySeries returns the aggregated time-series for a node/metric over a window.
-// For discrete (digital/state, 0/1) metrics pass discrete=true: the series is
-// read from the raw 1-minute rollup with a fine time-bucket (still using `last`,
-// never `avg`) so on/off transitions are preserved instead of being collapsed to
-// one value per hour by the hourly/daily continuous aggregates.
-func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string, discrete bool) (*model.SeriesResponse, error) {
+// QuerySeriesMulti returns aggregated time-series for a set of nodes and metrics
+// over a window, in one round-trip. Result is keyed series[node_id][metric].
+// If a (node, metric) has no data in the requested window, the window is
+// progressively widened (x6, x24, x7d, x30d) so the dashboard always renders
+// the most recent available telemetry instead of a blank chart.
+func (s *Store) QuerySeriesMulti(ctx context.Context, nodeIDs, metrics []string, from, to time.Time, interval string, discreteSet map[string]bool) (map[string]map[string][]model.SeriesPoint, error) {
+	out := make(map[string]map[string][]model.SeriesPoint, len(nodeIDs))
+	base := parseInterval(interval)
+	if base <= 0 {
+		base = time.Hour
+	}
+	for _, n := range nodeIDs {
+		perNode := make(map[string][]model.SeriesPoint, len(metrics))
+		for _, m := range metrics {
+			discrete := discreteSet[m]
+			pts, err := s.queryRange(ctx, n, m, from, to, base, discrete)
+			if err != nil {
+				return nil, err
+			}
+			if len(pts) == 0 {
+				for _, mult := range []time.Duration{6, 24, 24 * 7, 24 * 30} {
+					wFrom := to.Add(-base * mult)
+					wPts, wErr := s.queryRange(ctx, n, m, wFrom, to, base*mult, discrete)
+					if wErr != nil {
+						return nil, wErr
+					}
+					if len(wPts) > 0 {
+						pts = wPts
+						break
+					}
+				}
+			}
+			perNode[m] = pts
+		}
+		out[n] = perNode
+	}
+	return out, nil
+}
+
+// queryRange executes the series query for a fixed [from,to] window using the
+// given effective duration to pick the source view / bucket size.
+func (s *Store) queryRange(ctx context.Context, nodeID, metric string, from, to time.Time, d time.Duration, discrete bool) ([]model.SeriesPoint, error) {
 	if discrete {
-		step := discreteStep(parseInterval(interval))
+		step := discreteStep(d)
 		q := `SELECT time_bucket(CAST($5 AS interval), time) AS t, last(last, time) AS v
 		      FROM metrics_rollup
 		      WHERE node_id = $1 AND metric = $2 AND time BETWEEN $3 AND $4
@@ -103,23 +146,10 @@ func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to
 			return nil, err
 		}
 		defer rows.Close()
-
-		pts := make([]model.SeriesPoint, 0)
-		for rows.Next() {
-			var t time.Time
-			var v float64
-			if err := rows.Scan(&t, &v); err != nil {
-				return nil, err
-			}
-			pts = append(pts, model.SeriesPoint{T: t.UTC().Format(time.RFC3339), V: v})
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return &model.SeriesResponse{NodeID: nodeID, Metric: metric, Interval: interval, Points: pts}, nil
+		return scanSeries(rows)
 	}
 
-	table, valueExpr := sourceForInterval(interval)
+	table, valueExpr := sourceForDuration(d)
 	timeCol := "time"
 	if table != "metrics_rollup" {
 		timeCol = "bucket"
@@ -134,7 +164,11 @@ func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to
 		return nil, err
 	}
 	defer rows.Close()
+	return scanSeries(rows)
+}
 
+// scanSeries reads (time, value) rows into SeriesPoints.
+func scanSeries(rows pgx.Rows) ([]model.SeriesPoint, error) {
 	pts := make([]model.SeriesPoint, 0)
 	for rows.Next() {
 		var t time.Time
@@ -147,7 +181,7 @@ func (s *Store) QuerySeries(ctx context.Context, nodeID, metric string, from, to
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return &model.SeriesResponse{NodeID: nodeID, Metric: metric, Interval: interval, Points: pts}, nil
+	return pts, nil
 }
 
 // discreteStep picks a coarse-enough but transition-preserving bucket for digital

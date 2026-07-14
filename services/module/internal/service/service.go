@@ -359,7 +359,10 @@ func (s *ModuleService) GetNodeTags(ctx context.Context, nodeID string) ([]model
 }
 
 // SaveNodeTags replaces the full tag-mapping set for a node (idempotent attach).
-// Each request row attaches an MQTT source key to a DB tag name.
+// Each request row attaches an MQTT source key to a DB tag name. Rows removed by
+// the user are actually deleted (rather than merely left behind), so a reduced
+// mapping persists after save. Only sensor-kind tags are affected; actuator tags
+// are managed separately and left untouched.
 func (s *ModuleService) SaveNodeTags(ctx context.Context, nodeID string, reqs []model.NodeTagRequest) error {
 	tags := make([]*model.NodeTag, 0, len(reqs))
 	for _, r := range reqs {
@@ -373,11 +376,25 @@ func (s *ModuleService) SaveNodeTags(ctx context.Context, nodeID string, reqs []
 			SourceKey:   r.SourceKey,
 			TagName:     tagName,
 			DisplayName: r.DisplayName,
+			Label:       r.Label,
 			Unit:        r.Unit,
 			DataType:    r.DataType,
 			Enabled:     r.Enabled,
 		})
 	}
+
+	// Delete sensor tags the user removed from the mapping: anything whose id is
+	// not present in the incoming request.
+	keepIDs := make([]string, 0, len(tags))
+	for _, t := range tags {
+		if t.ID != "" {
+			keepIDs = append(keepIDs, t.ID)
+		}
+	}
+	if err := s.repo.DeleteSensorTagsExcept(ctx, nodeID, keepIDs); err != nil {
+		return err
+	}
+
 	for _, t := range tags {
 		if err := s.repo.UpsertNodeTag(ctx, t); err != nil {
 			return err

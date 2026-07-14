@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/almuzky/iot/services/module/internal/model"
@@ -168,10 +169,13 @@ func (r *Repository) UpsertDiscovered(ctx context.Context, n *model.Node) (bool,
 }
 
 // UpdateStatus updates only the connectivity status + last_seen of a node.
+// The IP is only overwritten when a non-empty value is provided, so that
+// periodic status/LWT messages (which typically omit ip) do not erase the
+// address learned earlier via discovery or a richer status payload.
 func (r *Repository) UpdateStatus(ctx context.Context, nodeID, status, ip string) error {
 	now := time.Now()
 	_, err := r.db.ExecContext(ctx,
-		`UPDATE nodes SET status = ?, last_seen_at = ?, ip = ?, updated_at = ? WHERE node_id = ?`,
+		`UPDATE nodes SET status = ?, last_seen_at = ?, ip = COALESCE(NULLIF(?, ''), ip), updated_at = ? WHERE node_id = ?`,
 		status, now, ip, now, nodeID)
 	return err
 }
@@ -208,7 +212,7 @@ func (r *Repository) GetModuleIDByNode(ctx context.Context, nodeID string) (*str
 
 func (r *Repository) ListNodeTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, node_id, kind, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at
+		`SELECT id, node_id, kind, source_key, tag_name, display_name, COALESCE(label, '') AS label, unit, data_type, enabled, created_at, updated_at
 		 FROM node_tags WHERE node_id = ? AND kind IN ('sensor','') ORDER BY source_key`, nodeID)
 	if err != nil {
 		return nil, err
@@ -219,7 +223,7 @@ func (r *Repository) ListNodeTags(ctx context.Context, nodeID string) ([]model.N
 		var t model.NodeTag
 		var kind, sourceKey string
 		var created, updated time.Time
-		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
+		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Label, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
 			return nil, err
 		}
 		t.Kind, t.SourceKey = kind, sourceKey
@@ -233,7 +237,7 @@ func (r *Repository) ListNodeTags(ctx context.Context, nodeID string) ([]model.N
 // controllable outputs the user explicitly mapped.
 func (r *Repository) ListActuatorTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, node_id, kind, source_key, tag_name, display_name, unit, data_type, enabled, created_at, updated_at
+		`SELECT id, node_id, kind, source_key, tag_name, display_name, COALESCE(label, '') AS label, unit, data_type, enabled, created_at, updated_at
 		 FROM node_tags WHERE node_id = ? AND kind = 'actuator' ORDER BY source_key`, nodeID)
 	if err != nil {
 		return nil, err
@@ -244,7 +248,7 @@ func (r *Repository) ListActuatorTags(ctx context.Context, nodeID string) ([]mod
 		var t model.NodeTag
 		var kind, sourceKey string
 		var created, updated time.Time
-		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
+		if err := rows.Scan(&t.ID, &t.NodeID, &kind, &sourceKey, &t.TagName, &t.DisplayName, &t.Label, &t.Unit, &t.DataType, &t.Enabled, &created, &updated); err != nil {
 			return nil, err
 		}
 		t.Kind, t.SourceKey = kind, sourceKey
@@ -268,17 +272,39 @@ func (r *Repository) UpsertNodeTag(ctx context.Context, t *model.NodeTag) error 
 		t.Kind = "sensor"
 	}
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO node_tags (id, node_id, source_key, kind, tag_name, display_name, unit, data_type, enabled, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO node_tags (id, node_id, source_key, kind, tag_name, display_name, label, unit, data_type, enabled, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 ON DUPLICATE KEY UPDATE
 		   tag_name = VALUES(tag_name), display_name = VALUES(display_name),
+		   label = VALUES(label),
 		   unit = VALUES(unit), data_type = VALUES(data_type), enabled = VALUES(enabled), updated_at = VALUES(updated_at)`,
-		t.ID, t.NodeID, t.SourceKey, t.Kind, t.TagName, t.DisplayName, t.Unit, t.DataType, t.Enabled, t.CreatedAt, t.UpdatedAt)
+		t.ID, t.NodeID, t.SourceKey, t.Kind, t.TagName, t.DisplayName, t.Label, t.Unit, t.DataType, t.Enabled, t.CreatedAt, t.UpdatedAt)
 	return err
 }
 
 func (r *Repository) DeleteNodeTag(ctx context.Context, nodeID, id string) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM node_tags WHERE node_id = ? AND id = ?`, nodeID, id)
+	return err
+}
+
+// DeleteSensorTagsExcept removes every sensor-kind tag for a node whose id is
+// NOT in keepIDs. Used by SaveNodeTags to make it a true replace: rows the user
+// removed from the mapping are actually deleted instead of merely left untouched.
+// Actuator (kind="actuator") tags are never affected.
+func (r *Repository) DeleteSensorTagsExcept(ctx context.Context, nodeID string, keepIDs []string) error {
+	if len(keepIDs) == 0 {
+		_, err := r.db.ExecContext(ctx, `DELETE FROM node_tags WHERE node_id = ? AND kind IN ('sensor','')`, nodeID)
+		return err
+	}
+	ph := strings.Repeat("?,", len(keepIDs))
+	ph = ph[:len(ph)-1]
+	args := make([]any, 0, len(keepIDs)+1)
+	args = append(args, nodeID)
+	for _, id := range keepIDs {
+		args = append(args, id)
+	}
+	_, err := r.db.ExecContext(ctx,
+		`DELETE FROM node_tags WHERE node_id = ? AND kind IN ('sensor','') AND id NOT IN (`+ph+`)`, args...)
 	return err
 }
 

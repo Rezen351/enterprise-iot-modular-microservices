@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/almuzky/iot/services/analytics/internal/service"
@@ -57,26 +58,49 @@ func parseTime(v string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// MetricsHandler returns an aggregated time-series for a node/metric.
+// MetricsHandler returns aggregated time-series for one or more nodes/metrics.
 //   Query: ?node_id&metric&interval=1h&from&to&discrete
-//   discrete=true keeps digital/state (0/1) metrics at raw 1-minute resolution
-//   (fine time-bucket, never averaged) instead of the hourly/daily aggregates.
+//   node_id and metric accept comma-separated lists (batched) so the dashboard
+//   can fetch an entire node's telemetry in a single request instead of one
+//   HTTP call per metric — this keeps the endpoint below Kong's rate limit and
+//   scales to many nodes × many sensors.
+//   discrete=true (bool) applies to every requested metric; discrete may also
+//   be a comma-separated list of metric names to mark only those as digital/state
+//   (0/1) so they stay at raw 1-minute resolution instead of the hourly/daily
+//   aggregates.
+//   Response: { interval, series: { node_id: { metric: [{t,v}] } } }
 func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	nodeID := q.Get("node_id")
-	metric := q.Get("metric")
-	if nodeID == "" || metric == "" {
+	nodeParam := q.Get("node_id")
+	metricParam := q.Get("metric")
+	if nodeParam == "" || metricParam == "" {
 		badRequest(w, "node_id and metric are required")
 		return
 	}
+	nodeIDs := splitCSV(nodeParam)
+	metrics := splitCSV(metricParam)
+	if len(nodeIDs) == 0 || len(metrics) == 0 {
+		badRequest(w, "node_id and metric are required")
+		return
+	}
+
 	interval := q.Get("interval")
 	if interval == "" {
 		interval = "1h"
 	}
 
-	discrete := false
+	// discrete: bool => all metrics; comma list => only those metric names.
+	discreteSet := map[string]bool{}
 	if v := q.Get("discrete"); v != "" {
-		discrete, _ = strconv.ParseBool(v)
+		if strings.Contains(v, ",") {
+			for _, m := range splitCSV(v) {
+				discreteSet[m] = true
+			}
+		} else if b, _ := strconv.ParseBool(v); b {
+			for _, m := range metrics {
+				discreteSet[m] = true
+			}
+		}
 	}
 
 	to := time.Now().UTC()
@@ -98,13 +122,26 @@ func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp, err := h.svc.QuerySeries(r.Context(), nodeID, metric, from, to, interval, discrete)
+	series, err := h.svc.QuerySeriesMulti(r.Context(), nodeIDs, metrics, from, to, interval, discreteSet)
 	if err != nil {
 		log.Printf("[handler] query series failed: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})
 		return
 	}
-	writeJSON(w, http.StatusOK, resp)
+	writeJSON(w, http.StatusOK, map[string]interface{}{"interval": interval, "series": series})
+}
+
+// splitCSV splits a comma-separated query value into trimmed, non-empty parts.
+func splitCSV(s string) []string {
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // SummaryHandler returns a statistical summary for a node/metric.

@@ -31,9 +31,11 @@ func (s *Service) IngestBatch(ctx context.Context, rows []model.BatchRow) error 
 	return nil
 }
 
-// QuerySeries proxies to the store with resolved time bounds.
-func (s *Service) QuerySeries(ctx context.Context, nodeID, metric string, from, to time.Time, interval string, discrete bool) (*model.SeriesResponse, error) {
-	return s.store.QuerySeries(ctx, nodeID, metric, from, to, interval, discrete)
+// QuerySeriesMulti proxies a batched (multi-node, multi-metric) query to the
+// store. discreteSet marks which metric names must stay at raw 1-minute
+// resolution (digital/state 0/1 metrics).
+func (s *Service) QuerySeriesMulti(ctx context.Context, nodeIDs, metrics []string, from, to time.Time, interval string, discreteSet map[string]bool) (map[string]map[string][]model.SeriesPoint, error) {
+	return s.store.QuerySeriesMulti(ctx, nodeIDs, metrics, from, to, interval, discreteSet)
 }
 
 // QuerySummary proxies to the store with resolved time bounds.

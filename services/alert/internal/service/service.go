@@ -1,0 +1,265 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/almuzky/iot/services/alert/internal/cache"
+	"github.com/almuzky/iot/services/alert/internal/model"
+	"github.com/almuzky/iot/services/alert/internal/repository"
+	"github.com/google/uuid"
+	"github.com/nats-io/nats.go"
+)
+
+const telemetrySubject = "telemetry.ingest"
+
+// Service evaluates telemetry against thresholds and persists/relays alerts.
+type Service struct {
+	store *repository.Store
+	cache *cache.AlertCache
+	nc    *nats.Conn
+}
+
+func New(store *repository.Store, c *cache.AlertCache, nc *nats.Conn) *Service {
+	return &Service{store: store, cache: c, nc: nc}
+}
+
+// SetNATS wires the (already-connected) NATS connection used for publishing
+// alert/notification events. main.go creates the Service before NATS connects
+// (so threshold CRUD stays cache-coherent if NATS is briefly unavailable), then
+// calls SetNATS once the connection is established so publishAlert/publishSystem
+// can relay events to subscribers.
+func (s *Service) SetNATS(nc *nats.Conn) { s.nc = nc }
+
+// telemetryMsg is the wire format published by Module Service to telemetry.ingest:
+// {"node_id":"...","metric":"...","value":<float>,"ts":<unix ms>}.
+type telemetryMsg struct {
+	NodeID string  `json:"node_id"`
+	Metric string  `json:"metric"`
+	Value  float64 `json:"value"`
+	Ts     int64   `json:"ts"`
+}
+
+// RunSubscriber subscribes to telemetry.ingest on Core NATS. A queue group lets
+// multiple Alert Service replicas share the load. The subscription runs on
+// NATS-managed goroutines, so the caller's HTTP server keeps the process alive.
+func (s *Service) RunSubscriber(nc *nats.Conn) error {
+	_, err := nc.QueueSubscribe(telemetrySubject, "alert-workers", func(m *nats.Msg) {
+		s.handleTelemetry(m.Data)
+	})
+	if err != nil {
+		log.Printf("WARN: alert subscriber failed: %v", err)
+		return err
+	}
+	log.Printf("alert subscriber listening on %q", telemetrySubject)
+	return nil
+}
+
+func (s *Service) handleTelemetry(body []byte) {
+	var tm telemetryMsg
+	if err := json.Unmarshal(body, &tm); err != nil {
+		log.Printf("WARN: alert: telemetry.ingest not JSON: %v", err)
+		return
+	}
+	if tm.NodeID == "" || tm.Metric == "" {
+		return
+	}
+
+	th := s.resolveThreshold(tm.NodeID, tm.Metric)
+	if th == nil || !th.Enabled {
+		return
+	}
+
+	violated, boundary := evaluate(tm.Value, th)
+	ctx := context.Background()
+
+	if violated {
+		// Already alerting for this (node, metric)? Dedup until resolved.
+		if s.cache.ActiveExists(ctx, tm.NodeID, tm.Metric) {
+			return
+		}
+		alert := &model.Alert{
+			ID:             uuid.NewString(),
+			NodeID:         tm.NodeID,
+			Metric:         tm.Metric,
+			Value:          tm.Value,
+			ThresholdValue: boundary,
+			Severity:       th.Severity,
+			Status:         "active",
+			Message:        buildMessage(th, tm.Value, boundary),
+			ThresholdID:    strPtr(th.ID),
+			TriggeredAt:    time.Now().UTC(),
+		}
+		if err := s.store.CreateAlert(ctx, alert); err != nil {
+			log.Printf("ERROR: alert: persist alert failed node=%s metric=%s: %v", tm.NodeID, tm.Metric, err)
+			return
+		}
+		s.cache.SetActive(ctx, tm.NodeID, tm.Metric)
+		s.publishAlert("alert.triggered", alert)
+		s.publishSystem(alert, "triggered")
+		return
+	}
+
+	// Within range: if an active alert exists, resolve it.
+	if s.cache.ActiveExists(ctx, tm.NodeID, tm.Metric) {
+		now := time.Now().UTC()
+		// Fetch the active alert BEFORE flipping its status so we can publish
+		// the resolved event with full context.
+		active, gerr := s.store.GetLatestActive(ctx, tm.NodeID, tm.Metric)
+		if gerr != nil {
+			log.Printf("ERROR: alert: get active failed node=%s metric=%s: %v", tm.NodeID, tm.Metric, gerr)
+			return
+		}
+		if err := s.store.ResolveActive(ctx, tm.NodeID, tm.Metric, now); err != nil {
+			log.Printf("ERROR: alert: resolve failed node=%s metric=%s: %v", tm.NodeID, tm.Metric, err)
+			return
+		}
+		s.cache.ClearActive(ctx, tm.NodeID, tm.Metric)
+		if active != nil {
+			active.Status = "resolved"
+			active.ResolvedAt = &now
+			s.publishAlert("alert.resolved", active)
+			s.publishSystem(active, "resolved")
+		}
+	}
+}
+
+// resolveThreshold returns the applicable threshold for (node, metric) using the
+// cache first, then MariaDB (exact, then wildcard "*"). The result is cached.
+func (s *Service) resolveThreshold(nodeID, metric string) *model.Threshold {
+	ctx := context.Background()
+
+	if t := s.cache.GetCachedThreshold(ctx, nodeID, metric); t != nil {
+		return t
+	}
+	if t := s.cache.GetCachedThreshold(ctx, "*", metric); t != nil {
+		return t
+	}
+
+	t, err := s.store.GetThresholdForNodeMetric(ctx, nodeID, metric)
+	if err != nil {
+		log.Printf("WARN: alert: threshold lookup failed node=%s metric=%s: %v", nodeID, metric, err)
+		return nil
+	}
+	if t != nil {
+		s.cache.SetCachedThreshold(ctx, nodeID, metric, t)
+	}
+	return t
+}
+
+// evaluate reports whether value is outside [min, max] and which boundary it hit.
+func evaluate(value float64, th *model.Threshold) (bool, *float64) {
+	if th.Min != nil && value < *th.Min {
+		return true, th.Min
+	}
+	if th.Max != nil && value > *th.Max {
+		return true, th.Max
+	}
+	return false, nil
+}
+
+func buildMessage(th *model.Threshold, value float64, boundary *float64) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "[%s] node %s metric %q value %v", th.Severity, th.NodeID, th.Metric, value)
+	switch {
+	case th.Min != nil && th.Max != nil:
+		fmt.Fprintf(&sb, " outside range [%v, %v]", *th.Min, *th.Max)
+	case th.Min != nil:
+		fmt.Fprintf(&sb, " below min %v", *th.Min)
+	case th.Max != nil:
+		fmt.Fprintf(&sb, " above max %v", *th.Max)
+	}
+	return sb.String()
+}
+
+// ─── Publishing ────────────────────────────────────────────────────────────
+
+func (s *Service) publishAlert(subject string, a *model.Alert) {
+	if s.nc == nil {
+		return
+	}
+	payload, err := json.Marshal(map[string]any{
+		"id":              a.ID,
+		"node_id":         a.NodeID,
+		"metric":          a.Metric,
+		"value":           a.Value,
+		"threshold_value": a.ThresholdValue,
+		"severity":        a.Severity,
+		"status":          a.Status,
+		"message":         a.Message,
+		"triggered_at":    a.TriggeredAt,
+	})
+	if err != nil {
+		return
+	}
+	if err := s.nc.Publish(subject, payload); err != nil {
+		log.Printf("WARN: alert: publish %s failed: %v", subject, err)
+	}
+}
+
+// publishSystem relays a human-friendly notification onto system.status so the
+// WS-Gateway can push it to the dashboard NotificationContext.
+func (s *Service) publishSystem(a *model.Alert, event string) {
+	if s.nc == nil {
+		return
+	}
+	payload, err := json.Marshal(map[string]any{
+		"type":     "alert",
+		"level":    a.Severity,
+		"node_id":  a.NodeID,
+		"metric":   a.Metric,
+		"value":    a.Value,
+		"message":  a.Message,
+		"status":   event,
+		"event":    event,
+		"ts":       time.Now().UnixMilli(),
+	})
+	if err != nil {
+		return
+	}
+	if err := s.nc.Publish("system.status", payload); err != nil {
+		log.Printf("WARN: alert: publish system.status failed: %v", err)
+	}
+}
+
+// ─── Threshold management (cache-coherent) ─────────────────────────────────
+
+// CreateThreshold persists a threshold and evicts any cached copy.
+func (s *Service) CreateThreshold(ctx context.Context, t *model.Threshold) (*model.Threshold, error) {
+	if err := s.store.CreateThreshold(ctx, t); err != nil {
+		return nil, err
+	}
+	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	return t, nil
+}
+
+// UpdateThreshold patches a threshold and evicts the cache.
+func (s *Service) UpdateThreshold(ctx context.Context, id string, patch map[string]any) (*model.Threshold, error) {
+	t, err := s.store.UpdateThreshold(ctx, id, patch)
+	if err != nil {
+		return nil, err
+	}
+	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	return t, nil
+}
+
+// DeleteThreshold removes a threshold and evicts the cache.
+func (s *Service) DeleteThreshold(ctx context.Context, id string) error {
+	t, err := s.store.DeleteThreshold(ctx, id)
+	if err != nil {
+		return err
+	}
+	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	return nil
+}
+
+// AckAlert acknowledges an alert by the given user.
+func (s *Service) AckAlert(ctx context.Context, id, userID string) (*model.Alert, error) {
+	return s.store.AckAlert(ctx, id, userID, time.Now().UTC())
+}
+
+func strPtr(s string) *string { return &s }

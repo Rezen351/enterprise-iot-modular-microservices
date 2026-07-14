@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   User,
   ShieldCheck,
@@ -10,40 +12,62 @@ import {
   Video,
   Camera,
   Activity,
-  Scan
+  ScrollText,
+  ShieldAlert
 } from 'lucide-react';
 
-function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, isAdmin = false }) {
+function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, me = null }) {
+  const roles = Array.isArray(me?.roles) ? me.roles : [];
+  const isAdmin = roles.includes('admin');
+
   const mainMenuItems = [
     { id: 'monitor', label: 'MONITOR', icon: Activity },
     { id: 'analytics', label: 'ANALYTICS', icon: BarChart3 },
     { id: 'control', label: 'CONTROL', icon: SlidersHorizontal },
-    { id: 'module', label: 'MODULE', icon: Server },
     { id: 'live', label: 'LIVE', icon: Video },
     { id: 'snapshot', label: 'GALLERY', icon: Camera },
+    { id: 'alerts', label: 'ALERTS', icon: ShieldAlert },
   ];
 
-  const userMenuItems = [];
-  if (isAdmin) {
-    userMenuItems.push({ id: 'users', label: 'Account', icon: ShieldCheck });
-  }
-  userMenuItems.push({ id: 'profile', label: 'PROFILE', icon: User });
+  // Admin-only tools grouped under a single collapsible "ADMINISTRATOR" tree.
+  const adminGroup = {
+    id: 'admin-group',
+    label: 'ADMINISTRATOR',
+    icon: ShieldCheck,
+    children: [
+      { id: 'module', label: 'MODULE', icon: Server },
+      { id: 'audit', label: 'AUDIT', icon: ScrollText },
+      { id: 'users', label: 'ACCOUNT', icon: User },
+    ],
+  };
 
-  const renderMenuItem = (item) => {
+  const profileItem = { id: 'profile', label: 'PROFILE', icon: User };
+
+  const adminChildActive = adminGroup.children.some((c) => c.id === activeTab);
+
+  // Local collapse state for the admin tree; forced open whenever one of its
+  // children is the active tab so the current selection stays visible.
+  const [adminOpen, setAdminOpen] = useState(() => adminChildActive);
+  const open = adminOpen || adminChildActive;
+
+  const handleSelect = (id) => {
+    setActiveTab(id);
+    if (setMobileOpen) setMobileOpen(false);
+  };
+
+  // Leaf item (flat, used for the main menu, profile and the collapsed tree).
+  const renderLeaf = (item, indented = false) => {
     const Icon = item.icon;
     const isActive = activeTab === item.id;
 
     return (
       <button
         key={item.id}
-        onClick={() => {
-          setActiveTab(item.id);
-          if (setMobileOpen) setMobileOpen(false);
-        }}
-        className={`w-full flex items-center transition-all duration-200 group relative ${collapsed ? 'lg:justify-center lg:h-14 lg:px-0 px-4 h-16 gap-5 text-left' : 'gap-5 px-5 h-16 text-left'
+        onClick={() => handleSelect(item.id)}
+        className={`w-full flex items-center transition-all duration-200 group relative ${collapsed ? 'lg:justify-center lg:h-14 lg:px-0 px-4 h-16 gap-5 text-left' : `${indented ? 'h-12 pl-12 pr-5 gap-3' : 'gap-5 px-5 h-16'} text-left`
           } ${isActive
-            ? 'bg-emerald-500 text-black font-black '
-            : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/20 border border-transparent'
+            ? 'bg-emerald-500 text-black font-black border-l-2 border-black'
+            : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/20 border border-transparent border-l-2 border-l-transparent'
           }`}
         title={collapsed ? item.label : undefined}
       >
@@ -53,7 +77,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
         />
 
         <span className={`text-sm font-black tracking-[0.1em] font-display truncate uppercase ${collapsed ? 'lg:hidden inline' : 'inline'
-          }`}>
+          } ${indented ? 'text-xs' : ''}`}>
           {item.label}
         </span>
 
@@ -64,6 +88,54 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
           </div>
         )}
       </button>
+    );
+  };
+
+  // Collapsible admin group with a downward tree of its children.
+  const renderAdminGroup = () => {
+    const Icon = adminGroup.icon;
+    const isActive = adminChildActive;
+
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={() => setAdminOpen((o) => !o)}
+          className={`w-full flex items-center transition-all duration-200 group relative gap-5 px-5 h-16 text-left ${isActive
+            ? 'bg-emerald-500/10 text-emerald-400 font-black border-l-2 border-emerald-500'
+            : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/20 border border-transparent border-l-2 border-l-transparent'
+            }`}
+          title={collapsed ? adminGroup.label : undefined}
+        >
+          <Icon
+            className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-emerald-400' : 'text-emerald-500'
+              } w-6 h-6`}
+          />
+          <span className="text-sm font-black tracking-[0.1em] font-display truncate uppercase">
+            {adminGroup.label}
+          </span>
+          <ChevronDown
+            className={`ml-auto w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${collapsed ? 'lg:hidden' : ''}`}
+          />
+
+          {collapsed && (
+            <div className="absolute left-full ml-5 px-3 py-1.5 bg-black/95 border border-emerald-500/30 text-emerald-400 text-[11px] font-black opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 whitespace-nowrap z-50 lg:block hidden uppercase tracking-widest">
+              {adminGroup.label}
+            </div>
+          )}
+        </button>
+
+        {/* Downward tree of admin tools */}
+        {open && (
+          <div className={`${collapsed ? 'lg:hidden' : ''} ml-6 border-l border-emerald-500/15 pl-1 space-y-1`}>
+            {adminGroup.children.map((child) => (
+              <div key={child.id} className="relative">
+                <span className="absolute -left-[5px] top-1/2 -translate-y-1/2 w-3 h-px bg-emerald-500/20" />
+                {renderLeaf(child, true)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -110,11 +182,15 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
         {/* Navigation Menu */}
         <nav className={`flex-1 py-8 flex flex-col justify-between overflow-y-auto ${collapsed ? 'lg:px-3 px-5' : 'px-5'}`}>
           <div className="space-y-4">
-            {mainMenuItems.map(renderMenuItem)}
+            {mainMenuItems.map((item) => renderLeaf(item))}
+            {isAdmin &&
+              (collapsed
+                ? adminGroup.children.map((item) => renderLeaf(item))
+                : renderAdminGroup())}
           </div>
 
           <div className="mt-auto pt-6 border-t border-emerald-500/10 space-y-4">
-            {userMenuItems.map(renderMenuItem)}
+            {renderLeaf(profileItem)}
           </div>
         </nav>
 

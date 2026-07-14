@@ -17,7 +17,7 @@
 | Auth Service (register, login, JWT, refresh token, RBAC, manajemen akun) | ✅ |
 | Module Service (onboarding device via MQTT discovery, pair/unpair, telemetry ingest, batch NATS) | ✅ |
 | Analytics Service (subscribe `telemetry.batch` → `timescaledb-analytics` → continuous aggregate → dashboard via Kong) | ✅ |
-| WS-Gateway (NATS → WebSocket bridge + JWT auth, route `/ws` via Kong, realtime telemetry + system-status notif) | ✅ |
+| WS-Gateway (NATS → WebSocket bridge + JWT auth, route `/ws` via Kong, realtime telemetry) | ✅ (alert/system-status notif ✅) |
 | Stream Service (MediaMTX RTSP→HLS/WebRTC + MinIO snapshot/recording + CRUD stream via Kong) | ✅ |
 | Monitor Service (snapshot resource container via `docker stats` untuk halaman Version/Security) | ✅ |
 | Dashboard React (Auth + Analytics + Module + Control + Live View + Snapshot via Kong) | ✅ |
@@ -27,18 +27,19 @@
 | Control Service (manual + scheduler otomatis + emergency stop/resume via MQTT) | ✅ |
 | Seed akun admin default + Manajemen Akun (Admin only) | ✅ |
 | Observability (Prometheus + exporter: mysqld/postgres/redis/mosquitto/nats) | ✅ |
+| Audit Service (consume `audit.log` → `mariadb-audit`, `GET /audit/logs`) | ✅ |
+| CCTV Capture Cron (`services/cctv-capture`) | ✅ (job eksternal, bukan microservice) |
 
-### Yang belum dikerjakan:
+### Yang belum dikerjakan (sisa):
 | Service | Fase | Prioritas |
 |---------|------|-----------|
-| Alert Service | Fase 7 | 🔴 P1 |
 | Notification Service | Fase 8 | 🟡 P2 |
-| Audit Service | Fase 9 | 🔴 P1 |
-| Dashboard Alert & History | Fase 10 | 🟡 P2 |
 | Export Service / Data API | Fase 11 | 🟢 P3 |
 | OTA Service | Fase 12 | ⬜ P4 |
 | Prometheus Metrics Service | Fase 13 | ⬜ P4 |
 | Cloudflare Tunnel | Fase 14 | ⬜ P4 |
+
+> **Catatan (2026-07-14):** Dashboard Alert & History (Fase 10) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Lihat tabel Fase 10.
 
 ---
 
@@ -200,7 +201,7 @@
 
 ---
 
-## 🟡 Fase 3 — WS-Gateway (P2 — SELESAI)
+## 🟡 Fase 3 — WS-Gateway (P2 — SELESAI, system-status notif ditunda)
 
 > WebSocket bridge: NATS → Dashboard untuk data real-time.
 
@@ -210,7 +211,7 @@
 | `[x]` | Subscribe `mqtt.{node_id}` | Push realtime payload ke dashboard (`/ws/nodes/{node_id}/live`) |
 | `[x]` | **Autentikasi koneksi WS via JWT** | Validasi access token (Bearer header / `?token=`) via `JWT_SECRET` yang sama dengan Auth Service |
 | `[x]` | Realtime telemetry di Dashboard | `NodeDetailPanel` membuka WS ke `/ws/nodes/{id}/live` → render metrik sensor live |
-| `[x]` | System-status notifications | `NotificationContext` membuka WS ke `/ws/system-status?token=` → notifikasi push real-time |
+| `[x]` | System-status notifications | Route `/ws/system-status` (JWT) di `services/wsgateway` sudah diimplementasikan — subscribe NATS `system.status`, stream ke `NotificationContext` dashboard. Notifikasi jalan begitu ada publisher (Alert/Monitor) ke subject tersebut |
 
 ---
 
@@ -314,24 +315,28 @@ Control Service Scheduler (interval/schedule/threshold/duration/ramp)
 
 ---
 
-## 🔴 Fase 7 — Alert Service (P2)
+## 🔴 Fase 7 — Alert Service (P1 — ✅ SELESAI)
 
 > Mengevaluasi data sensor terhadap threshold dan memicu notifikasi.
 
 | Status | Item | Deskripsi | Estimasi |
 |---|---|---|---|
-| `[ ]` | Scaffold Go service | Struktur `internal/` | 1 hari |
-| `[ ]` | Subscribe NATS `telemetry.ingest` | Terima data sensor real-time | 0.5 hari |
-| `[ ]` | Ambil threshold dari `mariadb-alert` | Konfigurasi threshold per node/metric | 0.5 hari |
-| `[ ]` | Cache threshold di `redis-alert` | Akses cepat tanpa query DB tiap kali | 0.5 hari |
-| `[ ]` | Evaluasi threshold | Bandingkan nilai sensor dengan batas min/max | 1 hari |
-| `[ ]` | Publish `alert.triggered` | Jika threshold terlampaui | 0.5 hari |
-| `[ ]` | Publish `alert.resolved` | Jika nilai kembali normal | 0.5 hari |
-| `[ ]` | REST endpoint `GET /alerts` | List alert history | 0.5 hari |
-| `[ ]` | REST endpoint `PUT /alerts/:id/ack` | Acknowledge alert oleh operator | 0.5 hari |
-| `[ ]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Scaffold Go service | Struktur `internal/` (config, model, repository, cache, service, handler, middleware) | 1 hari |
+| `[x]` | Subscribe NATS `telemetry.ingest` | Queue group `alert-workers` (Core NATS) terima data sensor real-time | 0.5 hari |
+| `[x]` | Ambil threshold dari `mariadb-alert` | Konfigurasi threshold per node/metric (fallback wildcard `node_id="*"`) | 0.5 hari |
+| `[x]` | Cache threshold di `redis-alert` | Cache hasil resolve threshold (TTL 60s) + marker alert aktif untuk dedup | 0.5 hari |
+| `[x]` | Evaluasi threshold | Bandingkan nilai sensor dengan batas min/max; dedup sampai resolve | 1 hari |
+| `[x]` | Publish `alert.triggered` | Jika threshold terlampaui | 0.5 hari |
+| `[x]` | Publish `alert.resolved` | Jika nilai kembali normal | 0.5 hari |
+| `[x]` | REST endpoint `GET /alerts` | List alert history (filter node/metric/status/severity + time window + paginasi) | 0.5 hari |
+| `[x]` | REST endpoint `PUT /alerts/:id/ack` | Acknowledge alert oleh operator/admin | 0.5 hari |
+| `[x]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Threshold CRUD | `GET/POST/PUT/DELETE /thresholds` (operator/admin) + cache-coherent invalidation | 0.5 hari |
+| `[x]` | Kong route + Prometheus | `/alerts`, `/thresholds` via Kong; job `alert-service` | 0.5 hari |
 
-**Total estimasi: 3-5 hari**
+**Total estimasi: 3-5 hari — ✅ Selesai (backend + infra + wiring). Dashboard Alert & History (Fase 10) menyusul.**
+
+> **Catatan integrasi notifikasi:** Alert Service mem-publish `alert.triggered`/`alert.resolved` **dan** `system.status` (envelope notifikasi). WS-Gateway (`/ws/system-status`) sudah subscribe ketiga subject → dashboard `NotificationContext` menerima alert real-time. Threshold dikelola via REST (wildcard `*` untuk semua node per metric).
 
 ### Database: `mariadb-alert` + `redis-alert`
 
@@ -381,29 +386,31 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🔴 Fase 9 — Audit Service (P2 — QUICK WIN)
+## 🔴 Fase 9 — Audit Service (P2 — ✅ SELESAI)
 
 > Mencatat semua aktivitas sistem untuk keperluan audit dan troubleshooting.
 
 | Status | Item | Deskripsi | Estimasi |
 |---|---|---|---|
-| `[ ]` | Scaffold Go service | Struktur `internal/` | 0.5 hari |
-| `[ ]` | Subscribe `audit.log` dari NATS | Konsumsi event audit dari semua service | 0.5 hari |
-| `[ ]` | Append-only insert ke `mariadb-audit` | Immutability log — tidak ada UPDATE/DELETE | 0.5 hari |
-| `[ ]` | `GET /audit/logs` (admin only) | Query log dengan filter (service, action, user, time range) | 0.5 hari |
-| `[ ]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Scaffold Go service | Struktur `internal/` (`config`, `handler`, `middleware`, `model`, `repository`, `service`) | 0.5 hari |
+| `[x]` | Subscribe `audit.log` dari NATS | Konsumsi event audit dari semua service (queue group `audit-workers`, Core NATS) | 0.5 hari |
+| `[x]` | Append-only insert ke `mariadb-audit` | Immutability log — tidak ada UPDATE/DELETE (GORM AutoMigrate) | 0.5 hari |
+| `[x]` | `GET /audit/logs` | Query log dengan filter `event` + `search` (payload LIKE) + paginasi `limit`/`offset` | 0.5 hari |
+| `[x]` | JWT auth (any authenticated user) | Validasi Bearer token via `JWT_SECRET` (sama dengan Auth) — route `/audit` via Kong | — |
+| `[x]` | `Dockerfile` + healthcheck + compose | Multi-stage + `/health`; `mariadb-audit` + `audit` + `mysqld-exporter-audit`; route Kong `/audit`; scrape Prometheus | 0.5 hari |
 
-**Total estimasi: 1-2 hari**
+**Total estimasi: 1-2 hari — ✅ Selesai (backend + wiring infra + build/vet).**
+**Catatan:** dashboard halaman Audit/History (Fase 10) menyusul. Endpoint `GET /audit/logs` terbuka untuk semua role terotentikasi (viewer/operator/admin) — sesuaikan RBAC bila hanya admin yang boleh lihat.
 
 ### Database: `mariadb-audit`
 
 | Tabel | Fungsi |
 |---|---|
-| `audit_logs` | Append-only: id, service, action, user_id, payload (JSON), ip_address, created_at |
+| `audit_logs` | Append-only: `id` (uuid), `event` (varchar, indexed), `payload` (longtext JSON `{event,data}`), `received_at` (datetime, indexed) |
 
 ### Catatan Penting
 
-> ⚠️ **Auth Service dan Module Service SUDAH publish `audit.log` ke NATS**, tapi belum ada service yang meng-consume. Data audit menumpuk sia-sia. Implementasi Audit Service adalah **quick win** dengan nilai besar dan effort kecil.
+> ⚠️ **Auth Service dan Module Service SUDAH publish `audit.log` ke NATS**, tapi belum ada service yang meng-consume. Data audit menumpuk sia-sia. Implementasi Audit Service adalah **quick win** dengan nilai besar dan effort kecil. ✅ Sekarang sudah di-consume (seluruh event `module.*`, `node.*`, `control.*`, `auth.*` mengalir ke `mariadb-audit`).
 
 ---
 
@@ -586,9 +593,11 @@ User (dashboard/API) ──Kong /ml/detect──▶ Vision API
 | `[x]` | **Live View** | Player MediaMTX (HLS/WebRTC iframe) + manajemen stream (create/edit/delete) |
 | `[x]` | **Snapshot** | Galeri snapshot & recording dari MinIO (capture/delete) |
 | `[x]` | **Telemetri Real-time** | Via WebSocket ke WS-Gateway (`NodeDetailPanel`) |
-| `[x]` | **System Notifications** | Via WebSocket `/ws/system-status` (NotificationContext) |
-| `[ ]` | Tampilan alert & history | Integrasi dengan Alert Service |
-| `[ ]` | Panel kontrol device | Integrasi dengan Control Service |
+| `[x]` | **System Notifications** | Via WebSocket `/ws/system-status` (NotificationContext) — route server sudah ada (rebuild `wsgateway`); notifikasi alert real-time (triggered/resolved) mengalir dari Alert Service |
+| `[x]` | **Audit Log page** | Halaman `AUDIT` (sidebar) → `GET /audit/logs`: filter event/search + paginasi + live refresh; konsumsi audit trail dari Audit Service (Fase 9) |
+| `[x]` | **Alert & History page** | Halaman `ALERTS` (sidebar) → `GET /alerts`: tabel history (severity/status/node/metric/value/threshold/message/triggered/acked) + filter + paginasi + Live toggle + Ack (operator/admin); sub-tab **Thresholds** (`GET/POST/PUT/DELETE /thresholds`, wildcard `*` per metric) untuk seed alert |
+| `[x]` | **Notification Bell** | Icon bell di header dashboard → konsumsi `useNotification()` (unread badge + dropdown); `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`) → notifikasi real-time |
+| `[x]` | Panel kontrol device | Integrasi dengan Control Service (Control Panel) |
 
 ### Halaman Dashboard (Saat Ini)
 
@@ -604,7 +613,21 @@ User (dashboard/API) ──Kong /ml/detect──▶ Vision API
 | Live View | `/live` | ✅ | Semua role |
 | Snapshot | `/snapshot` | ✅ | Semua role |
 | Control Panel | `/control` | ✅ | Operator/Admin |
-| Alert & History | (belum) | ⬜ | - |
+| Alert & History | `/alerts` | ✅ | Semua role (Ack: Operator/Admin) |
+
+### Penambahan (2026-07-14) — Dashboard Alert & History (Fase 10)
+
+- **Halaman `ALERTS`** (`dashboard/src/components/Dashboard/Pages/Alerts.jsx`): tab **Alerts** (history) + tab **Thresholds** (manajemen threshold).
+  - *Alerts history*: tabel kolom Severity / Status / Node / Metric / Value / Threshold / Message / Triggered / Acked + tombol **Ack** per baris (hanya `status=active`, enable untuk operator/admin, **disabled** untuk viewer), filter (node_id, metric, status, severity) + quick-chip, paginasi + page-size, toggle **Live** (auto-refresh 10s), expandable row untuk raw payload.
+  - *Thresholds*: list + form create/edit (node_id menerima `*` wildcard, metric, min, max, enabled, severity) + delete dengan konfirmasi. Seed threshold dari UI agar alert bisa ter-trigger.
+  - Bahasa UI **English** (sesuai AGENTS.md). Akses semua role; Ack butuh operator/admin (backend `RequireRole`).
+- **Notification Bell** (`NotificationBell.jsx`): icon bell di header (dekat ClockWidget) → `useNotification()`; badge unread + dropdown list notifikasi terbaru (relative time, warna severity). `NotificationProvider` di-mount di `main.jsx`.
+- **Normalisasi payload** di `NotificationContext.jsx`: `normalizeAlert()` menangani tiga shape — legacy wrapped (`data.*`), Alert Service `system.status` (flat: `type:'alert'`, `level`, `node_id`, `metric`, `value`, `message`, `status:'triggered'|'resolved'`, `ts`), dan raw `alert.triggered`/`alert.resolved` (`severity`, `status:'active'|'resolved'`, `triggered_at`). Mapping: `level`/`severity` → `warning`/`critical`; `resolved` → `success`; `category:'alert'`; `module_id` ← `node_id`; `timestamp` ← `ts`/`triggered_at`. Dedup 5s by message+status menangani event ganda (WS bridge forward `system.status` **dan** raw `alert.*`).
+- **Backend fixes (ditemukan saat E2E):**
+  1. `wsgateway` image stale — route `/ws/system-status` 404 di binary lama; **rebuild** agar route (sudah ada di source) ter-deploy.
+  2. `services/alert` bug: `Service` dibuat dengan NATS conn = `nil` (karena `service.New(...)` dipanggil *sebelum* `nats.Connect`), sehingga `publishAlert`/`publishSystem` sellau early-return → alert tidak pernah di-publish ke `system.status`/`alert.*`. Fix: tambah `Service.SetNATS(nc)` dan panggil setelah koneksi NATS established di `main.go`. Sekarang notifikasi mengalir end-to-end (WS → wsgateway → `NotificationContext`).
+
+> **Verifikasi E2E (2026-07-14):** via Kong — buat threshold (`*`, `e2e_test_ph`, min 5.5/max 7) → publish telemetry di luar range → alert `active` + WS terima `system.status`(triggered) & raw `alert.triggered`; balik ke range → `resolved` + `system.status`(resolved) & raw `alert.resolved`; Ack sebagai admin → `status:acked` + `acked_by`/`acked_at`; viewer → LIST 200 tapi ACK **403** (`forbidden: insufficient role`). Build dashboard `npm run build` ✅.
 
 ---
 
@@ -792,13 +815,17 @@ df = pd.read_parquet("data.parquet")
 | 6 | Stream | Go | MariaDB + MinIO (bucket `stream`, shared) | ✅ Selesai | P3 |
 | 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 |
 | 8 | ML/Vision | Python | MariaDB + MinIO (bucket `ml-vision`, shared) | ✅ Selesai | P3 |
-| 9 | Alert | Go | MariaDB + Redis | ⬜ Belum | **P1** |
+| 9 | Alert | Go | MariaDB + Redis | ✅ Selesai | **P1** |
 | 10 | Notification | Go | MariaDB + Redis | ⬜ Belum | P2 |
-| 11 | Audit | Go | MariaDB | ⬜ Belum | **P1** |
+| 11 | Audit | Go | MariaDB | ✅ Selesai | **P1** |
 | 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis | ⬜ Belum | P3 |
 | 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 |
 | 14 | Webhook | Go | MariaDB | ⬜ Belum | P4 |
 | 15 | Prometheus Metrics | Go | - | ⬜ Belum | P4 |
+
+> **Catatan:** `services/cctv-capture` (job cron snapshot CCTV, dijalankan via `docker-compose.yml`) **sudah ada & jalan** namun **tidak masuk ringkasan di atas** karena bukan microservice (bukan punya API/DB sendiri — hanya pull frame MediaMTX saat pompa OFF lalu simpan ke MinIO `stream`). Tidak ada service nomor 16.
+>
+> **Sinkronisasi status (2026-07-14):** item `system-status notifications` (WS-Gateway) dikoreksi dari ⬜ → ✅ (route `/ws/system-status` sudah diimplementasikan di `services/wsgateway` — subscribe NATS `system.status`, stream ke dashboard `NotificationContext`; notifikasi mengalir begitu ada publisher ke subject tersebut). Replay payload terakhir (`mqtt.>` cache di wsgateway + tulis langsung saat client connect) memperbaiki UX "Loading terus" saat device jarang report. Permanent fix reconnect handler NATS di `services/module` + `services/wsgateway` juga sudah dikerjakan (log disconnect/reconnect/closed + health-check periodik). **FIX (2026-07-14):** `services/alert` tidak mem-publish `system.status`/`alert.*` karena `Service` dibuat dengan NATS conn `nil` (`service.New` dipanggil sebelum `nats.Connect`); ditambah `SetNATS()` dan dipanggil setelah koneksi → notifikasi alert sekarang mengalir end-to-end. Dashboard Alert & History (Fase 10) ✅ selesai (halaman `ALERTS`, notification bell, normalisasi payload).
 
 ---
 
@@ -842,6 +869,9 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw 30 hari, hourly 365 hari, **daily 3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Idempotensi bootstrap diperbaiki: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, ekspor CSV range 4 tahun). |
 | 2026-07-14 | 2.10.0 | **Analytics: batch endpoint + label tampilan + scoping modul.** Perbaikan akar masalah dashboard Analytics kosong di timeframe 1 jam: (1) `GET /analytics/metrics` di-upgrade jadi **batch** (`node_id` & `metric` comma-list, respons `series[node_id][metric]`) → 19 metrik dalam 1 request, menghilangkan burst N×M yang memicu 429 rate-limit Kong; (2) scoping modul diperketat (modul tanpa telemetry tetap kosong); (3) hanya metrik ber-tag `enabled=true` yang ditampilkan. Node tag dapat kolom `label` (AutoMigrate GORM, `COALESCE(label,'')` di SELECT) — Analytics menampilkan `label` sebagai judul/legend tiap metrik, fallback `tag_name` lalu source_key. Editor tag (NodeDetailPanel & NodeConfigPage) dapat input `Label`. Lolos `go build` + `go vet` + e2e. |
 | 2026-07-14 | 2.11.0 | **Analytics: resolusi per-menit data diskrit (≤24h) + envelope min–max analog.** (1) `tsdb.go` `discreteStep`: data diskrit/digital kini di-bucket **1 menit** untuk seluruh window `≤24h` (sebelumnya 5 menit di 24h) → transisi ON/OFF tetap tiap menit; range multi-hari tetap coarsen bertahap (15 m / 1 j / 3 j) agar payload aman. (2) `model.SeriesPoint` diperluas `min`/`max`/`avg` (`*float64`, omitempty); `queryRange` analog kini memilih `last` + `avg=sum/NULLIF(count,0)` + `min` + `max` dari `metrics_rollup`/`metrics_hourly`/`metrics_daily` (CAGG tak simpan avg → dihitung ulang); tambah `scanSeriesRange`. (3) Dashboard `Analytics.jsx`: tren analog menggambar **envelope min–max** (band terisi antara nilai rendah/tinggi tiap bucket) + garis `avg`, dataset band disembunyikan dari legend & tooltip; kartu ringkasan menghitung **true** min/max/avg via `statsOf` (rentang tak lagi hilang di range lebar). Analog tetap per-jam (≤24h) & per-hari (>24h) sesuai keputusan. Lolos `go build` + `go vet` + ESLint (tanpa error baru). |
+| 2026-07-14 | 2.12.0 | **Sinkronisasi dokumen ↔ kode.** (1) Koreksi status `system-status notifications` WS-Gateway: ✅ → ⬜ Belum (route `/ws/system-status` belum diimplementasikan di `services/wsgateway`; hanya sisi dashboard `NotificationContext` yang siap). (2) Tambah catatan `services/cctv-capture` (job cron snapshot CCTV, sudah jalan via compose) yang sebelumnya tidak ada di ringkasan service. (3) Konfirmasi 0 unit test di seluruh service → produksi blocker (gate G10). |
+| 2026-07-14 | 2.13.0 | **Fase 9 — Audit Service SELESAI.** Service Go baru `services/audit`: subscribe `audit.log` (Core NATS, queue group `audit-workers`) → insert append-only ke `mariadb-audit` (`audit_logs`), endpoint `GET /audit/logs` (filter `event`/`search` + paginasi). Wire: `mariadb-audit` + `audit` + `mysqld-exporter-audit` (compose), upstream+route `/audit` (Kong, JWT), scrape job `audit-service`+`mariadb-audit` (Prometheus). Lolos `go build` + `go vet` + `docker compose config`. Dashboard Audit/History (Fase 10) menyusul. |
+| 2026-07-14 | 2.14.0 | **Fase 10 — Dashboard Audit Log page SELESAI.** Halaman `AUDIT` (sidebar, ikon `ScrollText`) di `dashboard/src/components/Dashboard/Pages/Audit.jsx`: tabel audit trail immutable dari `GET /audit/logs` via Kong, filter `event` (prefix) + `search` (payload), paginasi (25/50/100) + quick-filter chip (Auth/Module/Node/Control), tombol Live (auto-refresh 10s). Penyempurnaan backend: filter `event` di Audit Service diubah jadi prefix `LIKE` agar dashboard bisa filter `auth`/`control`/dll. Lolos `npm run build` (vite) + ESLint (sesuai baseline repo). Sidebar & DashboardLayout di-wire. |
 
 ---
 

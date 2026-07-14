@@ -6,9 +6,45 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+
+// Isolated clock widget — keeps its own 1s tick state so the rest of the
+// dashboard (including Analytics charts) is NOT re-rendered every second.
+function ClockWidget() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const formatTime = (date) =>
+    `${String(date.getHours()).padStart(2, '0')}.${String(date.getMinutes()).padStart(2, '0')}.${String(date.getSeconds()).padStart(2, '0')}`;
+
+  const formatDate = (date) => {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${days[date.getDay()]}`;
+  };
+
+  return (
+    <div className="hidden sm:flex items-center gap-2 lg:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 lg:py-2.5 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-main)' }}>
+      <div className="flex flex-col items-end">
+        <span className="text-xs sm:text-base lg:text-lg font-black font-display tracking-widest text-emerald-400 tabular-nums">
+          {formatTime(now)}
+        </span>
+        <span className="hidden lg:inline text-[11px] font-black uppercase tracking-widest mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          {formatDate(now)}
+        </span>
+      </div>
+      <div className="p-1.5 sm:p-2 lg:p-2.5 bg-emerald-500/10 border border-emerald-500/20">
+        <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-400 animate-pulse" />
+      </div>
+    </div>
+  );
+}
 import { useTheme } from '../../context/ThemeContext';
 import { ModuleProvider } from '../../context/ModuleContext';
 import Sidebar from './Sidebar';
+import ModuleSelector from './ModuleSelector';
 import Profile from './Pages/Users';
 import UserManagement from './Pages/UserManagement';
 import ModuleManagement from './Pages/DeviceManagement';
@@ -18,6 +54,9 @@ import ControlPanel from './Pages/ControlPanel';
 import LiveView from './Pages/LiveView';
 import Snapshot from './Pages/Snapshot';
 import Monitor from './Pages/Monitor';
+import Audit from './Pages/Audit';
+import Alerts from './Pages/Alerts';
+import NotificationBell from './NotificationBell';
 
 function DashboardContent({ onLogout }) {
   const { theme, toggleTheme } = useTheme();
@@ -32,7 +71,6 @@ function DashboardContent({ onLogout }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Current user (from session) — used for admin-only UI
   const me = (() => {
@@ -44,27 +82,8 @@ function DashboardContent({ onLogout }) {
   })();
   const isAdmin = Array.isArray(me?.roles) && me.roles.includes('admin');
 
-  // Clock tick
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (date) => {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${hours}.${minutes}.${seconds}`;
-  };
-
-  const formatDate = (date) => {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${days[date.getDay()]}`;
-  };
+  // Clock tick is isolated in <ClockWidget /> so its 1s interval does not
+  // re-render the rest of the dashboard (charts, tables, etc.).
 
   // Switching tabs from the sidebar must also exit the Node Config page,
   // otherwise nodeConfig stays truthy and renderContent() keeps showing it.
@@ -93,6 +112,10 @@ function DashboardContent({ onLogout }) {
         return <Monitor />;
       case 'snapshot':
         return <Snapshot />;
+      case 'audit':
+        return <Audit />;
+      case 'alerts':
+        return <Alerts />;
       case 'users':
         return isAdmin ? <UserManagement /> : <Profile onLogout={onLogout} />;
       default:
@@ -117,7 +140,7 @@ function DashboardContent({ onLogout }) {
         mobileOpen={mobileSidebarOpen}
         setMobileOpen={setMobileSidebarOpen}
         hidden={sidebarHidden}
-        isAdmin={isAdmin}
+        me={me}
       />
 
       {/* Main Layout Area */}
@@ -145,6 +168,11 @@ function DashboardContent({ onLogout }) {
 
           {/* Header Right widgets */}
           <div className="flex items-center gap-2 lg:gap-5 shrink-0">
+            {/* Module Selector (only for data-bound pages) */}
+            {!nodeConfig && ['monitor', 'analytics', 'control', 'live', 'snapshot'].includes(activeTab) && (
+              <ModuleSelector />
+            )}
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -158,20 +186,11 @@ function DashboardContent({ onLogout }) {
               )}
             </button>
 
-            {/* Live Clock Card */}
-            <div className="hidden sm:flex items-center gap-2 lg:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 lg:py-2.5 border  " style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-main)' }}>
-              <div className="flex flex-col items-end">
-                <span className="text-xs sm:text-base lg:text-lg font-black font-display tracking-widest text-emerald-400 tabular-nums">
-                  {formatTime(currentTime)}
-                </span>
-                <span className="hidden lg:inline text-[11px] font-black uppercase tracking-widest mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                  {formatDate(currentTime)}
-                </span>
-              </div>
-              <div className="p-1.5 sm:p-2 lg:p-2.5 bg-emerald-500/10 border border-emerald-500/20">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-400 animate-pulse" />
-              </div>
-            </div>
+            {/* Live Clock Card — isolated 1s tick, does not re-render the page */}
+            <ClockWidget />
+
+            {/* Notification Bell (real-time alerts from the Alert Service) */}
+            <NotificationBell />
 
             {/* Logout */}
             <button

@@ -111,13 +111,13 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — | ✅ Running |
 | Control | `mariadb-control` | — | — | — | ✅ Running |
 | Stream | `mariadb-stream` | — | — | bucket `stream` | ✅ Running |
-| Alert | `mariadb-alert` | — | `redis-alert` | — | ⬜ Belum |
+| Alert | `mariadb-alert` | — | `redis-alert` | — | ✅ Running |
 | ML / Vision | `mariadb-ml` | — | — | bucket `ml-vision` | ✅ Running |
 | OTA | `mariadb-ota` | — | — | bucket `ota` | ⬜ Belum |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
 | Export | — | `timescaledb-module` (read) | `redis-export` | — | ⬜ Belum |
 | Notification | `mariadb-notification` | — | `redis-notification` | — | ⬜ Belum |
-| Audit | `mariadb-audit` | — | — | — | ⬜ Belum |
+| Audit | `mariadb-audit` | — | — | — | ✅ Running |
 | Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
 | Monitor | — (docker stats) | — | — | — | ✅ Running |
 
@@ -153,7 +153,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `wsgateway/` ✅ — WebSocket bridge NATS → Dashboard (Go)
   - `export/` ⬜ — Service ekspor data untuk akses eksternal/Python (Go/Python)
   - `control/` ✅ — Service kontrol device
-  - `alert/` ⬜ — Service evaluasi threshold
+  - `alert/` ✅ — Service evaluasi threshold
   - `stream/` ⬜ — Service streaming video
   - `ota/` ⬜ — Service update firmware
   - `notification/` ⬜ — Service notifikasi multi-channel
@@ -176,11 +176,12 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 |---|---|---|---|---|
 | `telemetry.ingest` | Module Service | Alert, Analytics, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
 | `telemetry.batch` | Module Service | Analytics | Pub/Sub | ✅ Aktif |
-| `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
-| `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ⬜ Belum |
+| `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
+| `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
+| `system.status` | Alert / Monitor Service | WS-Gateway (`/ws/system-status`) | Pub/Sub | ✅ Aktif (route WS + publisher Alert Service jalan; dashboard `NotificationContext` konsumsi) |
 | `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
 | `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ✅ Dipublish |
-| `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module) tapi ⬜ belum di-consume |
+| `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module, Control, Stream) & ✅ di-consume oleh Audit Service |
 | `metrics.health` | Semua service | Prometheus | Pub/Sub | ⬜ Belum (masih scrape langsung) |
 | `webhook.delivery` | Webhook Service | Audit Service | Pub/Sub | ⬜ Belum |
 | `webhook.retry` | Webhook Service | Webhook Service (internal) | Queue | ⬜ Belum |
@@ -244,13 +245,15 @@ untuk di-stream.
 
 **Solusi:**
 - **Quick fix:** `docker restart microservices-module-1` → koneksi Core NATS
-  dibangun ulang saat startup, live monitor langsung jalan.
-- **Permanent fix (belum dikerjakan):** tambahkan `nats.SetReconnectHandler` /
-  `SetDisconnectErrHandler` + log di `services/module/main.go`, serta guard
-  `natsPub`/`jsPub` dengan health-check periodik agar publish tidak diam-diam
-  terbuang. Sebagai mitigasi UX, WS-Gateway (`NodeLive`) sebaiknya **replay payload
-  telemetry terakhir** dari DB/cache saat client connect, supaya tidak "loading"
-  bila device report-nya jarang.
+   dibangun ulang saat startup, live monitor langsung jalan.
+- **Permanent fix (SELESAI 2026-07-14):** ditambahkan `nats.DisconnectErrHandler` /
+   `nats.ReconnectHandler` / `nats.ClosedHandler` / `nats.ErrorHandler` + log di
+   `services/module/main.go` dan `services/wsgateway/main.go`, serta health-check
+   periodik (30s) yang men-log WARN bila `!natsConn.IsConnected()`. Selain itu
+   `publishTelemetry` (`services/module/internal/service/service.go:575`) kini
+   men-log error `telemetry.ingest` (tidak lagi `_ =` diam-diam). WS-Gateway
+   (`NodeLive`) juga mereplay payload telemetry terakhir dari cache `mqtt.>`
+   saat client connect, sehingga tidak "loading" bila device report-nya jarang.
 
 ---
 
@@ -399,6 +402,7 @@ Setiap event saga memiliki struktur payload yang konsisten:
 - Subscribe `mqtt.{node_id}` → push realtime payload ke dashboard (`/ws/nodes/{node_id}/live`)
 - ✅ **Autentikasi koneksi WS via JWT** — validasi access token (Bearer header / `?token=`) pakai `JWT_SECRET` yang sama dengan Auth Service
 - ⬜ **`system-status` / notifikasi multi-subject (NotificationContext)** — ditunda (belum diperlukan)
+- ✅ **`system-status` route (`/ws/system-status`)** — SELESAI 2026-07-14: route di `services/wsgateway` subscribe NATS `system.status` dan stream ke dashboard `NotificationContext`; notifikasi mengalir begitu ada publisher (Alert/Monitor) ke subject tersebut.
 
 ### ✅ Fase 4 — Control Service [P2 — SELESAI]
 
@@ -438,14 +442,13 @@ Skema ini **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply):
 #### Database `mariadb-control`
 - `control_targets` (katalog output per node), `control_modes` (MANUAL/AUTO per output), `schedules` (definisi otomatis + params JSON), `commands` (log: req_id, status pending→sent→acked / timeout / failed)
 
-### ⬜ Fase 5 — Alert Service [P2]
-- Subscribe NATS `telemetry.ingest`
-- Ambil threshold dari `mariadb-alert`, cache di `redis-alert`
-- Evaluasi threshold — bandingkan nilai sensor dengan batas min/max
-- Publish `alert.triggered` jika threshold terlampaui
-- Publish `alert.resolved` jika nilai kembali normal
-- REST endpoint: `GET /alerts`, `PUT /alerts/:id/ack`
-- Dockerfile + healthcheck
+### ✅ Fase 5 — Alert Service [P1 — SELESAI]
+- Subscribe NATS `telemetry.ingest` (queue group `alert-workers`, Core NATS)
+- Ambil threshold dari `mariadb-alert` (fallback wildcard `node_id="*"`), cache di `redis-alert` (TTL 60s) + marker alert aktif untuk dedup
+- Evaluasi threshold — bandingkan nilai sensor dengan batas min/max; publish `alert.triggered` / `alert.resolved`
+- Publish juga ke `system.status` agar WS-Gateway → dashboard `NotificationContext` menerima notifikasi real-time
+- REST endpoint: `GET /alerts`, `PUT /alerts/:id/ack` (operator/admin), plus `GET/POST/PUT/DELETE /thresholds`
+- Dockerfile + healthcheck + Kong route (`/alerts`, `/thresholds`) + scrape Prometheus `alert-service`
 
 ### ⬜ Fase 5 — Notification Service [P3]
 - Subscribe NATS `alert.triggered`, `alert.resolved`
@@ -684,7 +687,7 @@ df = pd.read_parquet("data.parquet")
 | Healthcheck | Setiap service menyediakan endpoint `/health` untuk Docker healthcheck | ✅ |
 | Prometheus Metrics | Auth, Module, Analytics, WS-Gateway expose `/metrics`; Kong via plugin prometheus | ✅ |
 | Scrape Targets | `prometheus`, `auth-service`, `module-service`, `analytics-service`, `wsgateway-service`, `kong` — semua UP | ✅ |
-| Audit Trail | Auth & Module publish `audit.log` ke NATS; ⬜ belum di-consume Audit Service | 🟡 Sebagian |
+| Audit Trail | Auth & Module publish `audit.log` ke NATS; ✅ di-consume oleh Audit Service (`mariadb-audit`) | ✅ |
 | Saga Tracing | Setiap transaksi saga memiliki `saga_id` dan `trace_id` untuk end-to-end tracing | ⬜ |
 | Dead Letter Queue | Pesan gagal terkumpul di subject `saga.*.dlq` untuk investigasi | ⬜ |
 | Webhook Delivery Log | Setiap pengiriman webhook ke eksternal dicatat melalui event `webhook.delivery` | ⬜ |
@@ -707,7 +710,7 @@ df = pd.read_parquet("data.parquet")
 | Prioritas | Fase | Service | Estimasi | Alasan |
 |---|---|---|---|---|
 | ✅ P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah bisa dikontrol (manual + otomatis + emergency/resume) |
-| 🔴 P1 | Fase 5 | Alert Service | 3-5 hari | Data sensor sudah masuk tapi belum ada evaluasi threshold |
+| ✅ P1 | Fase 5 | Alert Service | 3-5 hari | Threshold evaluation + notifikasi real-time via `system.status` (WS) |
 | 🔴 P1 | Fase 8 | Audit Service | 1-2 hari | Quick win: data audit sudah dipublish tapi tidak di-consume |
 | 🟡 P2 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna |
 | 🟡 P2 | Fase 3 | WS-Gateway JWT Auth | ✅ Selesai | Celah keamanan WS sudah ditutup |

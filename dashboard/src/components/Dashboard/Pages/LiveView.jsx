@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import streamApi from '../../../api/stream';
+import { useModule } from '../../../context/ModuleContext';
 
 // ─── Role helpers ──────────────────────────────────────────────────────────────
 function currentUser() {
@@ -34,6 +35,13 @@ function canManage() {
   const u = currentUser();
   const roles = Array.isArray(u?.roles) ? u.roles : [];
   return roles.includes('admin') || roles.includes('operator');
+}
+
+// Format a seconds count as mm:ss for the live recording timer.
+function formatDuration(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 // ─── MediaMTX player (iframe) ──────────────────────────────────────────────────
@@ -104,7 +112,18 @@ function StatusPill({ status, enabled }) {
 function StreamCard({ stream, onEdit, onDelete }) {
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [recordingStart, setRecordingStart] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
   const [flash, setFlash] = useState(null); // { type: 'ok'|'err', msg }
+
+  // Live ticking elapsed-time counter while a recording is active.
+  useEffect(() => {
+    if (recordingStart == null) return;
+    const tick = () => setElapsed(Math.floor((Date.now() - recordingStart) / 1000));
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [recordingStart]);
 
   const notify = (msg, type) => {
     setFlash({ type, msg });
@@ -115,7 +134,7 @@ function StreamCard({ stream, onEdit, onDelete }) {
     setBusy(true);
     try {
       await streamApi.captureSnapshot(stream.id, { detect });
-      notify(detect ? 'Snapshot sent to AI vision — saved to GALLERY (DETECTION)' : 'Snapshot saved to MinIO', 'ok');
+      notify(detect ? 'AI vision ran — saved in Gallery (AI DETECTION)' : 'Snapshot saved in Gallery', 'ok');
     } catch (e) {
       notify(e?.message || 'Capture failed', 'err');
     } finally {
@@ -127,15 +146,23 @@ function StreamCard({ stream, onEdit, onDelete }) {
     setBusy(true);
     try {
       if (recording) {
-        await streamApi.stopRecording(stream.id);
+        const res = await streamApi.stopRecording(stream.id);
         setRecording(false);
-        notify('Recording stopped & cover saved', 'ok');
+        setRecordingStart(null);
+        setElapsed(0);
+        const dur = Math.round(res?.duration || 0);
+        notify(`Recording stopped — ${formatDuration(dur)} saved in Gallery`, 'ok');
       } else {
         await streamApi.startRecording(stream.id);
         setRecording(true);
+        setRecordingStart(Date.now());
+        setElapsed(0);
         notify('Recording started', 'ok');
       }
     } catch (e) {
+      setRecording(false);
+      setRecordingStart(null);
+      setElapsed(0);
       notify(e?.message || 'Recording failed', 'err');
     } finally {
       setBusy(false);
@@ -171,8 +198,17 @@ function StreamCard({ stream, onEdit, onDelete }) {
       {/* Controls */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-emerald-500/10">
         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500">
-          <Radio className="w-3.5 h-3.5 text-emerald-400" />
-          MediaMTX Player
+          {recording ? (
+            <span className="flex items-center gap-1.5 text-red-400 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              REC {formatDuration(elapsed)}
+            </span>
+          ) : (
+            <>
+              <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              MediaMTX Player
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -233,7 +269,7 @@ function StreamCard({ stream, onEdit, onDelete }) {
 }
 
 // ─── Stream form modal (create / edit) ───────────────────────────────────────
-function StreamFormModal({ initial, onSubmit, onClose, busy }) {
+function StreamFormModal({ initial, selectedModule, onSubmit, onClose, busy }) {
   const isEdit = !!initial;
   const [form, setForm] = useState({
     name: initial?.name || '',
@@ -260,6 +296,8 @@ function StreamFormModal({ initial, onSubmit, onClose, busy }) {
       location: form.location.trim(),
     };
     if (form.source_rtsp.trim()) body.source_rtsp = form.source_rtsp.trim();
+    // Streams are bound to the currently selected module (not a node).
+    if (selectedModule?.id) body.module_id = selectedModule.id;
     if (isEdit) {
       body.enabled = form.enabled;
     }
@@ -396,6 +434,7 @@ function ConfirmDelete({ stream, onConfirm, onClose, busy }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function LiveView() {
+  const { selectedModule } = useModule();
   const [streams, setStreams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -408,7 +447,7 @@ export default function LiveView() {
     setLoading(true);
     setError('');
     try {
-      const data = await streamApi.list();
+      const data = await streamApi.list({ module_id: selectedModule?.id || '' });
       setStreams(Array.isArray(data?.streams) ? data.streams : []);
     } catch (e) {
       setError(e?.message || 'Failed to load streams');
@@ -416,7 +455,7 @@ export default function LiveView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedModule]);
 
   useEffect(() => {
     load();
@@ -533,6 +572,7 @@ export default function LiveView() {
       {formOpen && (
         <StreamFormModal
           initial={editing}
+          selectedModule={selectedModule}
           busy={busy}
           onClose={() => { setFormOpen(false); setEditing(null); }}
           onSubmit={editing ? handleUpdate : handleCreate}

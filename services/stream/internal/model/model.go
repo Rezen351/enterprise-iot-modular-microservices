@@ -9,6 +9,8 @@ type Stream struct {
 	DeviceLabel string    `gorm:"column:device_label;type:varchar(128)"`
 	Location    string    `gorm:"column:location;type:varchar(128)"`
 	SourceRTSP  string    `gorm:"column:source_rtsp;type:varchar(512);not null"` // includes CCTV credentials
+	NodeID      string    `gorm:"column:node_id;type:char(36);index"`            // owning node (CCTV device)
+	ModuleID    string    `gorm:"column:module_id;type:char(36);index"`          // owning module (denormalized for filtering)
 	Enabled     bool      `gorm:"column:enabled;not null;default:true"`
 	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
@@ -26,6 +28,7 @@ type Snapshot struct {
 	ID          string    `gorm:"column:id;type:char(36);primaryKey"`
 	StreamID    string    `gorm:"column:stream_id;type:char(36);index"`
 	StreamName  string    `gorm:"column:stream_name;type:varchar(64)"`
+	ModuleID    string    `gorm:"column:module_id;type:char(36);index"` // owning module (denormalized from stream)
 	ObjectKey   string    `gorm:"column:object_key;type:varchar(512);not null"`
 	URL         string    `gorm:"column:url;type:varchar(1024);not null"`
 	ContentType string    `gorm:"column:content_type;type:varchar(64)"`
@@ -39,6 +42,7 @@ type Snapshot struct {
 	Classes       string  `gorm:"column:classes;type:text"`    // JSON array string
 	Detections    string  `gorm:"column:detections;type:mediumtext"` // JSON array string
 	ConfidenceAvg float64 `gorm:"column:confidence_avg"`
+	Duration      float64 `gorm:"column:duration"` // recorded clip length in seconds (kind="recording")
 
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 }
@@ -50,6 +54,7 @@ type SnapshotView struct {
 	ID         string    `json:"id"`
 	StreamID   string    `json:"stream_id"`
 	StreamName string    `json:"stream_name"`
+	ModuleID   string    `json:"module_id,omitempty"`
 	URL        string    `json:"url"`
 	Kind       string    `json:"kind"`
 	Size       int64     `json:"size"`
@@ -62,6 +67,7 @@ type SnapshotView struct {
 	Classes       string  `json:"classes,omitempty"`    // JSON array string
 	Detections    string  `json:"detections,omitempty"` // JSON array string
 	ConfidenceAvg float64 `json:"confidence_avg,omitempty"`
+	Duration      float64 `json:"duration,omitempty"` // recorded clip length in seconds
 }
 
 
@@ -69,11 +75,15 @@ type SnapshotView struct {
 
 // CreateStreamRequest is the body for POST /streams.
 // source_rtsp is optional; when empty the configured CCTV_RTSP_URL is used.
+// node_id / module_id optionally bind the stream to a node (and its module) so
+// the dashboard can scope Live/Gallery to a selected module.
 type CreateStreamRequest struct {
 	Name        string `json:"name"`
 	DeviceLabel string `json:"device_label"`
 	Location    string `json:"location"`
 	SourceRTSP  string `json:"source_rtsp"`
+	NodeID      string `json:"node_id"`
+	ModuleID    string `json:"module_id"`
 }
 
 // UpdateStreamRequest is the body for PUT /streams/{id}.
@@ -86,6 +96,8 @@ type UpdateStreamRequest struct {
 	Location    *string `json:"location"`
 	SourceRTSP  *string `json:"source_rtsp"`
 	Enabled     *bool   `json:"enabled"`
+	NodeID      *string `json:"node_id"`
+	ModuleID    *string `json:"module_id"`
 }
 
 // ─── Response DTOs ────────────────────────────────────────────────────────────
@@ -97,6 +109,8 @@ type StreamView struct {
 	DeviceLabel string     `json:"device_label"`
 	Location    string     `json:"location"`
 	SourceRTSP  string     `json:"source_rtsp"`
+	NodeID      string     `json:"node_id,omitempty"`
+	ModuleID    string     `json:"module_id,omitempty"`
 	Enabled     bool       `json:"enabled"`
 	Status      string     `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
 	HlsURL      string     `json:"hls_url"`

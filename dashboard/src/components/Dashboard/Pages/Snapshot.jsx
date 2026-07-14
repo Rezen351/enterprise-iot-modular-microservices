@@ -1,21 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Camera,
   RefreshCw,
   Trash2,
   Loader2,
   Film,
-  Image as ImageIcon,
   AlertTriangle,
   X,
   Sparkles,
-  Scan,
   Check,
   Download,
+  Search,
+  ArrowUpDown,
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import streamApi from '../../../api/stream';
 import mlApi from '../../../api/ml';
+import { useModule } from '../../../context/ModuleContext';
 
 function canManage() {
   try {
@@ -33,6 +34,13 @@ function formatTime(d) {
   } catch {
     return '';
   }
+}
+
+// Format a seconds count as mm:ss for recording durations.
+function formatDuration(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds || 0));
+  const m = Math.floor(s / 60);
+  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
 // Parse a JSON string coming from the backend, tolerating empty/invalid values.
@@ -163,13 +171,51 @@ function triggerDownload(u, name) {
 }
 
 export default function Snapshot() {
+  const { selectedModule } = useModule();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState(''); // '' | 'snapshot' | 'recording' | 'detection' | 'frames' | 'annotated'
+  const [filter, setFilter] = useState('snapshot'); // 'snapshot' | 'recording' | 'ai'
   const [busyId, setBusyId] = useState(null);
   const [preview, setPreview] = useState(null); // lightbox item
   const [captureDetail, setCaptureDetail] = useState(null); // ml-result result JSON
+
+  // Local search + filter controls
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('newest'); // 'newest' | 'oldest'
+  const [streamFilter, setStreamFilter] = useState('all');
+
+  const streamOptions = useMemo(() => {
+    const set = new Set(items.map((i) => i.stream_name).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    let list = items;
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((i) => {
+        const hay = [
+          i.stream_name,
+          i.title,
+          i.id,
+          ...safeParseJSON(i.detections, []).map((d) => d.class_name),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    if (streamFilter !== 'all') {
+      list = list.filter((i) => i.stream_name === streamFilter);
+    }
+    return [...list].sort((a, b) => {
+      const ta = new Date(a.created_at).getTime() || 0;
+      const tb = new Date(b.created_at).getTime() || 0;
+      return sort === 'newest' ? tb - ta : ta - tb;
+    });
+  }, [items, query, streamFilter, sort]);
 
   // File-management (select / download / delete)
   const [selectMode, setSelectMode] = useState(false);
@@ -182,20 +228,30 @@ export default function Snapshot() {
     setLoading(true);
     setError('');
     try {
-      if (filter === 'frames' || filter === 'annotated') {
-        const data = await mlApi.listResults(filter);
-        setItems(Array.isArray(data) ? data.map(normalizeCapture) : []);
-      } else if (filter === '') {
-        const [snap, cap] = await Promise.all([
-          streamApi.listSnapshots(undefined).catch(() => null),
+      if (filter === 'ai') {
+        // AI Detection: every ML result (cron routine captures + live "Capture
+        // Detect AI" captures) lives in the shared ml-result bucket. Show both
+        // the raw frames and the annotated (boxed) images together.
+        const [frames, annotated] = await Promise.all([
           mlApi.listResults('frames').catch(() => null),
+          mlApi.listResults('annotated').catch(() => null),
         ]);
-        const a = Array.isArray(snap?.snapshots) ? snap.snapshots : [];
-        const b = Array.isArray(cap) ? cap.map(normalizeCapture) : [];
-        setItems([...a, ...b]);
-      } else {
-        const data = await streamApi.listSnapshots(filter);
+        const a = Array.isArray(frames) ? frames.map(normalizeCapture) : [];
+        const b = Array.isArray(annotated) ? annotated.map(normalizeCapture) : [];
+        let list = [...a, ...b];
+        // Scope to the selected module: keep only frames whose stream belongs to
+        // a stream bound to the active module.
+        if (selectedModule) {
+          const data = await streamApi.list({ module_id: selectedModule.id }).catch(() => null);
+          const names = new Set((data?.streams || []).map((s) => s.name));
+          list = list.filter((it) => names.has(it.stream_name));
+        }
+        setItems(list);
+      } else if (filter === 'snapshot' || filter === 'recording') {
+        const data = await streamApi.listSnapshots({ kind: filter, module_id: selectedModule?.id || '' });
         setItems(Array.isArray(data?.snapshots) ? data.snapshots : []);
+      } else {
+        setItems([]);
       }
     } catch (e) {
       setError(e?.message || 'Failed to load gallery');
@@ -203,7 +259,7 @@ export default function Snapshot() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, selectedModule]);
 
   useEffect(() => {
     load();
@@ -283,12 +339,9 @@ export default function Snapshot() {
   };
 
   const tabs = [
-    { id: '', label: 'ALL', icon: ImageIcon },
     { id: 'snapshot', label: 'SNAPSHOT', icon: Camera },
     { id: 'recording', label: 'RECORDING', icon: Film },
-    { id: 'detection', label: 'DETECTION', icon: Sparkles },
-    { id: 'frames', label: 'CAPTURES', icon: Scan },
-    { id: 'annotated', label: 'ANNOTATED', icon: ImageIcon },
+    { id: 'ai', label: 'AI DETECTION', icon: Sparkles },
   ];
 
   return (
@@ -335,6 +388,37 @@ export default function Snapshot() {
         })}
       </div>
 
+      {/* Search + filter bar */}
+      <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by stream, title, or detected object…"
+            className="w-full h-10 pl-9 pr-3 bg-[#030705]/80 border border-emerald-500/15 text-xs text-white placeholder:text-slate-500 uppercase tracking-wide outline-none focus:border-emerald-400"
+          />
+        </div>
+        <select
+          value={streamFilter}
+          onChange={(e) => setStreamFilter(e.target.value)}
+          className="h-10 px-3 bg-[#030705]/80 border border-emerald-500/15 text-xs text-white uppercase tracking-wide outline-none focus:border-emerald-400 cursor-pointer"
+        >
+          <option value="all">All streams</option>
+          {streamOptions.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => setSort((v) => (v === 'newest' ? 'oldest' : 'newest'))}
+          className="h-10 px-3 flex items-center gap-2 border border-emerald-500/15 text-xs font-black uppercase tracking-widest text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10"
+          title="Toggle sort order"
+        >
+          <ArrowUpDown className="w-4 h-4" />
+          {sort === 'newest' ? 'Newest' : 'Oldest'}
+        </button>
+      </div>
+
       {error && (
         <div className="flex items-center gap-2 text-red-400 text-sm font-bold border border-red-500/30 bg-red-500/10 px-4 py-3">
           <AlertTriangle className="w-4 h-4" /> {error}
@@ -346,25 +430,46 @@ export default function Snapshot() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
           <span className="text-xs font-black uppercase tracking-widest">Loading gallery…</span>
         </div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-20 border border-emerald-500/10 bg-[#030705]/60">
           <Camera className="w-12 h-12 text-slate-600" />
           <div className="text-center">
-            <div className="text-sm font-black uppercase tracking-widest text-slate-300">Gallery Empty</div>
-            <div className="text-xs text-slate-500 mt-1">Use the camera (snapshot) or AI Detect on the LIVE page. Cron captures (CAPTURES tab) appear every 8h when pump/load is OFF.</div>
+            {query || streamFilter !== 'all' ? (
+              <>
+                <div className="text-sm font-black uppercase tracking-widest text-slate-300">No matches</div>
+                <div className="text-xs text-slate-500 mt-1">No gallery items match the current search or filter.</div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-black uppercase tracking-widest text-slate-300">Gallery Empty</div>
+                <div className="text-xs text-slate-500 mt-1">Use the camera (SNAPSHOT) on the LIVE page for a plain frame, or AI Detect for a detection. AI DETECTION shows every ML result (cron routine + live captures) from the ml-result bucket.</div>
+              </>
+            )}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {items.map((s) => {
+          {filtered.map((s) => {
             const isDetection = s.kind === 'detection';
             const isCapture = s.source === 'capture';
+            const isAI = isDetection || isCapture;
+            const isRecording = s.kind === 'recording';
             const checked = !!selected[s.id];
             return (
             <div key={s.id} className={`border border-emerald-500/15 bg-[#030705]/80 backdrop-blur-md overflow-hidden flex flex-col ${checked ? 'ring-2 ring-emerald-400' : ''}`}>
               <div className="relative aspect-video bg-black">
                 {isDetection ? (
                   <DetectionImage item={s} onClick={() => !selectMode && openPreview(s)} />
+                ) : isRecording ? (
+                  <video
+                    src={s.url}
+                    controls
+                    preload="metadata"
+                    className="w-full h-full object-contain bg-black"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
                   <img
                     src={s.url}
@@ -380,13 +485,11 @@ export default function Snapshot() {
                 <span className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border ${
                   s.kind === 'recording'
                     ? 'bg-red-500/20 border-red-500/30 text-red-400'
-                    : isDetection
+                    : isAI
                       ? 'bg-violet-500/20 border-violet-500/30 text-violet-300'
-                      : isCapture
-                        ? 'bg-sky-500/20 border-sky-500/30 text-sky-300'
-                        : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                      : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
                 }`}>
-                  {s.kind === 'recording' ? <Film className="w-3 h-3" /> : isDetection ? <Sparkles className="w-3 h-3" /> : isCapture ? <Scan className="w-3 h-3" /> : <Camera className="w-3 h-3" />}
+                  {s.kind === 'recording' ? <Film className="w-3 h-3" /> : isAI ? <Sparkles className="w-3 h-3" /> : <Camera className="w-3 h-3" />}
                   {isCapture ? s.captureType : s.kind}
                 </span>
                 {selectMode && (
@@ -403,7 +506,9 @@ export default function Snapshot() {
               <div className="px-3 py-2 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-xs font-black uppercase tracking-wide text-white truncate">{s.stream_name}</div>
-                  <div className="text-[10px] text-slate-500 truncate">{formatTime(s.created_at)}</div>
+                  <div className="text-[10px] text-slate-500 truncate">
+                    {formatTime(s.created_at)}{isRecording && s.duration ? ` · ${formatDuration(s.duration)}` : ''}
+                  </div>
                   {isDetection && (
                     <div className="mt-1">
                       <DetectionSummary item={s} />
@@ -502,6 +607,12 @@ export default function Snapshot() {
               <div className="w-full max-w-5xl border border-violet-500/20">
                 <DetectionImage item={preview} />
               </div>
+            ) : preview.kind === 'recording' ? (
+              <video
+                src={preview.url}
+                controls
+                className="max-h-[80vh] w-auto max-w-full bg-black border border-red-500/20"
+              />
             ) : (
               <img
                 src={preview.url}
@@ -513,17 +624,18 @@ export default function Snapshot() {
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 border ${
                 preview.kind === 'recording'
                   ? 'border-red-500/30 text-red-400'
-                  : preview.kind === 'detection'
+                  : preview.kind === 'detection' || preview.source === 'capture'
                     ? 'border-violet-500/30 text-violet-300'
-                    : preview.source === 'capture'
-                      ? 'border-sky-500/30 text-sky-300'
-                      : 'border-emerald-500/30 text-emerald-400'
+                    : 'border-emerald-500/30 text-emerald-400'
               }`}>
-                {preview.kind === 'recording' ? <Film className="w-3 h-3" /> : preview.kind === 'detection' ? <Sparkles className="w-3 h-3" /> : preview.source === 'capture' ? <Scan className="w-3 h-3" /> : <Camera className="w-3 h-3" />}
+                {preview.kind === 'recording' ? <Film className="w-3 h-3" /> : preview.kind === 'detection' || preview.source === 'capture' ? <Sparkles className="w-3 h-3" /> : <Camera className="w-3 h-3" />}
                 {preview.source === 'capture' ? preview.captureType : preview.kind}
               </span>
               <span>{preview.stream_name}</span>
               <span className="text-slate-500">{formatTime(preview.created_at)}</span>
+              {preview.kind === 'recording' && preview.duration ? (
+                <span className="text-red-300">Duration {formatDuration(preview.duration)}</span>
+              ) : null}
               {preview.kind === 'detection' && (
                 <>
                   <span className="text-violet-300">{preview.model_name || preview.model_id}</span>

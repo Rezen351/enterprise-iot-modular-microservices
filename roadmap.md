@@ -432,8 +432,9 @@ Module Service → NATS telemetry.ingest → Alert Service
 | `[x]` | `POST /streams/{id}/snapshot?detect=true` | Capture frame → kirim ke ML Vision (`vision-aeroponik`) → simpan hasil deteksi sebagai `kind=detection` (bbox JSON) di tab Gallery DETECTION |
 | `[x]` | `GET /snapshots` | List snapshot/recording (`?kind=`) |
 | `[x]` | `GET /snapshots/{id}` · `DELETE /snapshots/{id}` | Get/delete snapshot |
-| `[x]` | `POST /streams/{id}/record/start` | Mulai rekam MediaMTX |
-| `[x]` | `POST /streams/{id}/record/stop` | Stop rekam → cover snapshot (`kind=recording`) |
+| `[x]` | `POST /streams/{id}/record/start` | Mulai rekam video via `ffmpeg` (pull RTSP relay MediaMTX `rtsp://mediamtx:8554/{name}`) → file `.mp4` temp (`-c copy`) |
+| `[x]` | `POST /streams/{id}/record/stop` | Finalisasi `ffmpeg` (SIGINT → moov atom) → upload MP4 ke MinIO (`recordings/<stream>/<uuid>.mp4`, `video/mp4`) → simpan `kind=recording` (playable + downloadable di Gallery tab RECORDING) |
+| `[x]` | Kolom `duration` | Tabel `snapshots` menyimpan durasi rekaman (detik, diukur `ffprobe`) — ditampilkan di notifikasi stop, tile & lightbox Gallery |
 | `[x]` | Integrisi MediaMTX client | Register/update/remove path via API `:9997` |
 | `[x]` | Integrisi MinIO client | Upload/download object bucket `stream` |
 | `[x]` | JWT middleware | Proteksi endpoint (Operator/Admin untuk mutasi) |
@@ -450,8 +451,8 @@ Module Service → NATS telemetry.ingest → Alert Service
 ### Database: `mariadb-stream`
 | Tabel | Fungsi |
 |---|---|
-| `streams` | Metadata stream (id, name=path MediaMTX, device_label, location, source_rtsp, enabled) |
-| `snapshots` | Capture frame/recording cover + hasil deteksi AI (stream_id, object_key, url, content_type, size, kind; untuk `kind=detection`: model_id, model_name, num_detections, classes, detections JSON bbox, confidence_avg) |
+| `streams` | Metadata stream (id, name=path MediaMTX, device_label, location, source_rtsp, module_id, enabled) — stream diikat ke **module** (bukan node); field Node dihapus dari form pendaftaran CCTV |
+| `snapshots` | Capture frame + rekaman video + hasil deteksi AI (stream_id, stream_name, module_id, object_key, url, content_type, size, kind; `kind=recording` menyimpan video MP4 `video/mp4`; kolom `duration` simpan durasi detik; untuk `kind=detection`: model_id, model_name, num_detections, classes, detections JSON bbox, confidence_avg) |
 
 ---
 
@@ -866,3 +867,18 @@ ML baca frame sumber dari `stream` (key read-only) untuk inferensi; retensi per 
 
 
 *Perbarui status item saat mulai (`[/]`) dan selesai (`[x]`) mengerjakan masing-masing item. Catat aktivitas harian di [`logs.md`](./logs.md).*
+---
+
+## 🛡️ Audit Fix #3 — Gateway & Service Hardening (2026-07-14) — ✅ Selesai
+
+Hasil *stress test & penetration test* (`stress-test/`) ditemukan & diperbaiki:
+
+| Item | Prioritas | Status | Detail |
+|------|-----------|--------|--------|
+| Enforce JWT + RBAC di Module Service (`/modules`, `/nodes`) | 🔴 P1 | [x] | `middleware/auth.go` (stdlib HS256) + wiring di `main.go` |
+| Naikkan rate limit Kong (global/auth-public/terlindungi) | 🟡 P2 | [x] | `infra/kong/kong.yml` |
+| Header keamanan + sembunyikan `Server` via `response-transformer` | 🟡 P2 | [x] | `infra/kong/kong.yml` + `KONG_NGINX_HTTP_SERVER_TOKENS: off` |
+| Validasi input XSS di Module Service | 🟡 P2 | [x] | `handler.go` |
+| Metrik host (node-exporter + cAdvisor) di Prometheus | 🟢 P3 | [x] | `docker-compose.yml` + `infra/prometheus/prometheus.yml` |
+
+**Verifikasi:** jalankan `python3 stress-test/cli.py pentest` (ekspektasi: *Protected routes reject unauthenticated access* → PASS) dan `python3 stress-test/cli.py metrics` (ekspektasi job `node-exporter` & `cadvisor` muncul).

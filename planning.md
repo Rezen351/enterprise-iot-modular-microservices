@@ -481,9 +481,20 @@ Skema ini **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply):
 - **Auth tereduksi:** ML Client di Stream Service membuat service JWT (HS256) — tidak perlu login ke Auth tiap request.
 - **Storage:** deteksi tetap di bucket `stream` (frame asli); kotak digambar di dashboard dari `detections` JSON (tidak bergantung public URL bucket `ml-vision`), sehingga view konsisten lewat proxy `/storage`.
 - **Dashboard Gallery (`/snapshot`):** satu halaman dengan toolbar **AI Capture** (pilih stream + *Capture & Detect*) untuk admin/operator, dan tab **ALL / SNAPSHOT / RECORDING / DETECTION**. Tab DETECTION merender overlay bounding box + ringkasan class & confidence (grid & lightbox).
-- **Hardening timeout:** `WriteTimeout` Stream Service 30s → 120s; route Kong `stream-service` `write_timeout`/`read_timeout` 10s → 120s (fix 504 *upstream timeout* saat capture + inferensi).
+  - **Hardening timeout:** `WriteTimeout` Stream Service 30s → 120s; route Kong `stream-service` `write_timeout`/`read_timeout` 10s → 120s (fix 504 *upstream timeout* saat capture + inferensi).
 
-Lihat detail lengkap (endpoint + contoh) di `roadmap.md` → **Fase 6 — ML / Vision API**.
+### ✅ Fase 6c — CCTV Recording (Video) + Gallery Playback [P3 — SELESAI]
+
+> Rekam **video asli** (bukan sekadar cover JPEG) yang bisa di-*play* dan di-*download* langsung di Gallery, beserta perbaikan framing module & bug koneksi saat stop rekam.
+
+- **Recording via ffmpeg (bukan MediaMTX disk recorder):** `POST /streams/{id}/record/start` menjalankan `ffmpeg` di container Stream Service yang men-pull `rtsp://mediamtx:8554/{name}` dan menulis `.mp4` temp (`-c copy`). `POST /streams/{id}/record/stop` mengirim `SIGINT` agar ffmpeg memfinalisasi MP4 (moov atom), lalu meng-upload ke MinIO bucket `stream` (`recordings/<stream>/<uuid>.mp4`, `content_type: video/mp4`) dan menyimpan baris `kind=recording` (terikat `module_id`).
+- **Gallery RECORDING:** tile & lightbox merender `<video controls>` (play inline) + tombol **Download** (proxy `/storage` → MinIO, public-read pada prefix `recordings/*`). Tidak lagi berupa gambar cover statis.
+- **Durasi rekaman:** diukur dari file video via `ffprobe` (`format=duration`) → disimpan di kolom `duration` tabel `snapshots` (float, detik). Frontend menampilkan durasi pada notifikasi stop (`Recording stopped — 00:42 saved in Gallery`), tile Gallery (`· 00:42`), dan lightbox (`Duration 00:42`).
+- **Timer live saat merekam:** kartu Live View menampilkan badge merah berkedip `● REC mm:ss` yang mengetik tiap detik sejak tombol Record ditekan (indikator kasar; tidak harus sama persis dengan durasi hasil).
+- **Binding module (bukan node):** pendaftaran CCTV diikat ke **module yang sedang dipilih di dropdown** (`module_id`), bukan node. Field *Node* dihapus dari modal Add/Edit Stream; `CreateStream` mengirim `module_id = selectedModule.id`.
+- **Fix bug "unable read server" saat stop rekam:** sebelumnya `exec.Cmd.Wait()` dipanggil **dua kali** (goroutine reaper + `StopRecording`) → race/`waitid: no child processes` yang memutus koneksi (dashboard dapat `fetch` gagal). Sekarang `Wait()` **hanya** dipanggil oleh reaper; `StopRecording` menunggu channel `job.done` yang ditutup setelah process selesai di-reap.
+
+Lihat detail lengkap (endpoint + contoh) di `roadmap.md` → **Fase 5 — Stream Service**.
 - Subscribe `audit.log` dari NATS
 - Append-only insert ke `mariadb-audit` untuk immutability log
 - Endpoint `GET /audit/logs` (admin only)
@@ -786,3 +797,26 @@ minio (1 instance, erasure-coding multi-drive bila memungkinkan)
  └─ bucket: ota         owner: OTA Service      (rw: ota-svc-key)  [Fase 12]
 ```
 ML membaca frame sumber dari `stream` (key read-only) untuk inferensi, tanpa Stream harus mengirim file ke ML. Retensi per bucket bisa berbeda (snapshot/recording pendek, model/annotated panjang).
+
+---
+
+## 🛡️ Audit Fix #3 — Hardening Gateway & Service Auth (2026-07-14)
+
+Berdasarkan hasil *stress test & penetration test* (toolkit di `stress-test/`),
+ditemukan beberapa kelemahan yang telah diperbaiki:
+
+### Temuan & Perbaikan
+| # | Temuan (pentest/stress) | Perbaikan | File |
+|---|--------------------------|-----------|------|
+| 1 | `/modules` & `/nodes` dapat diakses **tanpa token** (200) | Module Service sekarang menegakkan JWT (HS256, secret sama dengan Auth) + RBAC: read butuh user valid, write butuh `admin`/`operator`. Health `/health` tetap publik. | `services/module/internal/middleware/auth.go` (baru, stdlib-only), `services/module/main.go`, `services/module/internal/config/config.go` |
+| 2 | Rate limit Kong terlalu ketat → bottleneck (auth 20/menit, global 100/menit) | Dinaikkan: global `100→300`/menit, auth-public `20→60`/menit, route terlindungi `120→300`/menit (jam disesuaikan). Login tetap dilindungi dari brute-force. | `infra/kong/kong.yml` |
+| 3 | Header keamanan tidak ada + `Server`/`X-Powered-By` bocor | Plugin global `response-transformer` menyuntikkan CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS; menghapus `Server` & `X-Powered-By`. Plus `KONG_NGINX_HTTP_SERVER_TOKENS: off`. | `infra/kong/kong.yml`, `docker-compose.yml` |
+| 4 | XSS reflection pada `POST /modules` | Validasi input menolak `<` `>` & control char pada `name`/`description`; encoder JSON sudah HTML-escape sebagai lapisan kedua. | `services/module/internal/handler/handler.go` |
+| 5 | Tidak ada metrik host (CPU/RAM/disk) di Prometheus → bottleneck sulit dilacak | Tambah `node-exporter` (host) & `cAdvisor` (per-container) + job scrape di Prometheus. | `docker-compose.yml`, `infra/prometheus/prometheus.yml` |
+
+### Catatan
+- Middleware JWT Module Service dibuat **tanpa dependensi baru** (verifikasi HMAC-SHA256
+  pakai stdlib) agar `go.mod` tidak berubah & build tetap ringan.
+- Validasi RBAC di service bersifat *defense-in-depth*; Kong tetap berperan sebagai
+  rate-limiter/entry point (plugin `jwt` Kong sengaja tidak diaktifkan — validasi claim
+  tetap di service masing-masing, konsisten dengan pola Control Service).

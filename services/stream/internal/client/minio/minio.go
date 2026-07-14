@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -20,7 +22,11 @@ type Client struct {
 	bucket string
 }
 
-// New connects to MinIO and ensures the bucket exists.
+// New connects to MinIO and ensures the bucket exists. MinIO may not be ready
+// when this service starts (see the connection-refused race in the logs), so we
+// retry the bucket check/creation for up to ~90s — mirroring the DB startup
+// retry — instead of giving up and leaving the client nil (which would make
+// every snapshot/recording call fail with "client not configured").
 func New(endpoint, accessKey, secretKey string, useSSL bool, bucket string) (*Client, error) {
 	c, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
@@ -31,14 +37,19 @@ func New(endpoint, accessKey, secretKey string, useSSL bool, bucket string) (*Cl
 	}
 	cl := &Client{client: c, bucket: bucket}
 
-	exists, err := c.BucketExists(context.Background(), bucket)
-	if err != nil {
-		return nil, fmt.Errorf("minio bucket check: %w", err)
-	}
-	if !exists {
-		if err := c.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{}); err != nil {
-			return nil, fmt.Errorf("minio make bucket: %w", err)
+	var lastErr error
+	for i := 0; i < 30; i++ {
+		if err := cl.prepareBucket(bucket); err != nil {
+			lastErr = err
+			log.Printf("[minio] bucket %q not ready yet (%d/30): %v", bucket, i+1, err)
+			time.Sleep(3 * time.Second)
+			continue
 		}
+		lastErr = nil
+		break
+	}
+	if lastErr != nil {
+		return nil, fmt.Errorf("minio bucket prepare: %w", lastErr)
 	}
 
 	// Public-read for snapshots/recordings prefixes so the dashboard can
@@ -48,6 +59,20 @@ func New(endpoint, accessKey, secretKey string, useSSL bool, bucket string) (*Cl
 	}
 
 	return cl, nil
+}
+
+// prepareBucket verifies (and creates if missing) the bucket.
+func (c *Client) prepareBucket(bucket string) error {
+	exists, err := c.client.BucketExists(context.Background(), bucket)
+	if err != nil {
+		return fmt.Errorf("minio bucket check: %w", err)
+	}
+	if !exists {
+		if err := c.client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{}); err != nil {
+			return fmt.Errorf("minio make bucket: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *Client) setPublicReadPolicy() error {
@@ -68,16 +93,83 @@ func (c *Client) setPublicReadPolicy() error {
 	return c.client.SetBucketPolicy(context.Background(), c.bucket, policy)
 }
 
-// UploadObject stores data under key (e.g. "snapshots/cam-01/<uuid>.jpg").
-// proxyBase is the dashboard-relative base used to build the public URL
-// (e.g. "/storage"). Returns the same-origin URL the dashboard can render.
-func (c *Client) UploadObject(key, contentType string, data []byte) (string, error) {
-	_, err := c.client.PutObject(context.Background(), c.bucket, key, bytes.NewReader(data), int64(len(data)),
+// UploadFile streams a local file into the bucket (used for recordings, which
+// can be large and must not be buffered entirely in memory). Returns a
+// same-origin /storage URL the dashboard can render.
+func (c *Client) UploadFile(key, contentType, path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("minio open file: %w", err)
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return "", fmt.Errorf("minio stat file: %w", err)
+	}
+	if err := c.EnsureBucket(c.bucket); err != nil {
+		return "", err
+	}
+	_, err = c.client.PutObject(context.Background(), c.bucket, key, f, fi.Size(),
 		minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
 		return "", fmt.Errorf("minio put: %w", err)
 	}
 	return "/storage/" + c.bucket + "/" + key, nil
+}
+
+// UploadObject stores data under key (e.g. "snapshots/cam-01/<uuid>.jpg").
+// proxyBase is the dashboard-relative base used to build the public URL
+// (e.g. "/storage"). Returns the same-origin URL the dashboard can render.
+func (c *Client) UploadObject(key, contentType string, data []byte) (string, error) {
+	return c.UploadObjectToBucket(c.bucket, key, contentType, data)
+}
+
+// UploadObjectToBucket stores data in an arbitrary bucket (e.g. the shared
+// ml-result bucket where both the cron capture job and the live "Capture
+// Detect AI" button land their results). Returns a same-origin /storage URL.
+func (c *Client) UploadObjectToBucket(bucket, key, contentType string, data []byte) (string, error) {
+	if bucket == "" {
+		bucket = c.bucket
+	}
+	if err := c.EnsureBucket(bucket); err != nil {
+		return "", err
+	}
+	_, err := c.client.PutObject(context.Background(), bucket, key, bytes.NewReader(data), int64(len(data)),
+		minio.PutObjectOptions{ContentType: contentType})
+	if err != nil {
+		return "", fmt.Errorf("minio put: %w", err)
+	}
+	return "/storage/" + bucket + "/" + key, nil
+}
+
+// EnsureBucket creates the bucket if it does not exist (best-effort).
+func (c *Client) EnsureBucket(bucket string) error {
+	exists, err := c.client.BucketExists(context.Background(), bucket)
+	if err != nil {
+		return fmt.Errorf("minio bucket check: %w", err)
+	}
+	if exists {
+		return nil
+	}
+	if err := c.client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{}); err != nil {
+		return fmt.Errorf("minio make bucket: %w", err)
+	}
+	return nil
+}
+
+// ReadObject fetches an object (used to mirror the ML service's annotated
+// image from the ml bucket into the shared ml-result bucket).
+func (c *Client) ReadObject(bucket, key string) ([]byte, error) {
+	obj, err := c.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("minio get: %w", err)
+	}
+	defer obj.Close()
+	data, err := io.ReadAll(obj)
+	if err != nil {
+		return nil, fmt.Errorf("minio read: %w", err)
+	}
+	return data, nil
 }
 
 // DeleteObject removes an object (best-effort; ignores not-found).

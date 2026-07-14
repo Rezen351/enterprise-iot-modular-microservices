@@ -5,13 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/almuzky/iot/services/stream/internal/client/mediamtx"
-	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	miniosvc "github.com/almuzky/iot/services/stream/internal/client/minio"
+	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	"github.com/almuzky/iot/services/stream/internal/model"
 	"github.com/almuzky/iot/services/stream/internal/repository"
 	"github.com/google/uuid"
@@ -27,16 +33,33 @@ var (
 
 // StreamService coordinates DB metadata with MediaMTX path registration.
 type StreamService struct {
-	repo     *repository.Repository
-	media    *mediamtx.Client
-	minio    *miniosvc.Client
-	ml       *mlclient.Client
-	kongURL  string
-	cctvRTSP string
+	repo         *repository.Repository
+	media        *mediamtx.Client
+	minio        *miniosvc.Client
+	ml           *mlclient.Client
+	kongURL      string
+	cctvRTSP     string
+	resultBucket string // shared ml-result bucket for cron + live captures
+
+	// Active ffmpeg recordings, keyed by stream id. The Stream Service records
+	// directly via ffmpeg (not MediaMTX's disk recorder) so the resulting clip
+	// is uploaded to MinIO and surfaced as a playable Gallery item.
+	recMu   sync.Mutex
+	recJobs map[string]*recJob
 }
 
-func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP string) *StreamService {
-	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP}
+// recJob tracks a single in-progress ffmpeg recording.
+type recJob struct {
+	cmd      *exec.Cmd
+	outPath  string
+	name     string
+	streamID string
+	moduleID string
+	done     chan struct{} // closed once ffmpeg is fully reaped by the reaper
+}
+
+func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP, resultBucket string) *StreamService {
+	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP, resultBucket: resultBucket, recJobs: make(map[string]*recJob)}
 }
 
 // CreateStream inserts the DB row then registers the path in MediaMTX.
@@ -60,7 +83,7 @@ func (s *StreamService) CreateStream(ctx context.Context, req model.CreateStream
 		return nil, ErrDuplicateName
 	}
 
-	st, err := s.repo.CreateStream(ctx, name, req.DeviceLabel, req.Location, source)
+	st, err := s.repo.CreateStream(ctx, name, req.DeviceLabel, req.Location, source, req.NodeID, req.ModuleID)
 	if err != nil {
 		// Likely a duplicate-key on `name` at the DB layer.
 		if isDuplicateErr(err) {
@@ -89,9 +112,10 @@ func (s *StreamService) GetStream(ctx context.Context, id string) (*model.Stream
 	return s.toView(ctx, st), nil
 }
 
-// ListStreams returns all streams with live status + playback URLs.
-func (s *StreamService) ListStreams(ctx context.Context) ([]model.StreamView, error) {
-	streams, err := s.repo.ListStreams(ctx)
+// ListStreams returns all streams with live status + playback URLs,
+// optionally scoped to a single module (module_id).
+func (s *StreamService) ListStreams(ctx context.Context, moduleID string) ([]model.StreamView, error) {
+	streams, err := s.repo.ListStreams(ctx, moduleID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +153,15 @@ func (s *StreamService) UpdateStream(ctx context.Context, id string, req model.U
 			}
 		}
 		source := st.SourceRTSP
-		if req.SourceRTSP != nil && *req.SourceRTSP != "" {
-			source = *req.SourceRTSP
-		}
+	if req.SourceRTSP != nil && *req.SourceRTSP != "" {
+		source = *req.SourceRTSP
+	}
+	if req.NodeID != nil {
+		current.NodeID = *req.NodeID
+	}
+	if req.ModuleID != nil {
+		current.ModuleID = *req.ModuleID
+	}
 		if err := s.media.AddPath(ctx, st.Name, source); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrMediaMTX, err)
 		}
@@ -170,6 +200,8 @@ func (s *StreamService) toView(ctx context.Context, st *model.Stream) *model.Str
 		DeviceLabel: st.DeviceLabel,
 		Location:    st.Location,
 		SourceRTSP:  st.SourceRTSP,
+		NodeID:      st.NodeID,
+		ModuleID:    st.ModuleID,
 		Enabled:     st.Enabled,
 		Status:      status,
 		HlsURL:      s.hlsURL(st.Name),
@@ -207,12 +239,14 @@ func isDuplicateErr(err error) bool {
 
 // ─── Snapshots & Recordings ───────────────────────────────────────────────────
 
-// CaptureSnapshot grabs the current frame of a stream from MediaMTX, uploads it
-// to the MinIO stream bucket, and stores the metadata row. When detect is true
-// the captured frame is additionally sent to the AI vision model; the raw frame
-// is stored as a regular snapshot and the detection result (with inline
-// bounding boxes) is stored as a separate "detection" snapshot so the gallery
-// can render it in its own tab.
+// CaptureSnapshot grabs the current frame of a stream from MediaMTX.
+//   - detect=false (plain snapshot): the frame is uploaded to the MinIO stream
+//     bucket and a "snapshot" metadata row is stored — shown only in the
+//     gallery's SNAPSHOT tab. No ML is involved.
+//   - detect=true (AI Detect): the frame is sent to the AI vision model and the
+//     result (frame + detection JSON + annotated image) is written to the shared
+//     ml-result bucket — shown in the gallery's AI DETECTION tab. Nothing is
+//     written to the stream bucket or the stream-DB snapshots table.
 func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect bool) (*model.SnapshotView, error) {
 	if s.minio == nil {
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
@@ -227,74 +261,153 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 		return nil, fmt.Errorf("%w: %v", ErrMediaMTX, err)
 	}
 
-	key := fmt.Sprintf("snapshots/%s/%s.jpg", st.Name, uuid.New().String())
-	url, err := s.minio.UploadObject(key, ct, data)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMinIO, err)
-	}
-
-	// Always persist the plain snapshot (the original frame, viewable in /storage).
-	snap := &model.Snapshot{
-		ID:          uuid.New().String(),
-		StreamID:    st.ID,
-		StreamName:  st.Name,
-		ObjectKey:   key,
-		URL:         url,
-		ContentType: ct,
-		Size:        int64(len(data)),
-		Kind:        "snapshot",
-		CreatedAt:   time.Now(),
-	}
-	if _, err := s.repo.CreateSnapshot(ctx, snap); err != nil {
-		return nil, err
-	}
-
 	if !detect {
+		// Plain snapshot: upload the original frame to the stream bucket and a
+		// "snapshot" row, so it appears only in the SNAPSHOT tab.
+		key := fmt.Sprintf("snapshots/%s/%s.jpg", st.Name, uuid.New().String())
+		url, err := s.minio.UploadObject(key, ct, data)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrMinIO, err)
+		}
+		snap := &model.Snapshot{
+			ID:          uuid.New().String(),
+			StreamID:    st.ID,
+			StreamName:  st.Name,
+			ModuleID:    st.ModuleID,
+			ObjectKey:   key,
+			URL:         url,
+			ContentType: ct,
+			Size:        int64(len(data)),
+			Kind:        "snapshot",
+			CreatedAt:   time.Now(),
+		}
+		if _, err := s.repo.CreateSnapshot(ctx, snap); err != nil {
+			return nil, err
+		}
 		return toSnapshotView(snap), nil
 	}
 
-	// Run AI vision detection on the captured frame.
+	// AI Detect: run the frame through the vision model and store the result in
+	// the shared ml-result bucket (gallery AI DETECTION tab). Nothing is written
+	// to the stream bucket or the stream-DB snapshots table — the authoritative
+	// copy lives in ml-result, same as the cron capture job.
 	if s.ml == nil {
 		return nil, fmt.Errorf("%w: AI vision client not configured", ErrMinIO)
 	}
 	result, derr := s.ml.Detect(ctx, data, fmt.Sprintf("%s_%s.jpg", st.Name, uuid.New().String()))
 	if derr != nil {
-		// The plain snapshot is already stored; surface the detection error so
-		// the dashboard can tell the user detection failed.
 		return nil, fmt.Errorf("ai vision detection failed: %w", derr)
 	}
 	if result == nil {
 		return nil, fmt.Errorf("ai vision returned no result")
 	}
 
+	if s.minio != nil {
+		s.writeToResultBucket(st.Name, data, ct, result)
+	}
+
+	// Response view built from the detection result (not persisted to the
+	// stream DB; the stored copy is in ml-result).
 	classesJSON, _ := json.Marshal(result.Classes)
 	detJSON, _ := json.Marshal(result.Detections)
-	detSnap := &model.Snapshot{
+	view := model.SnapshotView{
 		ID:            uuid.New().String(),
 		StreamID:      st.ID,
 		StreamName:    st.Name,
-		ObjectKey:     key,
-		URL:           url, // original frame; the dashboard overlays the boxes
-		ContentType:   ct,
-		Size:          int64(len(data)),
 		Kind:          "detection",
+		Size:          int64(len(data)),
+		CreatedAt:     time.Now(),
 		ModelID:       result.ModelID,
 		ModelName:     result.ModelName,
 		NumDetections: result.NumDetections,
 		Classes:       string(classesJSON),
 		Detections:    string(detJSON),
 		ConfidenceAvg: result.ConfidenceAvg,
-		CreatedAt:     time.Now(),
 	}
-	if _, err := s.repo.CreateSnapshot(ctx, detSnap); err != nil {
-		return nil, err
-	}
-	return toSnapshotView(detSnap), nil
+	return &view, nil
 }
 
-// ListSnapshots returns snapshots/recordings newest-first (optional kind filter).
-func (s *StreamService) ListSnapshots(ctx context.Context, kind string) ([]model.SnapshotView, error) {
-	snaps, err := s.repo.ListSnapshots(ctx, kind)
+// knownBuckets are the buckets the gallery's ml-result listing can read from;
+// used to parse a minio public URL (e.g. annotated_url) back into bucket+key.
+var knownBuckets = []string{"ml-result", "mlbucket", "ml", "stream", "ota"}
+
+// bucketAndKeyFromURL extracts (bucket, key) from a minio public URL such as
+// "http://host/minio/ml/detected/foo.jpg" or "/storage/ml/...".
+func bucketAndKeyFromURL(raw string) (string, string) {
+	rest := raw
+	if i := strings.Index(rest, "://"); i >= 0 {
+		rest = rest[i+3:]
+	}
+	rest = strings.TrimPrefix(rest, "/")
+	segs := strings.Split(rest, "/")
+	for i, seg := range segs {
+		for _, b := range knownBuckets {
+			if seg == b {
+				return b, strings.Join(segs[i+1:], "/")
+			}
+		}
+	}
+	return "", strings.Join(segs, "/")
+}
+
+// writeToResultBucket stores the captured frame, the optional annotated image
+// (mirrored from the ML bucket), and a result JSON record into the shared
+// ml-result bucket. Best-effort: any failure is logged and skipped so the
+// primary snapshot/detection DB row is never affected.
+func (s *StreamService) writeToResultBucket(streamName string, data []byte, ct string, result *mlclient.DetectResult) {
+	bucket := s.resultBucket
+	ts := time.Now().UTC().Format("20060102_150405")
+
+	frameKey := fmt.Sprintf("frames/%s/%s.jpg", streamName, ts)
+	frameURL, err := s.minio.UploadObjectToBucket(bucket, frameKey, ct, data)
+	if err != nil {
+		log.Printf("[result-bucket] frame upload failed: %v", err)
+		return
+	}
+
+	detMap := map[string]any{
+		"detection_uid":  result.DetectionUID,
+		"model_id":       result.ModelID,
+		"model_name":     result.ModelName,
+		"num_detections": result.NumDetections,
+		"classes":        result.Classes,
+		"detections":     result.Detections,
+		"confidence_avg": result.ConfidenceAvg,
+	}
+	record := map[string]any{
+		"captured_at": time.Now().UTC().Format(time.RFC3339),
+		"stream":      streamName,
+		"trigger":     "user",
+		"source_rtsp": fmt.Sprintf("mediamtx:%s", streamName),
+		"frame_key":   frameKey,
+		"frame_url":   frameURL,
+		"detection":   detMap,
+	}
+	recordBytes, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		log.Printf("[result-bucket] record marshal failed: %v", err)
+	} else if _, err := s.minio.UploadObjectToBucket(bucket, fmt.Sprintf("results/%s/%s.json", streamName, ts), "application/json", recordBytes); err != nil {
+		log.Printf("[result-bucket] result json upload failed: %v", err)
+	}
+
+	if result.AnnotatedURL != "" {
+		srcBucket, srcKey := bucketAndKeyFromURL(result.AnnotatedURL)
+		if srcBucket != "" {
+			if annotated, rerr := s.minio.ReadObject(srcBucket, srcKey); rerr == nil {
+				if _, aerr := s.minio.UploadObjectToBucket(bucket, fmt.Sprintf("annotated/%s/%s.jpg", streamName, ts), "image/jpeg", annotated); aerr != nil {
+					log.Printf("[result-bucket] annotated mirror failed: %v", aerr)
+				}
+			} else {
+				log.Printf("[result-bucket] annotated read failed: %v", rerr)
+			}
+		}
+	}
+}
+
+// ListSnapshots returns snapshots/recordings newest-first (optional kind and
+// module filters).
+func (s *StreamService) ListSnapshots(ctx context.Context, kind, moduleID string) ([]model.SnapshotView, error) {
+	snaps, err := s.repo.ListSnapshots(ctx, kind, moduleID)
 	if err != nil {
 		return nil, err
 	}
@@ -326,52 +439,128 @@ func (s *StreamService) DeleteSnapshot(ctx context.Context, id string) error {
 	return s.repo.DeleteSnapshot(ctx, id)
 }
 
-// StartRecording enables MediaMTX recording for the path. The recorded segments
-// are written by MediaMTX; the cover frame is captured on stop.
+// StartRecording begins an ffmpeg capture of the stream's RTSP relay and writes
+// it to a temp .mp4. The clip is finalized and uploaded to MinIO on StopRecording.
 func (s *StreamService) StartRecording(ctx context.Context, id string) error {
 	st, err := s.repo.GetStream(ctx, id)
 	if err != nil {
 		return err
 	}
-	if err := s.media.SetRecord(ctx, st.Name, true); err != nil {
-		return fmt.Errorf("%w: %v", ErrMediaMTX, err)
+
+	s.recMu.Lock()
+	if _, ok := s.recJobs[id]; ok {
+		s.recMu.Unlock()
+		return fmt.Errorf("%w: recording already in progress for this stream", ErrMediaMTX)
 	}
+	outPath := filepath.Join(os.TempDir(), "rec-"+uuid.New().String()+".mp4")
+	// Pull from the MediaMTX RTSP relay (which triggers the on-demand source).
+	// -c copy keeps the original codec for a browser-playable MP4.
+	cmd := exec.Command("ffmpeg", "-rtsp_transport", "tcp", "-y",
+		"-i", fmt.Sprintf("rtsp://mediamtx:8554/%s", st.Name),
+		"-c", "copy", outPath)
+	if err := cmd.Start(); err != nil {
+		s.recMu.Unlock()
+		return fmt.Errorf("%w: failed to start recorder: %v", ErrMediaMTX, err)
+	}
+	job := &recJob{cmd: cmd, outPath: outPath, name: st.Name, streamID: st.ID, moduleID: st.ModuleID, done: make(chan struct{})}
+	s.recJobs[id] = job
+	s.recMu.Unlock()
+
+	// Sole owner of cmd.Wait(): reaps the process, then (if this is still the
+	// active job) cleans up the temp file and closes done so StopRecording can
+	// proceed. Calling Wait() more than once on a *exec.Cmd is a race/error, so
+	// no other goroutine may call it.
+	go func() {
+		if err := job.cmd.Wait(); err != nil {
+			log.Printf("[recorder] ffmpeg for %s ended: %v", st.Name, err)
+		}
+		s.recMu.Lock()
+		if cur, still := s.recJobs[id]; still && cur == job {
+			delete(s.recJobs, id)
+			os.Remove(outPath)
+		}
+		s.recMu.Unlock()
+		close(job.done)
+	}()
+
+	// Liveness probe: if ffmpeg dies immediately (e.g. source offline) remove the
+	// job so StopRecording reports a clear error. It does NOT call Wait() (owned
+	// by the reaper) — it only removes the orphan temp file.
+	go func() {
+		time.Sleep(1500 * time.Millisecond)
+		s.recMu.Lock()
+		cur, still := s.recJobs[id]
+		s.recMu.Unlock()
+		if still && cur == job && job.cmd.Process != nil && job.cmd.Process.Signal(syscall.Signal(0)) != nil {
+			s.recMu.Lock()
+			delete(s.recJobs, id)
+			s.recMu.Unlock()
+			os.Remove(outPath)
+			log.Printf("[recorder] ffmpeg for %s exited early (source unavailable)", st.Name)
+		}
+	}()
+
 	return nil
 }
 
-// StopRecording disables MediaMTX recording and stores a cover snapshot
-// (kind="recording") in the MinIO stream bucket.
+// StopRecording ends the active ffmpeg recording, uploads the resulting MP4 to
+// MinIO, and stores a "recording" snapshot (playable + downloadable in Gallery).
 func (s *StreamService) StopRecording(ctx context.Context, id string) (*model.SnapshotView, error) {
-	st, err := s.repo.GetStream(ctx, id)
-	if err != nil {
-		return nil, err
+	s.recMu.Lock()
+	job, ok := s.recJobs[id]
+	if !ok {
+		s.recMu.Unlock()
+		return nil, fmt.Errorf("%w: no active recording for this stream", ErrMediaMTX)
 	}
-	if err := s.media.SetRecord(ctx, st.Name, false); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMediaMTX, err)
+	delete(s.recJobs, id)
+	s.recMu.Unlock()
+
+	// Take ownership of the file: it was removed from the map so the reaper
+	// (which owns cmd.Wait()) will NOT delete it once ffmpeg exits. We need it
+	// for the MinIO upload below.
+	// Signal ffmpeg to finalize the MP4 (write the moov atom), then force-kill
+	// if it does not exit promptly. The reaper goroutine owns cmd.Wait() and
+	// closes job.done once the process is fully reaped.
+	if job.cmd.Process != nil {
+		_ = job.cmd.Process.Signal(syscall.SIGINT)
+	}
+	select {
+	case <-job.done:
+	case <-time.After(10 * time.Second):
+		if job.cmd.Process != nil {
+			_ = job.cmd.Process.Kill()
+		}
+		<-job.done
+	}
+
+	info, serr := os.Stat(job.outPath)
+	if serr != nil || info.Size() == 0 {
+		os.Remove(job.outPath)
+		return nil, fmt.Errorf("%w: no recording produced (stream may be unavailable)", ErrMediaMTX)
 	}
 
 	if s.minio == nil {
+		os.Remove(job.outPath)
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
 	}
-	data, ct, err := s.media.CaptureSnapshot(ctx, st.Name)
-	if err != nil {
-		// Recording stopped; cover capture is best-effort.
-		return nil, fmt.Errorf("%w: cover capture failed: %v", ErrMediaMTX, err)
+	key := fmt.Sprintf("recordings/%s/%s.mp4", job.name, uuid.New().String())
+	url, uerr := s.minio.UploadFile(key, "video/mp4", job.outPath)
+	os.Remove(job.outPath)
+	if uerr != nil {
+		return nil, fmt.Errorf("%w: %v", ErrMinIO, uerr)
 	}
-	key := fmt.Sprintf("recordings/%s/%s.jpg", st.Name, uuid.New().String())
-	u, err := s.minio.UploadObject(key, ct, data)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMinIO, err)
-	}
+
 	snap := &model.Snapshot{
 		ID:          uuid.New().String(),
-		StreamID:    st.ID,
-		StreamName:  st.Name,
+		StreamID:    job.streamID,
+		StreamName:  job.name,
+		ModuleID:    job.moduleID,
 		ObjectKey:   key,
-		URL:         u,
-		ContentType: ct,
-		Size:        int64(len(data)),
+		URL:         url,
+		ContentType: "video/mp4",
+		Size:        info.Size(),
 		Kind:        "recording",
+		Duration:    probeDuration(job.outPath),
 		CreatedAt:   time.Now(),
 	}
 	if _, err := s.repo.CreateSnapshot(ctx, snap); err != nil {
@@ -380,11 +569,30 @@ func (s *StreamService) StopRecording(ctx context.Context, id string) (*model.Sn
 	return toSnapshotView(snap), nil
 }
 
+// probeDuration returns the actual length (seconds) of a media file using
+// ffprobe, so the recorded clip's true duration is stored and shown to the user
+// (it may differ slightly from the wall-clock recording timer due to source
+// startup / finalize overhead).
+func probeDuration(path string) float64 {
+	out, err := exec.Command("ffprobe", "-v", "error",
+		"-show_entries", "format=duration",
+		"-of", "default=nokey=1:noprint_wrappers=1", path).Output()
+	if err != nil {
+		return 0
+	}
+	var d float64
+	if _, err := fmt.Sscanf(strings.TrimSpace(string(out)), "%f", &d); err != nil {
+		return 0
+	}
+	return d
+}
+
 func toSnapshotView(s *model.Snapshot) *model.SnapshotView {
 	return &model.SnapshotView{
 		ID:            s.ID,
 		StreamID:      s.StreamID,
 		StreamName:    s.StreamName,
+		ModuleID:      s.ModuleID,
 		URL:           s.URL,
 		Kind:          s.Kind,
 		Size:          s.Size,
@@ -395,5 +603,6 @@ func toSnapshotView(s *model.Snapshot) *model.SnapshotView {
 		Classes:       s.Classes,
 		Detections:    s.Detections,
 		ConfidenceAvg: s.ConfidenceAvg,
+		Duration:      s.Duration,
 	}
 }

@@ -75,13 +75,17 @@ function fmt(v, decimals = 2) {
 
 function statsOf(points) {
   if (!points.length) return { count: 0, min: NaN, max: NaN, avg: NaN, last: NaN };
-  let min = Infinity, max = -Infinity, sum = 0;
+  let min = Infinity, max = -Infinity, sum = 0, n = 0;
   for (const p of points) {
-    if (p.v < min) min = p.v;
-    if (p.v > max) max = p.v;
-    sum += p.v;
+    const lo = p.min != null ? p.min : p.v;
+    const hi = p.max != null ? p.max : p.v;
+    const a = p.avg != null ? p.avg : p.v;
+    if (lo < min) min = lo;
+    if (hi > max) max = hi;
+    sum += a;
+    n++;
   }
-  return { count: points.length, min, max, avg: sum / points.length, last: points[points.length - 1].v };
+  return { count: points.length, min, max, avg: n ? sum / n : NaN, last: points[points.length - 1].v };
 }
 
 function histogram(values, bins = 10) {
@@ -326,20 +330,51 @@ function Analytics() {
   const primaryMetrics = metrics.length ? metrics : [];
   const labels = primaryMetrics.length ? seriesByMetric[primaryMetrics[0]].map((p) => formatTick(p.t)) : [];
 
-  // Analog trend data only (excluding digital metrics)
+  // Analog trend: each metric draws a min–max envelope (filled band between its
+  // low/high bucket values) plus an avg line, so aggregated ranges (7d/30d)
+  // keep their full range information instead of a single point. The band
+  // datasets are tagged isBand and hidden from the legend/tooltip.
   const trendData = {
     labels,
-    datasets: analogMetrics.map((m, i) => ({
-      label: displayName(m),
-      data: seriesByMetric[m].map((p) => p.v),
-      borderColor: PALETTE[i % PALETTE.length],
-      backgroundColor: PALETTE[i % PALETTE.length] + '22',
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      tension: 0.3,
-      fill: false,
-    })),
+    datasets: analogMetrics.flatMap((m, i) => {
+      const color = PALETTE[i % PALETTE.length];
+      const pts = seriesByMetric[m] || [];
+      return [
+        {
+          label: displayName(m),
+          data: pts.map((p) => (p.max != null ? p.max : p.v)),
+          borderWidth: 0,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: '+1',
+          backgroundColor: color + '22',
+          isBand: true,
+          order: 1,
+        },
+        {
+          label: displayName(m),
+          data: pts.map((p) => (p.min != null ? p.min : p.v)),
+          borderWidth: 0,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          isBand: true,
+          order: 1,
+        },
+        {
+          label: displayName(m),
+          data: pts.map((p) => (p.avg != null ? p.avg : p.v)),
+          borderColor: color,
+          backgroundColor: color + '22',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          fill: false,
+          order: 2,
+        },
+      ];
+    }),
   };
 
   const trendOptions = {
@@ -347,10 +382,18 @@ function Analytics() {
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { labels: { color: 'rgba(148,163,184,0.9)', boxWidth: 12, font: { size: 10 } } },
+      legend: {
+        labels: {
+          color: 'rgba(148,163,184,0.9)',
+          boxWidth: 12,
+          font: { size: 10 },
+          filter: (item, data) => !data.datasets[item.datasetIndex].isBand,
+        },
+      },
       tooltip: {
         mode: 'index',
         intersect: false,
+        filter: (item, data) => !data.datasets[item.datasetIndex].isBand,
         callbacks: {
           label: (c) => {
             const m = c.dataset.label;

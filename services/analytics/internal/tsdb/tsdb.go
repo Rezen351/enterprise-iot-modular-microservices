@@ -74,21 +74,17 @@ func (s *Store) UpsertRollup(ctx context.Context, row model.BatchRow) error {
 }
 
 // sourceForDuration picks the materialized view (or raw hypertable) that best
-// matches the requested resolution window to keep payloads small.
-//
-// The value column is `last` (the most recent raw sample in the bucket) rather
-// than `avg`. Averaging a boolean metric would turn a toggling 0/1 signal into
-// a fraction (e.g. 0.45), which is not a meaningful "state". Using `last`
-// preserves discrete 0/1 states for digital inputs while still giving a
-// representative latest sample for analog metrics.
-func sourceForDuration(d time.Duration) (table string, agg string) {
+// matches the requested resolution window to keep payloads small. The chosen
+// source always carries count/sum/min/max/last so the query can derive a
+// representative `last` plus a min–max envelope for analog metrics.
+func sourceForDuration(d time.Duration) string {
 	switch {
 	case d <= time.Hour:
-		return "metrics_rollup", "last"
+		return "metrics_rollup"
 	case d <= 24*time.Hour:
-		return "metrics_hourly", "last"
+		return "metrics_hourly"
 	default:
-		return "metrics_daily", "last"
+		return "metrics_daily"
 	}
 }
 
@@ -149,13 +145,18 @@ func (s *Store) queryRange(ctx context.Context, nodeID, metric string, from, to 
 		return scanSeries(rows)
 	}
 
-	table, valueExpr := sourceForDuration(d)
+	table := sourceForDuration(d)
 	timeCol := "time"
 	if table != "metrics_rollup" {
 		timeCol = "bucket"
 	}
 
-	q := `SELECT ` + timeCol + `, ` + valueExpr + `
+	// V carries `last` (keeps digital-state detection stable and matches the
+	// legacy single-value client), while avg/min/max are derived so the
+	// dashboard can draw a min–max envelope and never lose the bucket's range.
+	// avg is recomputed as sum/NULLIF(count,0) because the hourly/daily
+	// continuous aggregates do not store avg.
+	q := `SELECT ` + timeCol + `, last, COALESCE(sum / NULLIF(count, 0), 0), COALESCE(min, 0), COALESCE(max, 0)
 	      FROM ` + table + `
 	      WHERE node_id = $1 AND metric = $2 AND ` + timeCol + ` BETWEEN $3 AND $4
 	      ORDER BY ` + timeCol
@@ -164,7 +165,7 @@ func (s *Store) queryRange(ctx context.Context, nodeID, metric string, from, to 
 		return nil, err
 	}
 	defer rows.Close()
-	return scanSeries(rows)
+	return scanSeriesRange(rows)
 }
 
 // scanSeries reads (time, value) rows into SeriesPoints.
@@ -184,15 +185,39 @@ func scanSeries(rows pgx.Rows) ([]model.SeriesPoint, error) {
 	return pts, nil
 }
 
-// discreteStep picks a coarse-enough but transition-preserving bucket for digital
-// metrics so the raw 1-minute rollup stays bounded in point count at wide ranges
-// (max ~720 points). The bucket always carries `last`, so values stay 0/1.
+// scanSeriesRange reads (time, last, avg, min, max) rows into SeriesPoints,
+// carrying the bucket statistics so the dashboard can draw a min–max envelope
+// while keeping `last` as V for digital-state detection.
+func scanSeriesRange(rows pgx.Rows) ([]model.SeriesPoint, error) {
+	pts := make([]model.SeriesPoint, 0)
+	for rows.Next() {
+		var t time.Time
+		var v, a, mn, mx float64
+		if err := rows.Scan(&t, &v, &a, &mn, &mx); err != nil {
+			return nil, err
+		}
+		pts = append(pts, model.SeriesPoint{
+			T:   t.UTC().Format(time.RFC3339),
+			V:   v,
+			Min: &mn,
+			Max: &mx,
+			Avg: &a,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return pts, nil
+}
+
+// discreteStep picks a transition-preserving bucket for digital metrics so they
+// stay at raw 1-minute resolution within a day (up to ~1440 points) and only
+// coarsen for multi-day windows. The bucket always carries `last`, so values
+// stay 0/1 and on/off transitions remain visible instead of being averaged.
 func discreteStep(d time.Duration) string {
 	switch {
-	case d <= 6*time.Hour:
-		return "1 minute"
 	case d <= 24*time.Hour:
-		return "5 minutes"
+		return "1 minute"
 	case d <= 7*24*time.Hour:
 		return "15 minutes"
 	case d <= 30*24*time.Hour:

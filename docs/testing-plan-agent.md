@@ -46,6 +46,7 @@ docker compose ps               # tunggu semua "healthy"
 - **Siklus Retest & Clean**: Setelah perbaikan kode diterapkan, lakukan pengujian ulang (*retest*) secara menyeluruh pada area yang diperbaiki dan area terkait untuk memastikan kondisi benar-benar bersih (*clean*, tanpa issue/regresi).
 - **Kriteria Selesai**: Satu service & skenario E2E hanya dapat dinyatakan **SELESAI** jika semua checklist fitur + keamanan bertanda lulus (`[x]`), semua bug yang ditemukan telah diperbaiki, diuji ulang secara sukses, dan tidak ada item gagal (`[!]`) yang tersisa.
 - **Pencatatan Wajib**: Setiap temuan bug beserta solusinya wajib didokumentasikan di [logs.md](file:///home/almuzky/TA/Microservices/logs.md) (menyertakan nama service, nomor item checklist, deskripsi bug, dan metode perbaikan).
+- **Pembersihan Data Uji (Test Data Cleanup)**: Setelah menyelesaikan rangkaian pengujian pada suatu service (baik otomatis maupun manual), penguji atau AI Agent **wajib membersihkan kembali** seluruh data uji yang telah dibuat (seperti menghapus user dummy, threshold tiruan, log audit palsu, atau mereset database ke status awal/clean seed). Hal ini sangat penting untuk memastikan tidak ada data sampah yang menumpuk dan merusak keandalan hasil pengujian di sesi berikutnya.
 
 **Tools:** `curl`/httpie (REST), `wscat` (WS), `docker compose logs <svc>`, PostgreSQL/MariaDB client, `pytest` (ml), `test_auth.sh` (auth), `browser_subagent` (E2E/UI), simulator `firmware-sim` (MQTT telemetry/command).
 

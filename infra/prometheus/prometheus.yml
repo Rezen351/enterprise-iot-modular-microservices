@@ -114,6 +114,28 @@ scrape_configs:
         replacement: "alert-service"
 
   # Notification Service — alert notifications via multiple channels
+  - job_name: "notification-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["notification:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "notification-service"
+
+  # Export Service — historical data exporter
+  - job_name: "export-service"
+    metrics_path: /metrics
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["export:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "export-service"
+
+  # ML SERVICE — YOLO model registry + inference metrics
   - job_name: "ml-service"
     metrics_path: /metrics
     scrape_interval: 10s
@@ -204,6 +226,17 @@ scrape_configs:
         replacement: "mariadb-alert"
 
   # MariaDB Notification — via mysqld-exporter
+  - job_name: "mariadb-notification"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["mysqld-exporter-notification:9104"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "mariadb-notification"
+
+  # MariaDB ML / Vision — via mysqld-exporter
   - job_name: "mariadb-ml"
     metrics_path: /metrics
     scrape_interval: 15s
@@ -237,6 +270,28 @@ scrape_configs:
         replacement: "redis-alert"
 
   # Redis (Export cache) — via redis-exporter-export
+  - job_name: "redis-export"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["redis-exporter-export:9121"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "redis-export"
+
+  # Redis (Notification cache) — via redis-exporter-notification
+  - job_name: "redis-notification"
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["redis-exporter-notification:9121"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "redis-notification"
+
+  # TimescaleDB Module — via postgres-exporter
   - job_name: "timescaledb-module"
     metrics_path: /metrics
     scrape_interval: 15s
@@ -303,13 +358,3 @@ scrape_configs:
         target_label: instance
         replacement: "host-containers"
 
-  # Monitor Service — docker-compose / container stats exporter
-  - job_name: "monitor"
-    metrics_path: /metrics
-    scrape_interval: 15s
-    static_configs:
-      - targets: ["monitor:9110"]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: "compose-services"

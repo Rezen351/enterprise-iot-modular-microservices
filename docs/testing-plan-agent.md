@@ -389,14 +389,13 @@ setelah API tervalidasi. Tes export via curl dahulu sebagai kontrak.
 
 ---
 
-## 11. Monitor Service (`monitor:8080`, Go) + WS Gateway (`wsgateway:8090`, Go)
-**Fitur:** Monitor publish telemetry/status ke NATS; wsgateway bridge NATS→WebSocket
-(`GET /ws/nodes/{node_id}/live`).
+## 11. WS Gateway (`wsgateway:8090`, Go)
+**Fitur:** Bridge NATS → WebSocket (`GET /ws/nodes/{node_id}/live` & `/ws/system-status`).
 
 ### Checklist Fitur
 - [ ] `GET /ws/nodes/{node_id}/live?token=` → 101, stream JSON telemetry.
 - [ ] Multi-client: beberapa dashboard receive update sama.
-- [ ] Health `/health` wsgateway & monitor 200.
+- [ ] Health `/health` wsgateway 200.
 
 ### Checklist Keamanan
 - [ ] WS wajib `?token=` (authenticate); tanpa token → 401 (lihat `wsgateway/internal/auth/jwt.go`).

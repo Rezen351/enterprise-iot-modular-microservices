@@ -210,7 +210,7 @@ function AppContent() {
         <nav className="relative z-50 border-b border-emerald-500/10 bg-inherit/80 backdrop-blur-xl sticky top-0" style={{ borderColor: 'var(--border-main)' }}>
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center compact-mobile-px">
             <div className="flex items-center cursor-pointer group" onClick={() => setView('landing')}>
-              <img src={`${BASE}Smart Farm Logo.svg`} className={`h-9 sm:h-10 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
+              <img src={`${BASE}Smart Farm Logo.svg`} className="h-9 sm:h-10 w-auto object-contain" alt="Smart Farm Logo" />
             </div>
             <button onClick={() => setView('landing')} className="text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
               <LogOut className="w-4 h-4 rotate-180" /> Back to Home
@@ -267,7 +267,7 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center compact-mobile-px">
           <div className="flex items-center cursor-pointer group select-none" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <img src="/favicon.svg" className={`sm:hidden h-8 w-8 object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Aeroponik" />
-            <img src="/Smart Farm Logo.svg" className={`hidden sm:block h-9 sm:h-10 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
+            <img src="/Smart Farm Logo.svg" className="hidden sm:block h-9 sm:h-10 w-auto object-contain" alt="Smart Farm Logo" />
           </div>
 
           <div className="hidden lg:flex items-center gap-5 xl:gap-8 text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
@@ -564,7 +564,7 @@ function AppContent() {
       {/* Footer */}
       <footer className="border-t py-16 text-center relative z-10" style={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-main)' }}>
         <div className="flex justify-center items-center mb-8 opacity-60 select-none">
-            <img src={`${BASE}Smart Farm Logo.svg`} className={`h-8 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`} alt="Smart Farm Logo" />
+            <img src={`${BASE}Smart Farm Logo.svg`} className="h-8 w-auto object-contain" alt="Smart Farm Logo" />
         </div>
         <p className="text-sm font-black uppercase tracking-[0.2em] mb-6" style={{ color: 'var(--text-main)' }}>Aeroponik — Precision Aeroponic Control</p>
         <div className="flex justify-center gap-10 text-[10px] font-black uppercase tracking-[0.2em] mb-10" style={{ color: 'var(--text-muted)' }}>

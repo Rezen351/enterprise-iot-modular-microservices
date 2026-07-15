@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -15,7 +16,12 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// ErrInvalidRange is returned when a threshold's effective min exceeds its max
+// (including partial updates that invert the range against the stored value).
+var ErrInvalidRange = errors.New("min must be less than or equal to max")
+
 const telemetrySubject = "telemetry.ingest"
+const auditSubject = "audit.log"
 
 // Service evaluates telemetry against thresholds and persists/relays alerts.
 type Service struct {
@@ -226,34 +232,98 @@ func (s *Service) publishSystem(a *model.Alert, event string) {
 	}
 }
 
+// publishAudit emits a threshold lifecycle event onto the shared audit.log
+// subject so the Audit Service can persist an immutable compliance record.
+func (s *Service) publishAudit(event string, fields map[string]string) {
+	if s.nc == nil {
+		return
+	}
+	payload := fmt.Sprintf(`{"event":%q,"service":"alert","data":%s}`, event, mapToJSON(fields))
+	if err := s.nc.Publish(auditSubject, []byte(payload)); err != nil {
+		log.Printf("WARN: alert: publish audit %s failed: %v", event, err)
+	}
+}
+
+// mapToJSON renders a string map as a compact JSON object (key/value quoted).
+func mapToJSON(m map[string]string) string {
+	out := "{"
+	first := true
+	for k, v := range m {
+		if !first {
+			out += ","
+		}
+		out += fmt.Sprintf(`%q:%q`, k, v)
+		first = false
+	}
+	return out + "}"
+}
+
 // ─── Threshold management (cache-coherent) ─────────────────────────────────
 
 // CreateThreshold persists a threshold and evicts any cached copy.
-func (s *Service) CreateThreshold(ctx context.Context, t *model.Threshold) (*model.Threshold, error) {
+func (s *Service) CreateThreshold(ctx context.Context, t *model.Threshold, by string) (*model.Threshold, error) {
 	if err := s.store.CreateThreshold(ctx, t); err != nil {
 		return nil, err
 	}
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	s.publishAudit("alert.threshold.created", map[string]string{
+		"threshold_id": t.ID,
+		"node_id":       t.NodeID,
+		"metric":        t.Metric,
+		"severity":      t.Severity,
+		"by":            by,
+	})
 	return t, nil
 }
 
-// UpdateThreshold patches a threshold and evicts the cache.
-func (s *Service) UpdateThreshold(ctx context.Context, id string, patch map[string]any) (*model.Threshold, error) {
+// UpdateThreshold patches a threshold and evicts the cache. It validates the
+// effective min/max range (even for single-field updates) and evicts BOTH the
+// old and new (node_id, metric) cache keys so a rename cannot leave a stale
+// threshold cached under the previous key.
+func (s *Service) UpdateThreshold(ctx context.Context, id string, patch map[string]any, by string) (*model.Threshold, error) {
+	old, err := s.store.GetThreshold(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	effMin, effMax := old.Min, old.Max
+	if v, ok := patch["min"].(float64); ok {
+		effMin = &v
+	}
+	if v, ok := patch["max"].(float64); ok {
+		effMax = &v
+	}
+	if effMin != nil && effMax != nil && *effMin > *effMax {
+		return nil, ErrInvalidRange
+	}
 	t, err := s.store.UpdateThreshold(ctx, id, patch)
 	if err != nil {
 		return nil, err
 	}
+	s.cache.ClearThreshold(ctx, old.NodeID, old.Metric)
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	s.publishAudit("alert.threshold.updated", map[string]string{
+		"threshold_id": t.ID,
+		"node_id":       t.NodeID,
+		"metric":        t.Metric,
+		"severity":      t.Severity,
+		"by":            by,
+	})
 	return t, nil
 }
 
 // DeleteThreshold removes a threshold and evicts the cache.
-func (s *Service) DeleteThreshold(ctx context.Context, id string) error {
+func (s *Service) DeleteThreshold(ctx context.Context, id string, by string) error {
 	t, err := s.store.DeleteThreshold(ctx, id)
 	if err != nil {
 		return err
 	}
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
+	s.publishAudit("alert.threshold.deleted", map[string]string{
+		"threshold_id": t.ID,
+		"node_id":       t.NodeID,
+		"metric":        t.Metric,
+		"by":            by,
+	})
 	return nil
 }
 

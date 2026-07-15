@@ -284,6 +284,27 @@ func (h *AuthHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]any{"users": users, "count": len(users)})
 }
 
+// GET /auth/users/{id}
+func (h *AuthHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		respondError(w, http.StatusBadRequest, "user id is required")
+		return
+	}
+
+	user, err := h.svc.GetUser(r.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			respondError(w, http.StatusNotFound, "user not found")
+		default:
+			respondError(w, http.StatusInternalServerError, "failed to get user")
+		}
+		return
+	}
+	respond(w, http.StatusOK, user)
+}
+
 // GET /auth/roles
 func (h *AuthHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 	roles, err := h.svc.ListRoles(r.Context())
@@ -362,11 +383,35 @@ func (h *AuthHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func respond(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	// Standard API response wrapper (AGENTS.md §4.4): { success, data }.
+	_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": v})
 }
 
+// respondError emits the standard error envelope (AGENTS.md §4.4):
+// { success:false, error:{ code, message } }.
 func respondError(w http.ResponseWriter, status int, msg string) {
-	respond(w, status, map[string]string{"error": msg})
+	respond(w, status, map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": errorCode(status), "message": msg},
+	})
+}
+
+// errorCode maps an HTTP status to a stable machine-readable error code.
+func errorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "BAD_REQUEST"
+	case http.StatusUnauthorized:
+		return "UNAUTHORIZED"
+	case http.StatusForbidden:
+		return "FORBIDDEN"
+	case http.StatusNotFound:
+		return "NOT_FOUND"
+	case http.StatusConflict:
+		return "CONFLICT"
+	default:
+		return "INTERNAL_ERROR"
+	}
 }
 
 // realIP extracts the client IP, respecting X-Forwarded-For from Kong.

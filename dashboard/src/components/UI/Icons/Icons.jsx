@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const BlueskyIcon = ({ className = "w-4 h-4" }) => (
   <svg viewBox="0 0 16 17" className={className} xmlns="http://www.w3.org/2000/svg">
     <g clipPath="url(#bluesky-clip)">

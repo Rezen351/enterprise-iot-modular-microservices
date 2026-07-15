@@ -1,0 +1,4 @@
+-- Audit Service — audit_db bootstrap.
+-- Schema is owned by GORM AutoMigrate (services/audit/migrate.go); this file is
+-- intentionally empty. The database and user are created from environment
+-- variables (MYSQL_DATABASE_AUDIT / DB_USER / DB_PASSWORD) by the MariaDB image.

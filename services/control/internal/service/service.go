@@ -19,9 +19,17 @@ var (
 	ErrNodeRequired     = errors.New("node_id is required")
 	ErrOutputRequired   = errors.New("output is required")
 	ErrValueRequired    = errors.New("value is required")
+	ErrValueOutOfRange  = errors.New("value is out of range")
 	ErrUnknownType      = errors.New("unknown control type")
 	ErrScheduleNotFound = errors.New("schedule not found")
 	ErrMQTTUnavailable  = errors.New("mqtt broker unavailable")
+	// ErrNodeAutoMode is returned when a manual command is issued to a node that
+	// is under automatic (scheduled) control. The caller must switch the node
+	// to MANUAL before overriding (arbitration: MANUAL overrides AUTO).
+	ErrNodeAutoMode = errors.New("node is in automatic mode; switch to Manual to override")
+	// ErrNodeEmergency is returned when a command is issued while the node is in
+	// EMERGENCY stop. The caller must resume control first.
+	ErrNodeEmergency = errors.New("node is in emergency stop; resume control first")
 )
 
 // NATSPublisher is a minimal interface for publishing audit/events.
@@ -33,6 +41,14 @@ type NATSPublisher interface {
 type Publisher interface {
 	PublishSetOutput(nodeID, target string, value int, reqID string) error
 	IsConnected() bool
+}
+
+// Scheduler is the optional control-plane hook the service uses to ask the
+// scheduler engine to re-evaluate immediately after a schedule is created,
+// enabled, disabled, updated, or deleted — so changes take effect without
+// waiting for the next periodic reconcile (important for stop/disarm latency).
+type Scheduler interface {
+	NotifyScheduleChanged()
 }
 
 // ActuatorSource yields the controllable outputs (actuator tags) for a node.
@@ -50,6 +66,11 @@ type ControlService struct {
 
 	// actuatorSource resolves actuator tags (Module Service tag-mapping).
 	actuatorSource ActuatorSource
+
+	// sched is the optional hook used to trigger an immediate scheduler
+	// reconcile after a schedule mutation (so disable/delete takes effect
+	// without waiting for the periodic reconcile).
+	sched Scheduler
 
 	// latest telemetry payload per node (for threshold evaluation).
 	mu     sync.RWMutex
@@ -110,6 +131,18 @@ func (s *ControlService) SetPublisher(pub Publisher) { s.pub = pub }
 // SetActuatorSource lets main swap the tag source (e.g. per-request module client).
 func (s *ControlService) SetActuatorSource(a ActuatorSource) { s.actuatorSource = a }
 
+// SetScheduler lets main wire the scheduler engine so schedule mutations
+// (create/enable/disable/update/delete) trigger an immediate reconcile.
+func (s *ControlService) SetScheduler(sc Scheduler) { s.sched = sc }
+
+// notifyScheduler asks the engine to reconcile immediately so a schedule
+// mutation takes effect without waiting for the periodic reconcile.
+func (s *ControlService) notifyScheduler() {
+	if s.sched != nil {
+		s.sched.NotifyScheduleChanged()
+	}
+}
+
 // ─── Manual commands ──────────────────────────────────────────────────────────
 
 // HandleManualCommand resolves a high-level manual command into one or more
@@ -123,10 +156,10 @@ func (s *ControlService) HandleManualCommand(ctx context.Context, req model.Comm
 	nodeMode := s.GetNodeMode(ctx, req.NodeID)
 	if req.Type != model.TypeEmergencyStop {
 		if nodeMode == model.ModeEmergency {
-			return nil, fmt.Errorf("node in emergency stop; resume control first")
+			return nil, ErrNodeEmergency
 		}
 		if nodeMode == model.ModeAuto {
-			return nil, fmt.Errorf("node in automatic mode; switch to Manual to override")
+			return nil, ErrNodeAutoMode
 		}
 	}
 	switch req.Type {
@@ -136,6 +169,9 @@ func (s *ControlService) HandleManualCommand(ctx context.Context, req model.Comm
 		}
 		if req.Value == nil {
 			return nil, ErrValueRequired
+		}
+		if *req.Value < 0 || *req.Value > 255 {
+			return nil, ErrValueOutOfRange
 		}
 		tag := s.lookupTag(src, req.NodeID, req.Output)
 		c, err := s.dispatch(ctx, req.NodeID, req.Output, tag, *req.Value, req.Type, model.SourceManual, nil, issuedBy)
@@ -408,7 +444,7 @@ func (s *ControlService) CreateSchedule(ctx context.Context, req model.ScheduleR
 	if req.OutputName == "" {
 		return nil, ErrOutputRequired
 	}
-	enabled := false
+	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
@@ -421,6 +457,7 @@ func (s *ControlService) CreateSchedule(ctx context.Context, req model.ScheduleR
 		return nil, err
 	}
 	s.publishAudit("control.schedule.created", map[string]string{"schedule_id": sc.ID, "node_id": sc.NodeID, "type": sc.Type})
+	s.notifyScheduler()
 	return sc, nil
 }
 
@@ -451,6 +488,7 @@ func (s *ControlService) UpdateSchedule(ctx context.Context, id string, req mode
 		}
 	}
 	s.publishAudit("control.schedule.updated", map[string]string{"schedule_id": id})
+	s.notifyScheduler()
 	return sc, err
 }
 
@@ -465,6 +503,7 @@ func (s *ControlService) SetScheduleEnabled(ctx context.Context, id string, enab
 			ev = "control.schedule.disabled"
 		}
 		s.publishAudit(ev, map[string]string{"schedule_id": id})
+		s.notifyScheduler()
 	}
 	return err
 }
@@ -476,6 +515,7 @@ func (s *ControlService) DeleteSchedule(ctx context.Context, id string) error {
 	}
 	if err == nil {
 		s.publishAudit("control.schedule.deleted", map[string]string{"schedule_id": id})
+		s.notifyScheduler()
 	}
 	return err
 }

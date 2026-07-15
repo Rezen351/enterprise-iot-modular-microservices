@@ -171,7 +171,7 @@ void MqttManager::mqttTask(void* parameter) {
                     addLog(("Sub: " + Config::TOPIC_ACTUATOR).c_str());
                     
                     // Publish online status (retained)
-                    String onlinePayload = "{\"status\":\"online\",\"mac\":\"" + macAsli + "\",\"fw\":\"" + Config::FW_VERSION + "\"}";
+                    String onlinePayload = "{\"status\":\"online\",\"mac\":\"" + macAsli + "\",\"ip\":\"" + WiFi.localIP().toString() + "\",\"fw\":\"" + Config::FW_VERSION + "\"}";
                     mqttClient->publish(lwtTopic.c_str(), onlinePayload.c_str(), true);
                     
                     // Publish discovery

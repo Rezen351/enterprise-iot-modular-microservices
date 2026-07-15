@@ -39,6 +39,8 @@ function Profile({ onLogout }) {
   // ── Sessions ───────────────────────────────────────────────────
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [sessionPage, setSessionPage] = useState(1);
+  const SESSIONS_PER_PAGE = 5;
 
   // ── Delete account ─────────────────────────────────────────────
   const [deletePassword, setDeletePassword] = useState('');
@@ -62,6 +64,7 @@ function Profile({ onLogout }) {
     try {
       const res = await authApi.getSessions();
       setSessions(res?.sessions || []);
+      setSessionPage(1);
     } catch (err) {
       console.warn('Profile: failed to load sessions', err);
       setSessions([]);
@@ -141,6 +144,16 @@ function Profile({ onLogout }) {
   };
 
   const role = (profile.roles && profile.roles[0]) || '—';
+
+  // Sessions sorted newest-first, then sliced to the current page (5 per page).
+  const sortedSessions = [...sessions].sort(
+    (a, b) => new Date(b.issued_at) - new Date(a.issued_at),
+  );
+  const totalSessionPages = Math.max(1, Math.ceil(sortedSessions.length / SESSIONS_PER_PAGE));
+  const pageSessions = sortedSessions.slice(
+    (sessionPage - 1) * SESSIONS_PER_PAGE,
+    sessionPage * SESSIONS_PER_PAGE,
+  );
 
   return (
     <div className="flex flex-col gap-3 w-full animate-fadeIn">
@@ -232,24 +245,58 @@ function Profile({ onLogout }) {
               <div className="flex items-center justify-center py-8 text-slate-500">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
-            ) : sessions.length === 0 ? (
+            ) : sortedSessions.length === 0 ? (
               <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 sm:py-6 text-center">No active sessions</p>
             ) : (
-              <div className="space-y-2 sm:space-y-3">
-                {sessions.map((s) => (
-                  <div key={s.id} className="p-2.5 sm:p-3 border border-emerald-500/10 bg-[#040e0a]/60">
-                    <div className="flex items-center gap-2 mb-1">
-                      <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
-                      <span className="text-[11px] sm:text-xs font-bold text-slate-300 truncate">{s.user_agent || 'Unknown device'}</span>
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex flex-wrap gap-x-3 gap-y-1">
-                      <span>IP: <span className="text-slate-400">{s.ip_address || '—'}</span></span>
-                      <span>Issued: <span className="text-slate-400">{fmt(s.issued_at)}</span></span>
-                      <span>Expires: <span className="text-slate-400">{fmt(s.expires_at)}</span></span>
-                    </div>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-emerald-500/10">
+                        <th className="py-2 pr-3 font-black">Device</th>
+                        <th className="py-2 pr-3 font-black">IP Address</th>
+                        <th className="py-2 pr-3 font-black">Issued</th>
+                        <th className="py-2 font-black">Expires</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageSessions.map((s) => (
+                        <tr key={s.id} className="border-b border-emerald-500/5 text-[10px] sm:text-[11px]">
+                          <td className="py-2.5 pr-3">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                              <span className="font-bold text-slate-300 truncate max-w-[140px]">{s.user_agent || 'Unknown device'}</span>
+                            </div>
+                          </td>
+                          <td className="py-2.5 pr-3 font-bold text-slate-400 tabular-nums">{s.ip_address || '—'}</td>
+                          <td className="py-2.5 pr-3 font-bold text-slate-400 tabular-nums whitespace-nowrap">{fmt(s.issued_at)}</td>
+                          <td className="py-2.5 font-bold text-slate-400 tabular-nums whitespace-nowrap">{fmt(s.expires_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-emerald-500/10">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    {sortedSessions.length} session{sortedSessions.length !== 1 && 's'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setSessionPage((p) => Math.max(1, p - 1))} disabled={sessionPage <= 1}
+                      className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider text-slate-300 border border-emerald-500/20 hover:border-emerald-500/50 bg-[#040e0a] transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]">
+                      Prev
+                    </button>
+                    <span className="text-[10px] font-bold text-slate-400 tabular-nums px-1">
+                      {sessionPage} / {totalSessionPages}
+                    </span>
+                    <button type="button" onClick={() => setSessionPage((p) => Math.min(totalSessionPages, p + 1))} disabled={sessionPage >= totalSessionPages}
+                      className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider text-slate-300 border border-emerald-500/20 hover:border-emerald-500/50 bg-[#040e0a] transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]">
+                      Next
+                    </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              </>
             )}
           </div>
 

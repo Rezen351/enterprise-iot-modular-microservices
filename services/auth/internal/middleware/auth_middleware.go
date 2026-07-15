@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -23,14 +24,14 @@ func JWTAuth(svc *service.AuthService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				http.Error(w, `{"error":"missing or invalid Authorization header"}`, http.StatusUnauthorized)
+				writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing or invalid Authorization header")
 				return
 			}
 
 			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 			claims, err := svc.ValidateClaims(tokenStr)
 			if err != nil {
-				http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+				writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid or expired token")
 				return
 			}
 
@@ -54,13 +55,13 @@ func RequireRole(allowed ...string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rolesVal := r.Context().Value(ContextKeyRoles)
 			if rolesVal == nil {
-				http.Error(w, `{"error":"unauthorized"}`, http.StatusForbidden)
+				writeError(w, http.StatusForbidden, "FORBIDDEN", "forbidden: insufficient role")
 				return
 			}
 
 			roles, ok := rolesVal.([]string)
 			if !ok {
-				http.Error(w, `{"error":"unauthorized"}`, http.StatusForbidden)
+				writeError(w, http.StatusForbidden, "FORBIDDEN", "forbidden: insufficient role")
 				return
 			}
 
@@ -71,7 +72,7 @@ func RequireRole(allowed ...string) func(http.Handler) http.Handler {
 				}
 			}
 
-			http.Error(w, `{"error":"forbidden: insufficient role"}`, http.StatusForbidden)
+			writeError(w, http.StatusForbidden, "FORBIDDEN", "forbidden: insufficient role")
 		})
 	}
 }
@@ -86,4 +87,15 @@ func UserIDFromContext(ctx context.Context) string {
 func RolesFromContext(ctx context.Context) []string {
 	v, _ := ctx.Value(ContextKeyRoles).([]string)
 	return v
+}
+
+// writeError emits the standard error envelope (AGENTS.md §4.4):
+// { success:false, error:{ code, message } }.
+func writeError(w http.ResponseWriter, status int, code, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": code, "message": msg},
+	})
 }

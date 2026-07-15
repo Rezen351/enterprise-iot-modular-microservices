@@ -1,0 +1,5 @@
+# keep cloned device identities local
+instances/
+.venv/
+__pycache__/
+*.pyc

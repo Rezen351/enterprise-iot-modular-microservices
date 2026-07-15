@@ -8,7 +8,7 @@
 //   • delete accounts
 // ============================================================================
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { authApi } from '../../../api/auth';
 import { Users as UsersIcon, UserPlus, ShieldCheck, Trash2, Edit3, X, Check } from 'lucide-react';
 import PageHeader from './PageHeader';

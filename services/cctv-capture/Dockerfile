@@ -11,8 +11,11 @@ WORKDIR /app
 # build used earlier would hang on H265 keyframe seeks for these CCTV streams.
 RUN apk add --no-cache ffmpeg
 
+# Vendored wheels: the Docker build context has no egress to PyPI, so we install
+# offline from the wheels/ directory (musllinux builds for python3.11).
+COPY wheels/ ./wheels/
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-index --find-links=wheels -r requirements.txt && rm -rf wheels
 
 COPY cron_capture.py .
 

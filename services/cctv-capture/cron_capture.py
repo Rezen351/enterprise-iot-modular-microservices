@@ -6,10 +6,16 @@ Runs independently of the microservices. Every interval it:
      misting is captured in the frame),
    3. grabs a single CCTV frame via ffmpeg from the RTSP relay,
    4. runs inference through the ML service /ml/detect API,
-  5. uploads the raw frame + detection result to the `ml-result` MinIO bucket.
+   5. uploads the raw frame + detection result to the `ml-result` MinIO bucket
+      (the SAME bucket the in-app "Capture Detect AI" button writes to, so
+      both routine cron captures and user-triggered captures appear together
+      in the gallery's CAPTURES tab).
 
-Designed to be scheduled externally (host cron) via RUN_ONCE=1, or run
-in-stack as a long-lived container that loops every CAPTURE_INTERVAL_HOURS.
+Scheduling (pick one):
+  - CAPTURE_CRON       : a 5-field cron expression, e.g. "0 */8 * * *" (custom
+                         routine schedule — most flexible).
+  - CAPTURE_INTERVAL_HOURS : fixed sleep loop (default 8h) when no cron expr.
+  - RUN_ONCE=1          : single shot (for an external host cron).
 """
 from __future__ import annotations
 
@@ -147,19 +153,24 @@ def evaluate_condition(telemetry: dict[str, dict], pump_paths: list[str], load_p
     return allowed, detail
 
 
-def discover_targets(token: str) -> tuple[list[str], Optional[str]]:
-    """Resolve the list of MediaMTX path names to snapshot.
+def discover_targets(token: str) -> tuple[list[str], dict[str, str], Optional[str]]:
+    """Resolve the list of MediaMTX path names to snapshot and their sources.
+
+    Returns (names, sources, error) where ``sources`` maps each name to the
+    upstream camera RTSP URL. We register each path in MediaMTX (on demand,
+    pulling from the camera) right before capturing — paths added via the
+    MediaMTX API are ephemeral and disappear on a MediaMTX restart, so we must
+    (re)create them every cycle rather than assuming they already exist.
 
     Priority:
       1. CCTV_CAPTURE_STREAMS (explicit comma-separated path names)
-      2. the streams already managed by the stream service (GET /streams)
+      2. the streams already managed by the stream service (GET /streams,
+         which also exposes each stream's source RTSP URL)
       3. fallback: a temporary MediaMTX path registered from CCTV_RTSP_URL
-    MediaMTX serves a single JPEG frame per path at its HTTP snapshot API,
-    so no ffmpeg process is needed.
     """
     names = parse_list(env("CAPTURE_STREAMS", ""))
     if names:
-        return names, None
+        return names, {}, None
 
     base = env("STREAM_BASE_URL", "http://stream:8080")
     try:
@@ -169,15 +180,17 @@ def discover_targets(token: str) -> tuple[list[str], Optional[str]]:
             timeout=15,
         )
         r.raise_for_status()
-        names = [s.get("name") for s in (r.json().get("streams") or []) if s.get("name")]
+        streams = [s for s in (r.json().get("streams") or []) if s.get("name")]
+        names = [s["name"] for s in streams]
+        sources = {s["name"]: s.get("source_rtsp") or "" for s in streams}
         if names:
-            return names, None
+            return names, sources, None
     except Exception as exc:
         logger.warning("could not discover streams from stream service: %s", exc)
 
     if env("CCTV_RTSP_URL", ""):
-        return ["__camera__"], None
-    return [], "set CCTV_CAPTURE_STREAMS, register streams, or set CCTV_RTSP_URL"
+        return ["__camera__"], {"__camera__": env("CCTV_RTSP_URL", "")}, None
+    return [], {}, "set CCTV_CAPTURE_STREAMS, register streams, or set CCTV_RTSP_URL"
 
 
 def register_path(name: str, source: str) -> None:
@@ -333,10 +346,41 @@ def mirror_annotated(client: minio.Minio, detection: dict, result_bucket: str, d
     try:
         data = client.get_object(src_bucket, src_key).read()
     except Exception as exc:
-        logger.warning("could not fetch annotated image %s/%s: %v", src_bucket, src_key, exc)
+        logger.warning("could not fetch annotated image %s/%s: %s", src_bucket, src_key, exc)
         return None
     client.put_object(result_bucket, dest_key, io.BytesIO(data), length=len(data), content_type="image/jpeg")
     return dest_key
+
+
+def cron_delay(expr: str) -> float:
+    """Seconds until the next matching time for a 5-field cron expression."""
+    from croniter import croniter
+
+    from datetime import datetime as _dt
+
+    return (croniter(expr, _dt.now()).get_next(_dt) - _dt.now()).total_seconds()
+
+
+def log_config() -> None:
+    """Emit resolved configuration so misconfiguration is obvious at startup."""
+    fields = [
+        ("CAPTURE_CRON", env("CAPTURE_CRON", "")),
+        ("CAPTURE_INTERVAL_HOURS", env("CAPTURE_INTERVAL_HOURS", "8")),
+        ("RUN_ONCE", env("RUN_ONCE", "")),
+        ("CAPTURE_STREAMS", env("CAPTURE_STREAMS", "")),
+        ("NODE_IDS", env("NODE_IDS", "")),
+        ("CONDITION_MODE", env("CONDITION_MODE", "any")),
+        ("SKIP_WHEN_TELEMETRY_MISSING", env("SKIP_WHEN_TELEMETRY_MISSING", "true")),
+        ("PUMP_PATHS", env("PUMP_PATHS", "telemetry.outputs.pump")),
+        ("LOAD_PATHS", env("LOAD_PATHS", "telemetry.outputs.load1")),
+        ("MINIO_RESULT_BUCKET", env("MINIO_RESULT_BUCKET", "ml-result")),
+        ("MODEL_ID", env("MODEL_ID", "")),
+        ("ML_BASE_URL", env("ML_BASE_URL", "http://ml:8080")),
+        ("CCTV_RTSP_URL", env("CCTV_RTSP_URL", "")),
+    ]
+    logger.info("config:")
+    for k, v in fields:
+        logger.info("  %-28s = %s", k, v or "<empty>")
 
 
 def run_cycle() -> None:
@@ -369,7 +413,7 @@ def run_cycle() -> None:
     logger.info("condition met (pump_off=%s load_zero=%s) — capturing", detail["pump_off"], detail["load_zero"])
 
     ml_token = get_ml_token()
-    names, err = discover_targets(ml_token)
+    names, sources, err = discover_targets(ml_token)
     if not names:
         logger.warning("no capture targets: %s — skipping", err or "unknown")
         return
@@ -389,15 +433,23 @@ def run_cycle() -> None:
     imgsz = env_int("IMSZ", 0) or None
     ml_base = env("ML_BASE_URL", "http://ml:8080")
 
+    captured = 0
     for name in names:
-        # Build the RTSP source: a registered MediaMTX path (relayed from the
-        # camera) or, as a fallback, the camera RTSP URL directly.
+        # Build the RTSP source: a MediaMTX path (relayed from the camera) or,
+        # as a fallback, the camera RTSP URL directly. We (re)register the
+        # MediaMTX path with its upstream source every cycle because API-added
+        # paths are ephemeral and vanish on a MediaMTX restart.
         if name == "__camera__":
             src = env("CCTV_RTSP_URL", "")
             target = "camera"
+            if src:
+                register_path(name, src)
         else:
-            src = f"{rtsp_base}/{name}"
             target = name
+            upstream = sources.get(name)
+            if upstream:
+                register_path(name, upstream)
+            src = f"{rtsp_base}/{name}"
         if not src:
             logger.warning("no RTSP source for %s — skipping", name)
             continue
@@ -446,9 +498,28 @@ def run_cycle() -> None:
             detection.get("num_detections") if detection else "n/a",
             detection.get("classes") if detection else "n/a",
         )
+        captured += 1
+
+    logger.info("cycle complete: %d target(s) captured of %d discovered", captured, len(names))
 
 
 def main() -> None:
+    log_config()
+    cron_expr = env("CAPTURE_CRON", "").strip()
+    if cron_expr:
+        logger.info("custom cron schedule enabled: %r", cron_expr)
+        while True:
+            try:
+                run_cycle()
+            except Exception as exc:
+                logger.exception("cycle error: %s", exc)
+            try:
+                delay = cron_delay(cron_expr)
+            except Exception as exc:
+                logger.error("invalid CAPTURE_CRON %r (%s) — falling back to 1h: %s", cron_expr, exc, exc)
+                delay = 3600
+            logger.info("next run in %.0fs", delay)
+            time.sleep(max(1.0, delay))
     if env_bool("RUN_ONCE", False):
         logger.info("single-shot run")
         run_cycle()

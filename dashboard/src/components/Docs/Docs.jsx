@@ -1,4 +1,4 @@
-import { BookOpen, ArrowLeft, Terminal, AlertTriangle, Info, Lightbulb, Server, Cpu, ShieldCheck } from 'lucide-react';
+import { BookOpen, ArrowLeft, AlertTriangle, Info, Lightbulb, ShieldCheck } from 'lucide-react';
 
 /* ------------------------------------------------------------------ *
  *  Small presentational helpers (kept local to the docs page)

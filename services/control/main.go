@@ -94,6 +94,7 @@ func main() {
 	}
 	log.Printf("scheduler timezone: %s", schedLoc)
 	engine := scheduler.New(svc, schedLoc)
+	svc.SetScheduler(engine)
 	go engine.Run(bgCtx)
 
 	// ─── Command timeout sweep ──────────────────────────────────────────
@@ -136,6 +137,7 @@ func main() {
 		r.Get("/outputs", h.ListOutputs)
 		r.Get("/schedules", h.ListSchedules)
 		r.Get("/schedules/{id}", h.GetSchedule)
+		r.Get("/modes/{node_id}", h.GetNodeMode)
 
 		// Write routes — operator/admin only.
 		r.Group(func(r chi.Router) {
@@ -148,7 +150,6 @@ func main() {
 			r.Post("/schedules/{id}/disable", h.DisableSchedule)
 			r.Delete("/schedules/{id}", h.DeleteSchedule)
 			r.Put("/modes/{node_id}", h.SetNodeMode)
-			r.Get("/modes/{node_id}", h.GetNodeMode)
 			r.Post("/modes/{node_id}/resume", h.ResumeNode)
 			r.Put("/modes/{node_id}/{output}", h.SetMode)
 		})

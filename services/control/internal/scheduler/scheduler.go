@@ -17,6 +17,11 @@ type Dispatcher interface {
 	EnabledSchedules(ctx context.Context) ([]model.Schedule, error)
 	SensorValue(nodeID, sourceKey string) (float64, bool)
 	SetScheduleEnabled(ctx context.Context, id string, enabled bool) error
+	// GetNodeMode returns the current node-level control mode (AUTO/MANUAL/
+	// EMERGENCY). Used to guard each dispatch so an in-flight schedule tick
+	// cannot re-energize an output after the node leaves AUTO, closing the
+	// race between the tick and the next reconcile that cancels the runner.
+	GetNodeMode(ctx context.Context, nodeID string) string
 }
 
 // Engine runs enabled schedules as independent goroutines and reconciles them
@@ -49,6 +54,16 @@ func New(disp Dispatcher, loc *time.Location) *Engine {
 		loc:            loc,
 		runners:        make(map[string]*runner),
 	}
+}
+
+// NotifyScheduleChanged triggers an immediate reconcile so that a schedule
+// created, enabled, disabled, updated, or deleted via the API takes
+// effect at once (e.g. a disabled/deleted schedule stops firing without
+// waiting for the next periodic reconcile — important for stop/disarm latency).
+func (e *Engine) NotifyScheduleChanged() {
+	go func() {
+		e.reconcile(context.Background())
+	}()
 }
 
 // Run blocks until ctx is cancelled, reconciling schedules periodically.
@@ -400,6 +415,14 @@ func (e *Engine) dispatch(ctx context.Context, sc model.Schedule, value int) {
 	id := sc.ID
 	bg, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	// Guard: never dispatch when the node is no longer under automatic
+	// control. Schedules run only in AUTO; if the node was switched to
+	// MANUAL or hit EMERGENCY stop, skip immediately instead of waiting
+	// for the next reconcile to cancel this runner (closes the ≤reload
+	// window where an in-flight tick could re-energize an output).
+	if m := e.disp.GetNodeMode(bg, sc.NodeID); m == model.ModeManual || m == model.ModeEmergency {
+		return
+	}
 	if _, err := e.disp.Dispatch(bg, sc.NodeID, sc.OutputName, sc.TagName, value, sc.Type, model.SourceSchedule, &id); err != nil {
 		log.Printf("[scheduler] dispatch failed id=%s node=%s output=%s val=%d: %v",
 			sc.ID, sc.NodeID, sc.OutputName, value, err)

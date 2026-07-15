@@ -578,7 +578,9 @@ func (s *ModuleService) publishTelemetry(nodeID, metric string, value float64) {
 	}
 	envelope := fmt.Sprintf(`{"node_id":%q,"metric":%q,"value":%v,"ts":%d}`,
 		nodeID, metric, value, time.Now().UnixMilli())
-	_ = s.nats.Publish("telemetry.ingest", []byte(envelope))
+	if err := s.nats.Publish("telemetry.ingest", []byte(envelope)); err != nil {
+		log.Printf("[nats] publish telemetry.ingest failed node=%s metric=%s: %v", nodeID, metric, err)
+	}
 }
 
 // ─── Audit helper ────────────────────────────────────────────────────────────

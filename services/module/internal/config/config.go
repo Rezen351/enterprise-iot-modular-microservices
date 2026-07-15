@@ -23,6 +23,10 @@ type Config struct {
 	// NATS — audit + event bus
 	NATSUrl string
 
+	// JWT — shared secret with Auth Service for validating access tokens.
+	// When empty (dev), auth is skipped; Kong still fronts the service.
+	JWTSecret string
+
 	// MQTT — Mosquitto broker (device onboarding signals)
 	MQTTURL         string
 	MQTTUser        string
@@ -41,6 +45,7 @@ func Load() (*Config, error) {
 		RedisPassword:   getEnv("REDIS_PASSWORD", ""),
 		RedisDB:         getEnvInt("REDIS_DB", 0),
 		NATSUrl:         getEnv("NATS_URL", "nats://nats:4222"),
+		JWTSecret:       getEnv("JWT_SECRET", ""),
 		MQTTURL:         getEnv("MQTT_URL", "tcp://mosquitto:1883"),
 		MQTTUser:        getEnv("MQTT_USER", ""),
 		MQTTPass:        getEnv("MQTT_PASS", ""),

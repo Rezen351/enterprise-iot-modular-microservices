@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/almuzky/iot/services/module/internal/model"
 	"github.com/almuzky/iot/services/module/internal/service"
@@ -30,6 +31,10 @@ func (h *Handler) CreateModule(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateModuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if !validName(req.Name) || !validName(req.Description) {
+		respondError(w, http.StatusBadRequest, "name/description contains invalid characters")
 		return
 	}
 	m, err := h.svc.CreateModule(r.Context(), req)
@@ -72,6 +77,14 @@ func (h *Handler) UpdateModule(w http.ResponseWriter, r *http.Request) {
 	var req model.UpdateModuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Name != nil && !validName(*req.Name) {
+		respondError(w, http.StatusBadRequest, "name contains invalid characters")
+		return
+	}
+	if req.Description != nil && !validName(*req.Description) {
+		respondError(w, http.StatusBadRequest, "description contains invalid characters")
 		return
 	}
 	m, err := h.svc.UpdateModule(r.Context(), id, req)
@@ -145,6 +158,10 @@ func (h *Handler) PairNode(w http.ResponseWriter, r *http.Request) {
 	var req model.PairRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if !validName(req.Name) {
+		respondError(w, http.StatusBadRequest, "name contains invalid characters")
 		return
 	}
 	n, err := h.svc.Pair(r.Context(), nodeID, req)
@@ -267,9 +284,48 @@ func (h *Handler) DeleteActuatorTag(w http.ResponseWriter, r *http.Request) {
 func respond(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	// Standard API response wrapper (AGENTS.md §4.4): { success, data }.
+	_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": v})
 }
 
+// respondError emits the standard error envelope (AGENTS.md §4.4):
+// { success:false, error:{ code, message } }.
 func respondError(w http.ResponseWriter, status int, msg string) {
-	respond(w, status, map[string]string{"error": msg})
+	respond(w, status, map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": errorCode(status), "message": msg},
+	})
+}
+
+// errorCode maps an HTTP status to a stable machine-readable error code.
+func errorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "BAD_REQUEST"
+	case http.StatusUnauthorized:
+		return "UNAUTHORIZED"
+	case http.StatusForbidden:
+		return "FORBIDDEN"
+	case http.StatusNotFound:
+		return "NOT_FOUND"
+	case http.StatusConflict:
+		return "CONFLICT"
+	default:
+		return "INTERNAL_ERROR"
+	}
+}
+
+// validName rejects control characters and angle brackets to prevent stored
+// XSS / injection via free-text fields. JSON output is HTML-escaped by the
+// encoder as a second layer of defense.
+func validName(s string) bool {
+	if strings.ContainsAny(s, "<>") {
+		return false
+	}
+	for _, r := range s {
+		if r < 0x20 && r != '\t' && r != '\n' && r != '\r' {
+			return false
+		}
+	}
+	return true
 }

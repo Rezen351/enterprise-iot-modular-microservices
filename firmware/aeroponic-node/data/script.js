@@ -1,6 +1,17 @@
 let token = localStorage.getItem('token');
 let alertTimer;
 
+// Lacak apakah field password benar-benar diubah user.
+// Backend sengaja TIDAK mengembalikan password (security), sehingga field kosong saat refresh.
+// Jika tidak dilacak, menyimpan form akan mengirim password kosong & menimpa password tersimpan.
+let pwDirty = { cfg_pass: false, cfg_eap_pass: false, cfg_mqtt_p: false };
+['cfg_pass', 'cfg_eap_pass', 'cfg_mqtt_p'].forEach(id => {
+    let el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => { pwDirty[id] = true; });
+});
+
+const PW_PLACEHOLDER = '•••••••• (biarkan kosong untuk mempertahankan)';
+
 function showMsg(msg, isErr = false) {
     let box = document.getElementById('alert');
     box.innerText = msg;
@@ -216,18 +227,27 @@ async function sendDiscovery() {
 async function loadFullConfig() {
     let d = await api('/api/fullconfig', 'GET');
     if (d) {
+        let wifi = (d.protocols && d.protocols.wifi) || {};
+        let mqtt = (d.protocols && d.protocols.mqtt) || {};
         document.getElementById('cfg_node_id').value = d.device.node_id || '';
         document.getElementById('cfg_admin_u').value = d.security.admin_user || '';
-        document.getElementById('cfg_ssid').value = d.wifi.ssid || '';
-        document.getElementById('cfg_pass').value = d.wifi.password || '';
-        document.getElementById('cfg_eap_id').value = d.wifi.eap_identity || '';
-        document.getElementById('cfg_eap_pass').value = d.wifi.eap_password || '';
-        document.getElementById('cfg_mqtt_srv').value = d.mqtt.server || '';
-        document.getElementById('cfg_mqtt_port').value = d.mqtt.port || '';
-        document.getElementById('cfg_mqtt_pre').value = d.mqtt.topic_prefix || '';
-        document.getElementById('cfg_mqtt_u').value = d.mqtt.user || '';
-        document.getElementById('cfg_mqtt_p').value = d.mqtt.pass || '';
-        document.getElementById('cfg_mqtt_int').value = d.mqtt.telemetry_interval || '';
+        document.getElementById('cfg_ssid').value = wifi.ssid || '';
+        document.getElementById('cfg_pass').value = wifi.password || '';
+        document.getElementById('cfg_pass').placeholder = wifi.password ? PW_PLACEHOLDER : '';
+        document.getElementById('cfg_eap_id').value = wifi.eap_identity || '';
+        document.getElementById('cfg_eap_pass').value = wifi.eap_password || '';
+        document.getElementById('cfg_eap_pass').placeholder = wifi.eap_password ? PW_PLACEHOLDER : '';
+        document.getElementById('cfg_mqtt_srv').value = mqtt.server || '';
+        document.getElementById('cfg_mqtt_port').value = mqtt.port || '';
+        document.getElementById('cfg_mqtt_pre').value = mqtt.topic_prefix || '';
+        document.getElementById('cfg_mqtt_u').value = mqtt.user || '';
+        document.getElementById('cfg_mqtt_p').value = mqtt.pass || '';
+        document.getElementById('cfg_mqtt_p').placeholder = mqtt.pass ? PW_PLACEHOLDER : '';
+        document.getElementById('cfg_mqtt_int').value = mqtt.telemetry_interval_ms || '';
+
+        pwDirty.cfg_pass = false;
+        pwDirty.cfg_eap_pass = false;
+        pwDirty.cfg_mqtt_p = false;
 
         // Render hardware
         renderHardwareRows(d.hardware || { inputs: [], outputs: [] });
@@ -509,10 +529,12 @@ async function saveDevice() {
 
 async function saveWifi() {
     let s = document.getElementById('cfg_ssid').value;
-    let p = document.getElementById('cfg_pass').value;
     let ei = document.getElementById('cfg_eap_id').value;
-    let ep = document.getElementById('cfg_eap_pass').value;
-    let d = await api('/api/wifi', 'POST', `ssid=${s}&pass=${p}&eap_identity=${ei}&eap_password=${ep}`);
+    let body = `ssid=${encodeURIComponent(s)}&eap_identity=${encodeURIComponent(ei)}`;
+    // Hanya kirim password bila user mengubahnya, agar password tersimpan tidak tertimpa kosong.
+    if (pwDirty.cfg_pass) body += `&pass=${encodeURIComponent(document.getElementById('cfg_pass').value)}`;
+    if (pwDirty.cfg_eap_pass) body += `&eap_password=${encodeURIComponent(document.getElementById('cfg_eap_pass').value)}`;
+    let d = await api('/api/wifi', 'POST', body);
     if (d) triggerRebootSequence();
 }
 
@@ -521,9 +543,10 @@ async function saveMqtt() {
     let p = document.getElementById('cfg_mqtt_port').value;
     let pre = document.getElementById('cfg_mqtt_pre').value;
     let u = document.getElementById('cfg_mqtt_u').value;
-    let pass = document.getElementById('cfg_mqtt_p').value;
     let int = document.getElementById('cfg_mqtt_int').value;
-    let d = await api('/api/mqtt', 'POST', `server=${s}&port=${p}&topic_prefix=${pre}&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(pass)}&telemetry_interval=${int}`);
+    let body = `server=${encodeURIComponent(s)}&port=${encodeURIComponent(p)}&topic_prefix=${encodeURIComponent(pre)}&user=${encodeURIComponent(u)}&telemetry_interval=${encodeURIComponent(int)}`;
+    if (pwDirty.cfg_mqtt_p) body += `&pass=${encodeURIComponent(document.getElementById('cfg_mqtt_p').value)}`;
+    let d = await api('/api/mqtt', 'POST', body);
     if (d) triggerRebootSequence();
 }
 

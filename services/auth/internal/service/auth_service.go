@@ -373,6 +373,22 @@ func (s *AuthService) ListUsers(ctx context.Context) ([]model.UserSummary, error
 	return out, nil
 }
 
+// GetUser returns a single user by ID (admin view).
+func (s *AuthService) GetUser(ctx context.Context, id string) (*model.UserSummary, error) {
+	if id == "" {
+		return nil, ErrUserNotFound
+	}
+	user, err := s.repo.GetUserByID(ctx, id)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrUserNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	summary := toUserSummary(user)
+	return &summary, nil
+}
+
 // ListRoles returns all roles defined in the system.
 func (s *AuthService) ListRoles(ctx context.Context) ([]model.Role, error) {
 	return s.repo.GetAllRoles(ctx)

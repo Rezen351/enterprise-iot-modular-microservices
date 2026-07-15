@@ -3,12 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/almuzky/iot/services/control/internal/middleware"
 	"github.com/almuzky/iot/services/control/internal/model"
+	"github.com/almuzky/iot/services/control/internal/module"
 	"github.com/almuzky/iot/services/control/internal/service"
 	"github.com/go-chi/chi/v5"
 )
@@ -38,6 +40,14 @@ func bearerToken(r *http.Request) string {
 	return strings.TrimSpace(strings.TrimPrefix(header, prefix))
 }
 
+// nodeRegistered checks the Module Service whether nodeID is a registered node.
+// Used to reject commands/schedules targeted at unregistered nodes (spoofing).
+func (h *Handler) nodeRegistered(r *http.Request, nodeID string) (bool, error) {
+	token := bearerToken(r)
+	c := module.NewClient(h.moduleURL, token)
+	return c.IsNodeRegistered(r.Context(), nodeID)
+}
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 func Health(w http.ResponseWriter, r *http.Request) {
@@ -61,9 +71,22 @@ func (h *Handler) PostCommand(w http.ResponseWriter, r *http.Request) {
 	} else {
 		src = h.actuatorSourceFor(r)
 	}
+	// Reject commands targeted at an unregistered node (prevents node-id spoofing).
+	if req.NodeID != "" {
+		registered, err := h.nodeRegistered(r, req.NodeID)
+		if err != nil {
+			respondError(w, http.StatusBadGateway, "failed to verify node registration")
+			return
+		}
+		if !registered {
+			respondError(w, http.StatusBadRequest, "node not registered")
+			return
+		}
+	}
 	issuedBy := middleware.UserIDFromContext(r.Context())
 	cmds, err := h.svc.HandleManualCommand(r.Context(), req, issuedBy, src)
 	if err != nil {
+		log.Printf("[handler] HandleManualCommand error node=%s output=%s type=%s: %v", req.NodeID, req.Output, req.Type, err)
 		switch {
 		case errors.Is(err, service.ErrNodeRequired):
 			respondError(w, http.StatusBadRequest, "node_id is required")
@@ -71,6 +94,12 @@ func (h *Handler) PostCommand(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "output is required")
 		case errors.Is(err, service.ErrValueRequired):
 			respondError(w, http.StatusBadRequest, "value is required")
+		case errors.Is(err, service.ErrValueOutOfRange):
+			respondError(w, http.StatusBadRequest, "value is out of range (0..255)")
+		case errors.Is(err, service.ErrNodeAutoMode):
+			respondError(w, http.StatusConflict, "node is in automatic mode; switch to Manual to override")
+		case errors.Is(err, service.ErrNodeEmergency):
+			respondError(w, http.StatusConflict, "node is in emergency stop; resume control first")
 		case errors.Is(err, service.ErrUnknownType):
 			respondError(w, http.StatusBadRequest, "unknown control type")
 		case errors.Is(err, service.ErrMQTTUnavailable):
@@ -170,6 +199,17 @@ func (h *Handler) CreateSchedule(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.NodeID != "" {
+		registered, err := h.nodeRegistered(r, req.NodeID)
+		if err != nil {
+			respondError(w, http.StatusBadGateway, "failed to verify node registration")
+			return
+		}
+		if !registered {
+			respondError(w, http.StatusBadRequest, "node not registered")
+			return
+		}
+	}
 	sc, err := h.svc.CreateSchedule(r.Context(), req)
 	if err != nil {
 		switch {
@@ -264,9 +304,33 @@ func (h *Handler) DeleteSchedule(w http.ResponseWriter, r *http.Request) {
 func respond(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	// Standard API response wrapper (AGENTS.md §4.4): { success, data }.
+	_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": v})
 }
 
+// respondError emits the standard error envelope (AGENTS.md §4.4):
+// { success:false, error:{ code, message } }.
 func respondError(w http.ResponseWriter, status int, msg string) {
-	respond(w, status, map[string]string{"error": msg})
+	respond(w, status, map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": errorCode(status), "message": msg},
+	})
+}
+
+// errorCode maps an HTTP status to a stable machine-readable error code.
+func errorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "BAD_REQUEST"
+	case http.StatusUnauthorized:
+		return "UNAUTHORIZED"
+	case http.StatusForbidden:
+		return "FORBIDDEN"
+	case http.StatusNotFound:
+		return "NOT_FOUND"
+	case http.StatusConflict:
+		return "CONFLICT"
+	default:
+		return "INTERNAL_ERROR"
+	}
 }

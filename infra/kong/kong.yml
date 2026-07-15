@@ -37,8 +37,8 @@ plugins:
   # Rate Limiting global — fallback jika route tidak punya override
   - name: rate-limiting
     config:
-      minute: 100
-      hour: 1000
+      minute: 300
+      hour: 6000
       policy: local
       fault_tolerant: true
       hide_client_headers: false
@@ -66,6 +66,24 @@ plugins:
       credentials: true
       max_age: 3600
       preflight_continue: false
+
+  # Security response headers — injected on every proxied response (defense
+  # in depth). HSTS is harmless over plain HTTP (browsers ignore it) and takes
+  # effect once traffic is served via the HTTPS Cloudflare Tunnel.
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "Content-Security-Policy: default-src 'self'"
+          - "X-Content-Type-Options: nosniff"
+          - "X-Frame-Options: DENY"
+          - "Referrer-Policy: no-referrer"
+          - "Permissions-Policy: geolocation=(), camera=(), microphone=()"
+          - "Strict-Transport-Security: max-age=31536000; includeSubDomains"
+      remove:
+        headers:
+          - "Server"
+          - "X-Powered-By"
 
 # ─── Upstreams ────────────────────────────────────────────────────────
 upstreams:
@@ -144,6 +162,36 @@ upstreams:
       - target: control:8080
         weight: 100
 
+  - name: audit-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: audit:8080
+        weight: 100
+
+  - name: alert-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: alert:8080
+        weight: 100
+
   - name: stream-upstream
     algorithm: round-robin
     healthchecks:
@@ -174,6 +222,36 @@ upstreams:
       - target: ml:8080
         weight: 100
 
+  - name: notification-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: notification:8080
+        weight: 100
+
+  - name: export-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 10
+          successes: 1
+        unhealthy:
+          interval: 5
+          http_failures: 2
+    targets:
+      - target: export:8080
+        weight: 100
+
   # MediaMTX HLS upstream — Kong strips /hls and forwards to mediamtx:8888.
   # No active healthcheck: MediaMTX returns 404 on "/" which would otherwise
   # mark the target unhealthy. Passive checks (default) still apply.
@@ -198,7 +276,6 @@ services:
       # ── Public routes (no JWT required) ──────────────────────────
       - name: auth-public
         paths:
-          - /health
           - /auth/login
           - /auth/register
           - /auth/refresh
@@ -211,11 +288,22 @@ services:
           # Rate-limit lebih ketat untuk endpoint auth publik (anti-brute-force)
           - name: rate-limiting
             config:
-              minute: 20
-              hour: 100
+              minute: 60
+              hour: 2000
               policy: local
               fault_tolerant: true
-              error_message: "Terlalu banyak percobaan login. Coba lagi nanti."
+              error_message: "Too many login attempts. Please try again later."
+
+      # ── Health check (public, NOT rate-limited) ──────────────────
+      # Probes must stay reachable under load, so /health gets only the
+      # generous global limit instead of the strict auth-public one.
+      - name: auth-health
+        paths:
+          - /health
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
 
       # ── Protected routes (JWT required) ──────────────────────────
       - name: auth-protected
@@ -249,8 +337,8 @@ services:
           # Rate-limit untuk route terlindungi
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -278,8 +366,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -302,8 +390,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -326,11 +414,11 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
-              error_message: "Batas permintaan analytics tercapai. Coba lagi nanti."
+              error_message: "Analytics request limit reached. Please try again later."
 
   # Control Service — device command dispatch (manual + scheduled)
   # JWT/RBAC (operator/admin) divalidated by Control Service middleware.
@@ -360,8 +448,63 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
+  # Audit Service — append-only audit log API (sensitive, admin-only read).
+  # JWT validated + admin role enforced by Audit Service middleware.
+  - name: audit-service
+    host: audit-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: audit-routes
+        paths:
+          - /audit
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
+  # Alert Service — threshold evaluation API + alert history/notifications.
+  # JWT validated by Alert Service middleware (any authenticated user for reads;
+  # operator/admin for threshold mutations and alert acknowledgement).
+  - name: alert-service
+    host: alert-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: alert-routes
+        paths:
+          - /alerts
+          - /thresholds
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -388,8 +531,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
       - name: stream-snapshots-routes
@@ -403,8 +546,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -431,8 +574,59 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
+  # Notification Service
+  - name: notification-service
+    host: notification-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: notification-routes
+        paths:
+          - /notifications
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
+  # Export Service
+  - name: export-service
+    host: export-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: export-routes
+        paths:
+          - /analytics/export
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 
@@ -456,8 +650,8 @@ services:
         plugins:
           - name: rate-limiting
             config:
-              minute: 120
-              hour: 2000
+              minute: 300
+              hour: 8000
               policy: local
               fault_tolerant: true
 

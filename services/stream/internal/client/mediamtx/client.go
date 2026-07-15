@@ -108,6 +108,22 @@ func (c *Client) RemovePath(ctx context.Context, name string) error {
 	return nil
 }
 
+// PathExists reports whether a path config is currently registered in
+// MediaMTX (true on 200, false on 404 or any other outcome).
+func (c *Client) PathExists(ctx context.Context, name string) bool {
+	url := fmt.Sprintf("%s/v3/config/paths/get/%s", c.baseURL, name)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false
+	}
+	resp, err := c.httpCl.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
+}
+
 // GetPathStatus returns the runtime state string for a path ("unknown" on miss/error).
 func (c *Client) GetPathStatus(ctx context.Context, name string) string {
 	url := fmt.Sprintf("%s/v3/paths/get/%s", c.baseURL, name)

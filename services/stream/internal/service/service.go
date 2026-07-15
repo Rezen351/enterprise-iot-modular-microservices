@@ -109,6 +109,11 @@ func (s *StreamService) GetStream(ctx context.Context, id string) (*model.Stream
 	if err != nil {
 		return nil, err
 	}
+	// API-added MediaMTX paths are ephemeral and disappear on a MediaMTX
+	// restart. Lazily re-register the path here so a single fetch (e.g. when
+	// the dashboard opens the player) self-heals the "path not configured"
+	// error instead of surfacing it to the user.
+	s.ensurePath(ctx, st)
 	return s.toView(ctx, st), nil
 }
 
@@ -211,7 +216,57 @@ func (s *StreamService) toView(ctx context.Context, st *model.Stream) *model.Str
 	}
 }
 
-// hlsURL builds the gateway HLS URL: {kong}/hls/{name}/index.m3u8.
+// ensurePath re-registers a stream's MediaMTX path config if it is missing.
+// API-added paths are ephemeral and lost on a MediaMTX restart, so we must
+// restore them; this is idempotent (AddPath overwrites) and only fires when
+// the path is actually absent, preserving any user-set runtime state (e.g.
+// recording toggles).
+func (s *StreamService) ensurePath(ctx context.Context, st *model.Stream) {
+	if !st.Enabled {
+		return
+	}
+	if s.media.PathExists(ctx, st.Name) {
+		return
+	}
+	if err := s.media.AddPath(ctx, st.Name, st.SourceRTSP); err != nil {
+		log.Printf("[stream] ensure path %q failed (playback may error until next reconcile): %v", st.Name, err)
+		return
+	}
+	log.Printf("[stream] re-registered missing MediaMTX path %q", st.Name)
+}
+
+// ReconcilePaths restores every enabled stream's path config into MediaMTX.
+// MediaMTX drops API-registered paths on restart, while the DB keeps the
+// streams, so the two drift apart ("path 'X' is not configured"). This is run
+// at startup and on a timer so a MediaMTX restart self-heals. Existing paths
+// are left untouched to avoid clobbering runtime state.
+func (s *StreamService) ReconcilePaths(ctx context.Context) {
+	streams, err := s.repo.ListStreams(ctx, "")
+	if err != nil {
+		log.Printf("[stream] reconcile: list streams failed: %v", err)
+		return
+	}
+	registered, skipped := 0, 0
+	for i := range streams {
+		st := streams[i]
+		if !st.Enabled {
+			continue
+		}
+		if s.media.PathExists(ctx, st.Name) {
+			skipped++
+			continue
+		}
+		if err := s.media.AddPath(ctx, st.Name, st.SourceRTSP); err != nil {
+			log.Printf("[stream] reconcile: add path %q failed: %v", st.Name, err)
+			continue
+		}
+		registered++
+	}
+	if registered > 0 {
+		log.Printf("[stream] reconcile: re-registered %d path(s), %d already present", registered, skipped)
+	}
+}
+
 func (s *StreamService) hlsURL(name string) string {
 	base := strings.TrimRight(s.kongURL, "/")
 	return fmt.Sprintf("%s/hls/%s/index.m3u8", base, name)

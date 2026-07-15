@@ -56,18 +56,59 @@ func main() {
 	defer statusCache.Close()
 
 	// ─── NATS (audit + events) ─────────────────────────────────────────
+	// Connecting once at startup is fragile: at container boot the `nats`
+	// DNS name may not be resolvable yet (depends_on only waits for the
+	// container to *start*, not for DNS/port readiness). A single failed
+	// nats.Connect leaves natsConn nil forever, silently disabling live
+	// streaming (PublishLive), core telemetry events and audit. So we retry
+	// with backoff until a connection is established. Once connected, the
+	// client's own MaxReconnects(-1) keeps it alive across later blips.
 	var natsConn *nats.Conn
-	natsConn, err = nats.Connect(cfg.NATSUrl,
-		nats.Name("module-svc"),
-		nats.MaxReconnects(-1),
-		nats.ReconnectWait(3*time.Second),
-	)
-	if err != nil {
-		log.Printf("WARN: NATS connect failed: %v — audit events disabled", err)
-	} else {
-		defer natsConn.Drain()
-		log.Println("NATS connected")
+	for attempt := 1; ; attempt++ {
+		natsConn, err = nats.Connect(cfg.NATSUrl,
+			nats.Name("module-svc"),
+			nats.MaxReconnects(-1),
+			nats.ReconnectWait(3*time.Second),
+			nats.DisconnectErrHandler(func(c *nats.Conn, e error) {
+				log.Printf("WARN: NATS disconnected: %v", e)
+			}),
+			nats.ReconnectHandler(func(c *nats.Conn) {
+				log.Printf("NATS reconnected -> %s", c.ConnectedUrl())
+			}),
+			nats.ClosedHandler(func(c *nats.Conn) {
+				log.Printf("WARN: NATS connection closed")
+			}),
+			nats.ErrorHandler(func(c *nats.Conn, sub *nats.Subscription, e error) {
+				if e != nil {
+					log.Printf("WARN: NATS async error: %v", e)
+				}
+			}),
+		)
+		if err == nil {
+			break
+		}
+		backoff := time.Duration(attempt) * time.Second
+		if backoff > 15*time.Second {
+			backoff = 15 * time.Second
+		}
+		log.Printf("WARN: NATS connect attempt %d failed: %v — retrying in %s", attempt, err, backoff)
+		time.Sleep(backoff)
 	}
+	defer natsConn.Drain()
+	log.Println("NATS connected")
+
+	// Periodic health-check: surfaces a prolonged NATS outage so live telemetry
+	// (PublishLive), core telemetry events and audit logs are not silently lost
+	// while the connection is down.
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if natsConn == nil || !natsConn.IsConnected() {
+				log.Printf("WARN: NATS not connected — live telemetry/audit publish will buffer until reconnect")
+			}
+		}
+	}()
 
 	// ─── NATS JetStream (durable telemetry.batch) ────────────────────
 	// The batch publisher emits one aggregate per minute on telemetry.batch.
@@ -148,28 +189,35 @@ func main() {
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/health", handler.Health)
 
+	// ─── Auth middleware ───────────────────────────────────────────────
+	// Kong fronts the service and (optionally) rate-limits; the service itself
+	// enforces a valid JWT and RBAC so protected resources are never reachable
+	// unauthenticated. Reads require any valid user; writes require admin/operator.
+	authMw := middleware.JWTAuth(cfg.JWTSecret)
+	writeMw := middleware.RequireRole(cfg.JWTSecret, "admin", "operator")
+
 	// Modules
 	r.Route("/modules", func(r chi.Router) {
-		r.Post("/", h.CreateModule)
-		r.Get("/", h.ListModules)
-		r.Get("/{id}", h.GetModule)
-		r.Put("/{id}", h.UpdateModule)
-		r.Delete("/{id}", h.DeleteModule)
+		r.With(authMw).Get("/", h.ListModules)
+		r.With(authMw, writeMw).Post("/", h.CreateModule)
+		r.With(authMw).Get("/{id}", h.GetModule)
+		r.With(authMw, writeMw).Put("/{id}", h.UpdateModule)
+		r.With(authMw, writeMw).Delete("/{id}", h.DeleteModule)
 	})
 
 	// Nodes
 	r.Route("/nodes", func(r chi.Router) {
-		r.Get("/", h.ListNodes)
-		r.Get("/discovered", h.ListDiscovered)
-		r.Get("/{node_id}", h.GetNode)
-		r.Post("/{node_id}/pair", h.PairNode)
-		r.Post("/{node_id}/unpair", h.UnpairNode)
-		r.Delete("/{node_id}", h.DeleteNode)
-		r.Get("/{node_id}/tags", h.GetNodeTags)
-		r.Put("/{node_id}/tags", h.SaveNodeTags)
-		r.Get("/{node_id}/actuators", h.GetActuatorTags)
-		r.Post("/{node_id}/actuators", h.CreateActuatorTag)
-		r.Delete("/{node_id}/actuators/{id}", h.DeleteActuatorTag)
+		r.With(authMw).Get("/", h.ListNodes)
+		r.With(authMw).Get("/discovered", h.ListDiscovered)
+		r.With(authMw).Get("/{node_id}", h.GetNode)
+		r.With(authMw, writeMw).Post("/{node_id}/pair", h.PairNode)
+		r.With(authMw, writeMw).Post("/{node_id}/unpair", h.UnpairNode)
+		r.With(authMw, writeMw).Delete("/{node_id}", h.DeleteNode)
+		r.With(authMw).Get("/{node_id}/tags", h.GetNodeTags)
+		r.With(authMw, writeMw).Put("/{node_id}/tags", h.SaveNodeTags)
+		r.With(authMw).Get("/{node_id}/actuators", h.GetActuatorTags)
+		r.With(authMw, writeMw).Post("/{node_id}/actuators", h.CreateActuatorTag)
+		r.With(authMw, writeMw).Delete("/{node_id}/actuators/{id}", h.DeleteActuatorTag)
 	})
 
 	// ─── HTTP Server ───────────────────────────────────────────────────

@@ -62,6 +62,8 @@ type DetectResult struct {
 	Classes       []string    `json:"classes"`
 	Detections    []Detection `json:"detections"`
 	ConfidenceAvg float64     `json:"confidence_avg"`
+	OriginalURL   string      `json:"original_url"`
+	AnnotatedURL  string      `json:"annotated_url"`
 }
 
 // mlDetectResponse is the envelope returned by POST /ml/detect.

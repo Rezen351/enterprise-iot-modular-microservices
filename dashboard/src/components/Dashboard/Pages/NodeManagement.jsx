@@ -176,7 +176,7 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
                       </div>
                       <div className="flex justify-between gap-2">
                         <span>IP:</span>
-                        <span className="text-white">{node.ip || 'DHCP'}</span>
+                        <span className="text-white">{node.ip || '—'}</span>
                       </div>
                       <div className="flex justify-between gap-2">
                         <span>FW:</span>
@@ -228,7 +228,7 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
                   </div>
                   <div className="flex justify-between gap-2">
                     <span className="text-slate-500 font-black">IP</span>
-                    <span className="text-white font-black">{node.ip || 'DHCP'}</span>
+                    <span className="text-white font-black">{node.ip || '—'}</span>
                   </div>
                   <div className="flex justify-between gap-2">
                     <span className="text-slate-500 font-black">FW</span>

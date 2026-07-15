@@ -22,7 +22,7 @@
     --bg-main: #f8fafc;
     --bg-card: #ffffff;
     --text-main: #0f172a;
-    --text-muted: #475569;
+    --text-muted: #1e293b;
     --border-main: rgba(16, 185, 129, 0.15);
     --accent-emerald: #047857;
     --accent-emerald-bg: rgba(16, 185, 129, 0.08);
@@ -280,9 +280,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     color: var(--accent-emerald) !important;
   }
 
-  /* Image styling for Branding Logos - green tint, no invert */
+  /* Image styling for Branding Logos - invert text to black, keep green icon green */
   img[src*="Smart Farm Logo.svg"] {
-    filter: sepia(1) saturate(5) hue-rotate(100deg) opacity(0.85);
+    filter: invert(1) hue-rotate(180deg);
   }
   img[src*="favicon.svg"] {
     filter: sepia(1) saturate(5) hue-rotate(100deg) opacity(0.85);
@@ -323,6 +323,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .border-emerald-500\/20,
   .border-emerald-500\/30,
   .border-emerald-500\/40,
+  .border-white\/5,
+  .border-white\/10,
+  .border-white\/20,
   .border-slate-800,
   .border-slate-700 {
     border-color: #cbd5e1 !important;
@@ -353,7 +356,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-color: #e2e8f0 !important;
   }
   .font-mono {
-    color: #334155 !important;
+    color: #1e293b !important;
   }
 
   /* Badge/role chips */
@@ -469,13 +472,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .text-slate-300,
   .text-slate-400,
   .text-slate-500 {
-    color: #475569 !important;
+    color: #1e293b !important;
   }
   .text-white {
     color: #0f172a !important;
   }
   .text-slate-200 {
-    color: #1e293b !important;
+    color: #0f172a !important;
   }
 
   /* Table overrides for light mode */
@@ -485,7 +488,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .users-table thead th {
     background-color: #f8fafc !important;
     border-bottom-color: #cbd5e1 !important;
-    color: #475569 !important;
+    color: #1e293b !important;
   }
   .table-card {
     background-color: #ffffff !important;
@@ -501,6 +504,120 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #10b981 !important;
+  }
+
+  /* ==========================================================================
+     COMPREHENSIVE SURFACE & CONTRAST PASS (appended — wins by source order)
+     Goal: guarantee no dark surface leaks into light mode, and that every
+     background/text pair has a clear, WCAG-friendly contrast. Surface tiers:
+       page   #f8fafc  •  card #ffffff  •  inset #f1f5f9  •  control #e2e8f0
+     ========================================================================== */
+
+  /* Catch-all: ANY arbitrary dark hex background (bg-[#0xxxxx], any opacity)
+     collapses to the card surface so it can never render as a dark box. */
+  [class*="bg-[#0"] {
+    background-color: var(--bg-card) !important;
+  }
+
+  /* Deepest surfaces (near-black page/backdrops) -> page background */
+  .bg-\[\#020503\], .bg-\[\#020503\]\/95, .bg-\[\#020503\]\/80,
+  .bg-\[\#010402\], .bg-\[\#010402\]\/80 {
+    background-color: var(--bg-main) !important;
+  }
+
+  /* Log / mono / nested inset panels -> subtle slate inset for hierarchy */
+  .bg-\[\#040806\], .bg-\[\#040806\]\/80,
+  .bg-\[\#050b08\]\/40, .bg-\[\#050b08\]\/60 {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* --- Solid & translucent slate surfaces (buttons, badges, inputs, rows) --- */
+  .bg-slate-800 { background-color: #e2e8f0 !important; }
+  .bg-slate-700, .bg-slate-700\/50 { background-color: #cbd5e1 !important; }
+  .bg-slate-600 { background-color: #94a3b8 !important; }
+  .bg-slate-900,
+  .bg-slate-900\/80, .bg-slate-900\/60, .bg-slate-900\/50,
+  .bg-slate-900\/40, .bg-slate-900\/20 {
+    background-color: #f1f5f9 !important;
+  }
+  .bg-slate-950\/70, .bg-slate-950\/50, .bg-slate-950\/40,
+  .bg-slate-950\/10, .bg-slate-950\/5 {
+    background-color: #f1f5f9 !important;
+  }
+
+  /* Inputs/selects that sit on bg-black/40 must read as white fields */
+  input.bg-black\/40, select.bg-black\/40, textarea.bg-black\/40 {
+    background-color: #ffffff !important;
+  }
+
+  /* --- Accent tint backgrounds (kept subtle, clearly tinted on white) --- */
+  .bg-emerald-950 { background-color: #ecfdf5 !important; }
+  .bg-red-950, .bg-red-950\/10, .bg-red-950\/15, .bg-red-950\/20,
+  .bg-red-900\/30 { background-color: #fef2f2 !important; }
+  .bg-sky-500\/10 { background-color: #e0f2fe !important; }
+  .bg-violet-500\/10, .bg-violet-500\/15, .bg-violet-500\/20 {
+    background-color: #f5f3ff !important;
+  }
+  .bg-cyan-400\/5 { background-color: #ecfeff !important; }
+  .bg-teal-500\/5 { background-color: #f0fdfa !important; }
+
+  /* ==========================================================================
+     FIX: white vs bright-orange clash — ground solid amber to a deeper,
+     more legible orange (amber-600/700) so it pairs cleanly with white and
+     keeps strong contrast against black button text.
+     ========================================================================== */
+  .bg-amber-500, .bg-amber-400 {
+    background-color: #d97706 !important;
+    border-color: #d97706 !important;
+  }
+  .hover\:bg-amber-500:hover, .hover\:bg-amber-400:hover {
+    background-color: #b45309 !important;
+    border-color: #b45309 !important;
+  }
+  .border-amber-500,
+  .border-amber-500\/50, .border-amber-500\/40, .border-amber-500\/30,
+  .border-amber-500\/25, .border-amber-500\/20 {
+    border-color: rgba(217, 119, 6, 0.45) !important;
+  }
+  /* All amber text -> amber-700 for reliable contrast on light surfaces */
+  .text-amber-200, .text-amber-300, .text-amber-400, .text-amber-500 {
+    color: #b45309 !important;
+  }
+
+  /* ==========================================================================
+     TEXT CONTRAST — cover remaining pastel/accent text colors
+     ========================================================================== */
+  .text-emerald-200 { color: #047857 !important; }
+  .text-emerald-400\/70, .text-emerald-500\/40, .text-emerald-500\/30,
+  .text-emerald-500\/20 { color: #059669 !important; }
+  .text-sky-300 { color: #0369a1 !important; }
+  .text-violet-300, .text-violet-400 { color: #6d28d9 !important; }
+  .text-teal-300 { color: #0f766e !important; }
+  .text-cyan-400 { color: #0e7490 !important; }
+  .text-orange-400 { color: #ea580c !important; }
+  .text-red-400\/70 { color: #dc2626 !important; }
+  .text-slate-600, .text-slate-700 { color: #1e293b !important; }
+  .text-slate-900 { color: #0f172a !important; }
+
+  /* ==========================================================================
+     BORDER CONTRAST — remaining dark/uncovered borders -> neutral slate
+     ========================================================================== */
+  .border-slate-950, .border-slate-900,
+  .border-slate-600, .border-slate-600\/40, .border-slate-600\/30,
+  .border-emerald-950, .border-emerald-950\/60, .border-emerald-950\/40 {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* ==========================================================================
+     SVG ILLUSTRATION STAGE — the aeroponic schematic is drawn for a dark
+     backdrop, so in light mode it gets its own green-black stage instead of
+     sitting on a white surface (keeps the diagram legible & on-theme).
+     ========================================================================== */
+  .svg-stage {
+    background: radial-gradient(120% 120% at 50% 0%, #06180f 0%, #041009 45%, #010402 100%) !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    box-shadow: inset 0 0 40px -12px rgba(16, 185, 129, 0.25) !important;
   }
 }
 

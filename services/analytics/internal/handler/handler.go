@@ -27,16 +27,54 @@ func New(svc *service.Service) *Handler {
 
 // Health is a liveness probe for Kong upstream healthchecks.
 func Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// writeJSON encodes a payload as JSON with the given status code.
+// maxWindow caps the absolute span a client may query to prevent a full-DB
+// dump / heavy scan (DoS). The live query endpoints (metrics/summary) are
+// capped to 31 days to cover the dashboard's widest range (30d) plus a
+// margin; the research CSV export allows up to a year.
+const (
+	maxLiveWindow = 31 * 24 * time.Hour
+	maxExportWindow = 366 * 24 * time.Hour
+)
+
+// validateWindow rejects spans wider than the allowed maximum so a malicious or
+// buggy client cannot trigger unbounded queries against TimescaleDB.
+func validateWindow(from, to time.Time, max time.Duration) (time.Time, time.Time, bool) {
+	if to.Before(from) {
+		return from, to, false
+	}
+	if to.Sub(from) > max {
+		return from, to, false
+	}
+	return from, to, true
+}
+
+// writeJSON encodes a payload as JSON with the given status code, wrapped in
+// the standard response envelope (AGENTS.md §4.4): { success, data }.
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": v})
+}
+
+// errorCode maps an HTTP status to a stable machine-readable error code.
+func errorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "BAD_REQUEST"
+	case http.StatusUnauthorized:
+		return "UNAUTHORIZED"
+	case http.StatusForbidden:
+		return "FORBIDDEN"
+	case http.StatusNotFound:
+		return "NOT_FOUND"
+	case http.StatusConflict:
+		return "CONFLICT"
+	default:
+		return "INTERNAL_ERROR"
+	}
 }
 
 // badRequest is a convenience for 400 errors.
@@ -122,6 +160,11 @@ func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if _, _, ok := validateWindow(from, to, maxLiveWindow); !ok {
+		badRequest(w, "requested time range exceeds the 31-day limit")
+		return
+	}
+
 	series, err := h.svc.QuerySeriesMulti(r.Context(), nodeIDs, metrics, from, to, interval, discreteSet)
 	if err != nil {
 		log.Printf("[handler] query series failed: %v", err)
@@ -174,6 +217,11 @@ func (h *Handler) SummaryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if _, _, ok := validateWindow(from, to, maxLiveWindow); !ok {
+		badRequest(w, "requested time range exceeds the 31-day limit")
+		return
+	}
+
 	resp, err := h.svc.QuerySummary(r.Context(), nodeID, metric, from, to)
 	if err != nil {
 		log.Printf("[handler] query summary failed: %v", err)
@@ -194,12 +242,14 @@ func (h *Handler) NodesHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"nodes": nodes})
 }
 
-// Routes registers the Analytics HTTP routes.
-func (h *Handler) Routes(r chi.Router) {
-	r.Get("/analytics/metrics", h.MetricsHandler)
-	r.Get("/analytics/summary", h.SummaryHandler)
-	r.Get("/analytics/nodes", h.NodesHandler)
-	r.Get("/analytics/export", h.ExportHandler)
+// Routes registers the Analytics HTTP routes. The auth middleware is applied
+// to every /analytics route so they are never reachable unauthenticated;
+// /health (registered in main.go) stays public for Kong's upstream probe.
+func (h *Handler) Routes(r chi.Router, authMw func(http.Handler) http.Handler) {
+	r.With(authMw).Get("/analytics/metrics", h.MetricsHandler)
+	r.With(authMw).Get("/analytics/summary", h.SummaryHandler)
+	r.With(authMw).Get("/analytics/nodes", h.NodesHandler)
+	r.With(authMw).Get("/analytics/export", h.ExportHandler)
 }
 
 // ExportHandler streams a CSV export of aggregated telemetry for research use.
@@ -237,6 +287,11 @@ func (h *Handler) ExportHandler(w http.ResponseWriter, r *http.Request) {
 			badRequest(w, "invalid 'from' (use RFC3339 or unix seconds)")
 			return
 		}
+	}
+
+	if _, _, ok := validateWindow(from, to, maxExportWindow); !ok {
+		badRequest(w, "requested time range exceeds the 366-day export limit")
+		return
 	}
 
 	rows, err := h.svc.ExportSeries(r.Context(), nodeID, metric, from, to, resolution)

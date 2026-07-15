@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Usb, RefreshCw, UploadCloud, TerminalSquare, AlertTriangle, ShieldCheck, Network } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Usb, UploadCloud, TerminalSquare, AlertTriangle, Network } from 'lucide-react';
 import { ESPLoader, Transport } from 'esptool-js';
 
 const WebSerialClient = () => {

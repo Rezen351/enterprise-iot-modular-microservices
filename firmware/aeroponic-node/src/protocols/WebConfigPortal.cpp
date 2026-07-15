@@ -376,6 +376,8 @@ void WebConfigPortal::handleApiFullConfigGet() {
         p["invert"]      = pin.invert;
         p["debounce_ms"] = pin.debounce_ms;
         p["interrupt"]   = pin.interrupt;
+        p["analog_min"]  = pin.analog_min;
+        p["analog_max"]  = pin.analog_max;
     }
     
     // Hardware Outputs

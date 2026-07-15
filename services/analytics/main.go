@@ -79,7 +79,14 @@ func main() {
 
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/health", handler.Health)
-	h.Routes(r)
+	r.Get("/analytics/health", handler.Health)
+
+	// Auth middleware: Kong fronts the service, but the service itself
+	// enforces a valid JWT so analytics data is never reachable
+	// unauthenticated. All authenticated roles may read (read-only).
+	authMw := middleware.JWTAuth(cfg.JWTSecret)
+
+	h.Routes(r, authMw)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

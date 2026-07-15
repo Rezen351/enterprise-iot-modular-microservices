@@ -17,8 +17,8 @@ import (
 type gormControlMode struct {
 	NodeID           string    `gorm:"column:node_id;type:varchar(100);not null;primaryKey"`
 	OutputName       string    `gorm:"column:output_name;type:varchar(100);not null;primaryKey"`
-	Mode             string    `gorm:"column:mode;type:varchar(8);not null;default:MANUAL"`
-	PrevMode         *string   `gorm:"column:prev_mode;type:varchar(8)"`
+	Mode             string    `gorm:"column:mode;type:varchar(16);not null;default:MANUAL"`
+	PrevMode         *string   `gorm:"column:prev_mode;type:varchar(16)"`
 	ActiveScheduleID *string   `gorm:"column:active_schedule_id;type:char(36)"`
 	UpdatedAt        time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }

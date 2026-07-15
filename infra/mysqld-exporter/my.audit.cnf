@@ -1,0 +1,7 @@
+# MariaDB Audit — mysqld-exporter client config.
+# Credentials mirror DB_USER / DB_PASSWORD from .env (app / app1234).
+[client]
+user=app
+password=app1234
+host=mariadb-audit
+port=3306

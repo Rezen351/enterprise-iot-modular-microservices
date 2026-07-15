@@ -5,7 +5,6 @@ import {
   Power,
   Gauge,
   RefreshCw,
-  RotateCcw,
   Plus,
   Trash2,
   Clock,
@@ -14,7 +13,6 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle2,
-  Timer,
   Tags,
   ShieldAlert,
   PlayCircle,
@@ -25,6 +23,7 @@ import {
 import PageHeader from './PageHeader';
 import controlApi from '../../../api/control';
 import { moduleApi } from '../../../api/module';
+import { useModule } from '../../../context/ModuleContext';
 
 // Schedule type → editable parameters (kept in sync with Control Service).
 const SCHEDULE_TYPES = {
@@ -456,6 +455,7 @@ function ScheduleForm({ nodeId, targets, onCreate, onUpdate, busy, editSched, on
 
 // ─── Main page ─────────────────────────────────────────────────────────────
 function ControlPanel() {
+  const { selectedModule } = useModule();
   const [nodes, setNodes] = useState([]);
   const [nodeId, setNodeId] = useState('');
   const [tags, setTags] = useState([]);          // raw tag-mapping from Module Service
@@ -470,21 +470,31 @@ function ControlPanel() {
   const [editId, setEditId] = useState(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 4;
+  const [cmdPage, setCmdPage] = useState(1);
+  const CMD_PAGE_SIZE = 10;
   const editSched = schedules.find((s) => s.id === editId) || null;
 
   useEffect(() => {
     let active = true;
-    moduleApi
-      .listNodes({ paired: true })
-      .then((data) => {
+    (async () => {
+      try {
+        if (!selectedModule) {
+          setNodes([]);
+          setNodeId('');
+          return;
+        }
+        const data = await moduleApi.listNodes({ paired: true, module_id: selectedModule.id });
         if (!active) return;
         const list = data?.nodes || [];
         setNodes(list);
         if (list.length > 0) setNodeId(list[0].node_id);
-      })
-      .catch((err) => { if (active) setError(err.message || 'Failed to load nodes'); });
+        else setNodeId('');
+      } catch (err) {
+        if (active) setError(err.message || 'Failed to load nodes');
+      }
+    })();
     return () => { active = false; };
-  }, []);
+  }, [selectedModule]);
 
   const flash = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -526,7 +536,7 @@ function ControlPanel() {
       setNodeMode(mode);
       const [s, c] = await Promise.all([
         controlApi.listSchedules(nodeId),
-        controlApi.listCommands({ node_id: nodeId, limit: 30 }),
+        controlApi.listCommands({ node_id: nodeId, limit: Math.max(100, CMD_PAGE_SIZE) }),
       ]);
       setSchedules(s?.schedules || []);
       setCommands(c?.commands || []);
@@ -542,6 +552,7 @@ function ControlPanel() {
   const handleNodeChange = (id) => {
     setNodeId(id);
     setPage(1);
+    setCmdPage(1);
     setEditId(null);
   };
 
@@ -816,35 +827,62 @@ function ControlPanel() {
 
       {/* Command log */}
       {!loading && nodeId && (
-        <Card title="Command Log" icon={CheckCircle2}>
+        <Card title="Command Log" icon={CheckCircle2} right={
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{commands.length} entries</span>
+        }>
           {commands.length === 0 ? (
             <div className="text-xs text-slate-500">No commands sent yet.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-emerald-500/10">
-                    <th className="text-left p-2">Output</th>
-                    <th className="text-left p-2">Type</th>
-                    <th className="text-left p-2">Value</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commands.map((c) => (
-                    <tr key={c.id} className="border-b border-emerald-500/5">
-                      <td className="p-2 font-black uppercase tracking-wide text-slate-200">{c.tag_name || c.target || '—'}</td>
-                      <td className="p-2 uppercase text-slate-400">{c.control_type}</td>
-                      <td className="p-2 tabular-nums text-slate-300">{c.value ?? '—'}</td>
-                      <td className="p-2" style={{ color: undefined }}>
-                        <span className={statusColor(c.status)}>{c.status}</span>
-                      </td>
-                      <td className="p-2 text-slate-500">{c.created_at ? new Date(c.created_at).toLocaleTimeString() : '—'}</td>
+            <div className="flex flex-col gap-3">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-emerald-500/10">
+                      <th className="text-left p-2">Output</th>
+                      <th className="text-left p-2">Type</th>
+                      <th className="text-left p-2">Value</th>
+                      <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Time</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {commands
+                      .slice((Math.min(cmdPage, Math.max(1, Math.ceil(commands.length / CMD_PAGE_SIZE))) - 1) * CMD_PAGE_SIZE, Math.min(cmdPage, Math.max(1, Math.ceil(commands.length / CMD_PAGE_SIZE))) * CMD_PAGE_SIZE)
+                      .map((c) => (
+                        <tr key={c.id} className="border-b border-emerald-500/5">
+                          <td className="p-2 font-black uppercase tracking-wide text-slate-200">{c.tag_name || c.target || '—'}</td>
+                          <td className="p-2 uppercase text-slate-400">{c.control_type}</td>
+                          <td className="p-2 tabular-nums text-slate-300">{c.value ?? '—'}</td>
+                          <td className="p-2" style={{ color: undefined }}>
+                            <span className={statusColor(c.status)}>{c.status}</span>
+                          </td>
+                          <td className="p-2 text-slate-500">{c.created_at ? new Date(c.created_at).toLocaleTimeString() : '—'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              {Math.ceil(commands.length / CMD_PAGE_SIZE) > 1 && (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button
+                    onClick={() => setCmdPage((p) => Math.max(1, p - 1))}
+                    disabled={busy || cmdPage <= 1}
+                    className="h-8 px-3 flex items-center gap-1 bg-slate-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+                  >
+                    ‹ Prev
+                  </button>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    {Math.min(cmdPage, Math.max(1, Math.ceil(commands.length / CMD_PAGE_SIZE)))} / {Math.ceil(commands.length / CMD_PAGE_SIZE)}
+                  </span>
+                  <button
+                    onClick={() => setCmdPage((p) => Math.min(Math.ceil(commands.length / CMD_PAGE_SIZE), p + 1))}
+                    disabled={busy || cmdPage >= Math.ceil(commands.length / CMD_PAGE_SIZE)}
+                    className="h-8 px-3 flex items-center gap-1 bg-slate-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+                  >
+                    Next ›
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Card>

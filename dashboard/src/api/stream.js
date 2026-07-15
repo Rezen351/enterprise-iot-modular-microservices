@@ -18,14 +18,14 @@ function qs(params) {
 
 export const streamApi = {
   // ─── List all streams (with live status + playback URLs) ─────────────
-  list: () => request('/streams', { auth: true }),
+  // params: { module_id } — scope streams to a single module.
+  list: (params) => request(`/streams${qs(params)}`, { auth: true }),
 
   // ─── Get a single stream detail ──────────────────────────────────────
   get: (id) => request(`/streams/${encodeURIComponent(id)}`, { auth: true }),
 
   // ─── Register a new CCTV stream ──────────────────────────────────────
-  // body: { name, device_label?, location?, source_rtsp? }
-  //   source_rtsp is optional — when omitted the server uses CCTV_RTSP_URL.
+  // body: { name, device_label?, location?, source_rtsp?, node_id?, module_id? }
   create: (body) => request('/streams', { method: 'POST', auth: true, body }),
 
   // ─── Update label / location / enabled / name / source ───────────────
@@ -47,7 +47,8 @@ export const streamApi = {
     request(`/streams/${encodeURIComponent(id)}/record/stop`, { method: 'POST', auth: true }),
 
   // ─── Snapshots & recordings (MinIO) ─────────────────────────────────
-  listSnapshots: (kind) => request(`/snapshots${qs({ kind })}`, { auth: true }),
+  // params: { kind?, module_id? } — scope gallery items to a single module.
+  listSnapshots: (params) => request(`/snapshots${qs(params)}`, { auth: true }),
   getSnapshot: (id) => request(`/snapshots/${encodeURIComponent(id)}`, { auth: true }),
   deleteSnapshot: (id) => request(`/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 };

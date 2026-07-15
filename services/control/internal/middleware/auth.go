@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -93,11 +94,18 @@ func UserIDFromContext(ctx context.Context) string {
 func unauthorized(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
-	fmt.Fprintf(w, `{"error":%q}`, msg)
+	// Standard error envelope (AGENTS.md §4.4).
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": "UNAUTHORIZED", "message": msg},
+	})
 }
 
 func forbidden(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusForbidden)
-	fmt.Fprint(w, `{"error":"forbidden: insufficient role"}`)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": "FORBIDDEN", "message": "forbidden: insufficient role"},
+	})
 }

@@ -24,9 +24,11 @@ func Health(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// ListStreams returns all registered streams with live status + playback URLs.
+// ListStreams returns all registered streams with live status + playback URLs,
+// optionally scoped to a single module via the `module_id` query param.
 func (h *Handler) ListStreams(w http.ResponseWriter, r *http.Request) {
-	streams, err := h.svc.ListStreams(r.Context())
+	moduleID := r.URL.Query().Get("module_id")
+	streams, err := h.svc.ListStreams(r.Context(), moduleID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to list streams")
 		return
@@ -127,10 +129,12 @@ func (h *Handler) CaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusCreated, view)
 }
 
-// ListSnapshots returns all snapshots/recordings (newest first).
+// ListSnapshots returns all snapshots/recordings (newest first), optionally
+// filtered by `kind` and/or `module_id`.
 func (h *Handler) ListSnapshots(w http.ResponseWriter, r *http.Request) {
 	kind := r.URL.Query().Get("kind")
-	snaps, err := h.svc.ListSnapshots(r.Context(), kind)
+	moduleID := r.URL.Query().Get("module_id")
+	snaps, err := h.svc.ListSnapshots(r.Context(), kind, moduleID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to list snapshots")
 		return

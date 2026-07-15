@@ -28,6 +28,15 @@ func main() {
 			nats.Name("ws-gateway"),
 			nats.MaxReconnects(-1),
 			nats.ReconnectWait(3*time.Second),
+			nats.DisconnectErrHandler(func(c *nats.Conn, e error) {
+				log.Printf("[ws-gateway] WARN: NATS disconnected: %v", e)
+			}),
+			nats.ReconnectHandler(func(c *nats.Conn) {
+				log.Printf("[ws-gateway] NATS reconnected -> %s", c.ConnectedUrl())
+			}),
+			nats.ClosedHandler(func(c *nats.Conn) {
+				log.Printf("[ws-gateway] WARN: NATS connection closed")
+			}),
 		)
 		if err == nil {
 			break
@@ -43,6 +52,12 @@ func main() {
 
 	h := handler.New(nc, cfg.JWTSecret)
 
+	// Keep a rolling cache of the latest live payload per node so freshly
+	// connected dashboard clients get an immediate frame (no "Loading" stall).
+	if err := h.StartLatestCache(); err != nil {
+		log.Fatalf("[ws-gateway] failed to start latest cache: %v", err)
+	}
+
 	// ─── Router ───────────────────────────────────────────────────────────
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -54,6 +69,9 @@ func main() {
 	// Secured by JWT: dashboard must send a valid access token via the
 	// Authorization header or ?token= query param on the WS handshake.
 	r.Get("/ws/nodes/{node_id}/live", h.NodeLive)
+
+	// System-level notifications (e.g. alerts). Secured by JWT, same as above.
+	r.Get("/ws/system-status", h.SystemStatus)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

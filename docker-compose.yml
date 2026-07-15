@@ -74,7 +74,38 @@ services:
       nats:
         condition: service_started
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8090/health" ]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # Alert Service — threshold evaluation + alert history/notifications
+  # ──────────────────────────────────────
+  alert:
+    build:
+      context: ./services/alert
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/${MYSQL_DATABASE_ALERT}?parseTime=true&charset=utf8mb4"
+      NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
+      REDIS_ADDR: "redis-alert:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_DB: "0"
+    depends_on:
+      mariadb-alert:
+        condition: service_healthy
+      redis-alert:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -139,6 +170,78 @@ services:
       - iot-net
 
   # ──────────────────────────────
+  # MariaDB Audit — append-only audit log store
+  # ──────────────────────────────
+  mariadb-audit:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_AUDIT}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-audit:/var/lib/mysql
+      - ./infra/mariadb/audit/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # MariaDB Alert — thresholds + alert history store
+  # ──────────────────────────────
+  mariadb-alert:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_ALERT}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-alert:/var/lib/mysql
+      - ./infra/mariadb/alert/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # MariaDB Notification — notification database
+  # ──────────────────────────────
+  mariadb-notification:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_NOTIFICATION}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-notification:/var/lib/mysql
+      - ./infra/mariadb/notification/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
   # Redis Module — cache for module service
   # ──────────────────────────────
   redis-module:
@@ -146,6 +249,54 @@ services:
     restart: unless-stopped
     volumes:
       - ./volumes/redis-module:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # Redis Alert — threshold/recent-alert cache for Alert Service (Fase 7)
+  # ──────────────────────────────
+  redis-alert:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./volumes/redis-alert:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # Redis Notification — notification queue/throttle cache
+  # ──────────────────────────────
+  redis-notification:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./volumes/redis-notification:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
+  # Redis Export — query cache for export service
+  # ──────────────────────────────
+  redis-export:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./volumes/redis-export:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -272,6 +423,7 @@ services:
       PORT: "8080"
       TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
       NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
     depends_on:
       timescaledb-analytics:
         condition: service_healthy
@@ -317,6 +469,29 @@ services:
     networks:
       - iot-net
 
+  audit:
+    build:
+      context: ./services/audit
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/${MYSQL_DATABASE_AUDIT}?parseTime=true&charset=utf8mb4"
+      NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
+    depends_on:
+      mariadb-audit:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
   # ──────────────────────────────────────
   # KONG — API Gateway (satu-satunya pintu masuk)
   # ──────────────────────────────────────
@@ -345,6 +520,32 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # CLOUDFLARED — Cloudflare Tunnel (secure ingress)
+  # Establishes an outbound-only tunnel to Cloudflare that proxies the
+  # public hostname(s) to Kong:8000. Authentication uses the tunnel token
+  # from .env (CLOUDFLARED_TUNNEL_TOKEN); ingress rules live in
+  # infra/cloudflared/config.yml. No host ports are exposed.
+  # ──────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # Token-only run (same as `cloudflared service install <token>` on Windows):
+    # the tunnel authenticates with CLOUDFLARED_TUNNEL_TOKEN and pulls its
+    # ingress (public hostname → http://kong:8000) from the Cloudflare
+    # Zero Trust dashboard. No local config / open host ports required.
+    command:
+      - "tunnel"
+      - "run"
+      - "--token"
+      - "${CLOUDFLARED_TUNNEL_TOKEN}"
+    environment:
+      CLOUDFLARED_TUNNEL_TOKEN: "${CLOUDFLARED_TUNNEL_TOKEN}"
+    depends_on:
+      - kong
     networks:
       - iot-net
 
@@ -389,13 +590,19 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: ""
+      # URL publik (via Cloudflare Tunnel) agar link, redirect, dan cookie
+      # Grafana benar saat diakses lewat hostname HTTPS.
+      GF_SERVER_ROOT_URL: "${GRAFANA_PUBLIC_URL}"
+      GF_SERVER_DOMAIN: "${GRAFANA_DOMAIN}"
+      GF_SESSION_COOKIE_SECURE: "true"
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - ./volumes/grafana:/var/lib/grafana
     ports:
-      # Bound to localhost only — do not expose the Grafana admin UI publicly.
-      - "127.0.0.1:3000:3000"   # Grafana UI
+      # Bound to all interfaces so it can be reached via VPN/LAN by this machine's IP.
+      # For tighter security, replace 0.0.0.0 with the VPN/LAN IP (e.g. 172.31.225.221:3000:3000).
+      - "0.0.0.0:3000:3000"   # Grafana UI
     depends_on:
       - prometheus
     healthcheck:
@@ -456,6 +663,34 @@ services:
     networks:
       - iot-net
 
+  # MariaDB Audit
+  mysqld-exporter-audit:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-audit:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.audit.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-audit:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+  # MariaDB Alert
+  mysqld-exporter-alert:
+    image: prom/mysqld-exporter:v0.15.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-alert:3306)/"
+    volumes:
+      - ./infra/mysqld-exporter/my.alert.cnf:/.my.cnf:ro
+    depends_on:
+      mariadb-alert:
+        condition: service_healthy
+    networks:
+      - iot-net
+
   # MariaDB Module
   mysqld-exporter-module:
     image: prom/mysqld-exporter:v0.15.1
@@ -497,7 +732,7 @@ services:
     networks:
       - iot-net
 
-  # Redis (Module cache)
+  # MariaDB Notification
   redis-exporter:
     image: oliver006/redis_exporter:v1.55.0
     restart: unless-stopped
@@ -509,7 +744,19 @@ services:
     networks:
       - iot-net
 
-  # TimescaleDB Module
+  # Redis (Alert cache) — threshold/recent-alert cache for Alert Service
+  redis-exporter-alert:
+    image: oliver006/redis_exporter:v1.55.0
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis-alert:6379"
+    depends_on:
+      redis-alert:
+        condition: service_started
+    networks:
+      - iot-net
+
+  # Redis (Export cache) — device export cache for Export Service
   postgres-exporter-module:
     image: wrouesnel/postgres_exporter:latest
     restart: unless-stopped
@@ -563,6 +810,42 @@ services:
       - iot-net
 
   # ──────────────────────────────────────
+  # NODE-EXPORTER — host CPU/RAM/disk/network metrics
+  # ──────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # CADVISOR — per-container resource metrics (CPU/RAM/IO/network)
+  # ──────────────────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
+    restart: unless-stopped
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8891:8080"
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
   # DASHBOARD — Vite frontend (dev mode, HMR)
   # Di-build dari ./dashboard (Dockerfile). Source di-mount sebagai volume
   # agar perubahan file langsung ter-reload. Berbicara ke Kong (published
@@ -574,8 +857,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      # Dikonsumsi browser (host), bukan container → pakai host-published Kong.
-      VITE_API_URL: "http://localhost:8000"
+      # URL API untuk browser. Lewat Cloudflare Tunnel, pakai hostname publik
+      # API (HTTPS) agar browser remote bisa menjangkau Kong.
+      VITE_API_URL: "${VITE_API_URL:-http://172.31.225.221:8000}"
     ports:
       - "5173:5173"
     volumes:
@@ -649,8 +933,12 @@ services:
       - "8889:8889"   # WebRTC (signaling + UDP media, host-direct)
       - "8554:8554"   # RTSP (debug)
       # API (9997) intentionally NOT published — internal iot-net only.
+    # aeroponik-docker_iot-net is the external network shared with the
+    # standalone RTSP dummy stack (TA/rtsp/rtsp-dummy-stream) so this
+    # MediaMTX can pull its streams (e.g. rtsp://admin:admin123@mediamtx-dummy:8554/live1).
     networks:
       - iot-net
+      - aeroponik-docker_iot-net
 
   # ──────────────────────────────────────
   # MinIO — object storage (shared infra; Stream Service does not use in Fase 5)
@@ -691,10 +979,12 @@ services:
 
   # ──────────────────────────────────────
   # CCTV CAPTURE CRON — external data-collection job (NOT a microservice)
-  # Every 8h it checks the pump/load telemetry; when the pump is OFF or the
-  # output load is 0 (no misting), it grabs a CCTV frame via ffmpeg, runs
-  # inference through the ML service API, and stores the frame + result in the
-  # `ml-result` MinIO bucket.
+  # When the pump is OFF or the output load is 0 (no misting), it grabs a CCTV
+  # frame via ffmpeg, runs inference through the ML service API, and stores the
+  # frame + result in the `ml-result` MinIO bucket — the SAME bucket the live
+  # "Capture Detect AI" button writes to, so both appear in the gallery's
+  # CAPTURES tab. Schedule via CAPTURE_CRON (5-field expr), CAPTURE_INTERVAL_HOURS
+  # (fixed loop, default 8h), or RUN_ONCE=1 for an external host cron.
   # ──────────────────────────────────────
   cctv-capture:
     build:
@@ -703,6 +993,7 @@ services:
     restart: unless-stopped
     environment:
       CAPTURE_INTERVAL_HOURS: "${CCTV_CAPTURE_INTERVAL_HOURS}"
+      CAPTURE_CRON: "${CCTV_CAPTURE_CRON}"
       CAPTURE_STREAMS: "${CCTV_CAPTURE_STREAMS}"
       PUMP_PATHS: "${CCTV_PUMP_PATHS}"
       LOAD_PATHS: "${CCTV_LOAD_PATHS}"
@@ -764,6 +1055,7 @@ services:
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
       MINIO_USE_SSL: "false"
       MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
+      MINIO_RESULT_BUCKET: "${MINIO_RESULT_BUCKET:-ml-result}"
       ML_BASE_URL: "http://ml:8080"
       ML_VISION_MODEL_ID: ""
     depends_on:
@@ -823,6 +1115,12 @@ services:
     networks:
       - iot-net
 
+  # ──────────────────────────────────────
+  # NOTIFICATION SERVICE — alert notifications via multiple channels
+  # ──────────────────────────────────────
 networks:
   iot-net:
     driver: bridge
+  aeroponik-docker_iot-net:
+    external: true
+    name: aeroponik-docker_iot-net

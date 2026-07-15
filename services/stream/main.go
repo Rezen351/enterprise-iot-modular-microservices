@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/stream/internal/client/mediamtx"
-	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	"github.com/almuzky/iot/services/stream/internal/client/minio"
+	mlclient "github.com/almuzky/iot/services/stream/internal/client/ml"
 	"github.com/almuzky/iot/services/stream/internal/config"
 	"github.com/almuzky/iot/services/stream/internal/handler"
 	"github.com/almuzky/iot/services/stream/internal/middleware"
@@ -51,8 +51,29 @@ func main() {
 		log.Printf("[startup] minio unavailable (snapshots disabled): %v", err)
 	}
 	mlClient := mlclient.New(cfg.MLBaseURL, cfg.MLVisionModelID, cfg.JWTSecret)
-	svc := service.New(repo, media, minioClient, mlClient, cfg.KongPublicURL, cfg.CCTVRTSPURL)
+	svc := service.New(repo, media, minioClient, mlClient, cfg.KongPublicURL, cfg.CCTVRTSPURL, cfg.MinIOResultBucket)
 	h := handler.New(svc)
+
+	// ─── MediaMTX path reconciliation ─────────────────────────────────
+	// API-registered MediaMTX paths are ephemeral and disappear when
+	// MediaMTX restarts, while the DB streams persist — that drift is what
+	// surfaces as `path 'X' is not configured`. Re-register all enabled
+	// streams on startup and keep it in sync on a timer so a MediaMTX
+	// restart self-heals.
+	go func() {
+		ctx := context.Background()
+		// Best-effort initial reconcile; if MediaMTX is not up yet the timer
+		// below retries until it succeeds.
+		svc.ReconcilePaths(ctx)
+		if cfg.ReconcileInterval <= 0 {
+			return
+		}
+		ticker := time.NewTicker(cfg.ReconcileInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			svc.ReconcilePaths(context.Background())
+		}
+	}()
 
 	// ─── Router ──────────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -105,9 +126,9 @@ func main() {
 
 	// ─── HTTP Server ────────────────────────────────────────────────────
 	srv := &http.Server{
-		Addr:         ":" + cfg.Port,
-		Handler:      r,
-		ReadTimeout:  15 * time.Second,
+		Addr:        ":" + cfg.Port,
+		Handler:     r,
+		ReadTimeout: 15 * time.Second,
 		// Snapshot capture pulls a frame from MediaMTX's HTTP snapshot endpoint
 		// (may retry on a cold on-demand source) and, with ?detect=true, also runs
 		// ML inference. Keep this comfortably above the retry budget plus model

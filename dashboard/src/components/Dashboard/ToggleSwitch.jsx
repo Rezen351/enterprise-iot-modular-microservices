@@ -1,5 +1,3 @@
-import React from 'react';
-
 function ToggleSwitch({ checked, onChange, disabled = false, size = 'sm' }) {
   const isLarge = size === 'lg';
 

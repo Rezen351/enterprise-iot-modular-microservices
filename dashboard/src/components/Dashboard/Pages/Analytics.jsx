@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,6 +12,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import {
   BarChart3,
   Activity,
@@ -21,6 +22,9 @@ import {
   LineChart,
   BarChart2,
   Grid3x3,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import analyticsApi from '../../../api/analytics';
@@ -36,7 +40,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  zoomPlugin
 );
 
 const RANGES = [
@@ -86,6 +91,28 @@ function statsOf(points) {
     n++;
   }
   return { count: points.length, min, max, avg: n ? sum / n : NaN, last: points[points.length - 1].v };
+}
+
+// Build a unified, time-sorted x-axis from several per-metric point arrays so
+// datasets with different bucket counts (e.g. per-minute digital vs hourly
+// analog at the same range) line up by actual timestamp instead of by array
+// index — otherwise the series with fewer points gets squashed/truncated.
+function buildAxis(pointLists) {
+  const set = new Set();
+  for (const pts of pointLists) for (const p of pts) set.add(p.t);
+  return Array.from(set).sort();
+}
+
+// Project one metric's points onto the unified axis; gaps become null so the
+// line breaks instead of shifting every subsequent sample out of alignment.
+function alignToAxis(axis, pts, pick) {
+  const idx = new Map(axis.map((t, i) => [t, i]));
+  const out = new Array(axis.length).fill(null);
+  for (const p of pts) {
+    const i = idx.get(p.t);
+    if (i != null) out[i] = pick(p);
+  }
+  return out;
 }
 
 function histogram(values, bins = 10) {
@@ -170,6 +197,8 @@ function Analytics() {
   const [booleanSet, setBooleanSet] = useState(() => new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const trendRef = useRef(null);
+  const stateRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -327,22 +356,27 @@ function Analytics() {
     booleanSet.size ? booleanSet.has(m) : isBooleanMetric(seriesByMetric[m])
   );
   const analogMetrics = metrics.filter((m) => !boolMetrics.includes(m));
-  const primaryMetrics = metrics.length ? metrics : [];
-  const labels = primaryMetrics.length ? seriesByMetric[primaryMetrics[0]].map((p) => formatTick(p.t)) : [];
+  // Each chart builds its own time axis from the metrics it draws, so mismatched
+  // bucket counts (per-minute digital vs hourly analog at the same range) never
+  // squash or truncate a series.
+  const trendAxis = buildAxis(analogMetrics.map((m) => seriesByMetric[m] || []));
+  const trendLabels = trendAxis.map(formatTick);
+  const stateAxis = buildAxis(boolMetrics.map((m) => seriesByMetric[m] || []));
+  const stateLabels = stateAxis.map(formatTick);
 
   // Analog trend: each metric draws a min–max envelope (filled band between its
   // low/high bucket values) plus an avg line, so aggregated ranges (7d/30d)
   // keep their full range information instead of a single point. The band
   // datasets are tagged isBand and hidden from the legend/tooltip.
   const trendData = {
-    labels,
+    labels: trendLabels,
     datasets: analogMetrics.flatMap((m, i) => {
       const color = PALETTE[i % PALETTE.length];
       const pts = seriesByMetric[m] || [];
       return [
         {
           label: displayName(m),
-          data: pts.map((p) => (p.max != null ? p.max : p.v)),
+          data: alignToAxis(trendAxis, pts, (p) => (p.max != null ? p.max : p.v)),
           borderWidth: 0,
           pointRadius: 0,
           pointHoverRadius: 0,
@@ -353,7 +387,7 @@ function Analytics() {
         },
         {
           label: displayName(m),
-          data: pts.map((p) => (p.min != null ? p.min : p.v)),
+          data: alignToAxis(trendAxis, pts, (p) => (p.min != null ? p.min : p.v)),
           borderWidth: 0,
           pointRadius: 0,
           pointHoverRadius: 0,
@@ -363,7 +397,7 @@ function Analytics() {
         },
         {
           label: displayName(m),
-          data: pts.map((p) => (p.avg != null ? p.avg : p.v)),
+          data: alignToAxis(trendAxis, pts, (p) => (p.avg != null ? p.avg : p.v)),
           borderColor: color,
           backgroundColor: color + '22',
           borderWidth: 2,
@@ -377,12 +411,43 @@ function Analytics() {
     }),
   };
 
+  // Shared zoom/pan config (chartjs-plugin-zoom). Mode 'x' keeps the time axis
+  // zoomable while Y stays auto-scaled, so dragging/scrolling drills into a
+  // window without distorting the values.
+  const zoomCfg = {
+    // pan needs a modifier key so a plain left-drag is reserved for box-zoom.
+    // Having pan and drag-zoom both trigger on a bare left-drag is a documented
+    // conflict in chartjs-plugin-zoom that swallows the hover events, breaking
+    // tooltips and legend clicks.
+    pan: { enabled: true, mode: 'x', modifierKey: 'shift' },
+    zoom: {
+      wheel: { enabled: true },
+      pinch: { enabled: true },
+      drag: { enabled: true, backgroundColor: 'rgba(16,185,129,0.15)', borderColor: 'rgba(16,185,129,0.5)', borderWidth: 1 },
+      mode: 'x',
+    },
+  };
+
   const trendOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
+        // Each metric is rendered as 3 datasets (max band, min band, avg line)
+        // that share one label. The bands are hidden from the legend via
+        // `filter`, but toggling a legend item must hide/show all three so the
+        // metric appears and disappears as a unit. The default handler only
+        // flips the single avg-line dataset, leaving the bands behind — which
+        // made the legend look like it could not be re-shown.
+        onClick: (e, legendItem, legend) => {
+          const ci = legend.chart;
+          const mi = Math.floor(legendItem.datasetIndex / 3);
+          const indices = [3 * mi, 3 * mi + 1, 3 * mi + 2];
+          const hide = ci.isDatasetVisible(legendItem.datasetIndex);
+          indices.forEach((i) => (hide ? ci.hide(i) : ci.show(i)));
+          ci.update();
+        },
         labels: {
           color: 'rgba(148,163,184,0.9)',
           boxWidth: 12,
@@ -393,7 +458,7 @@ function Analytics() {
       tooltip: {
         mode: 'index',
         intersect: false,
-        filter: (item, data) => !data.datasets[item.datasetIndex].isBand,
+        filter: (item) => !item.dataset.isBand,
         callbacks: {
           label: (c) => {
             const m = c.dataset.label;
@@ -403,6 +468,7 @@ function Analytics() {
           },
         },
       },
+      zoom: zoomCfg,
     },
     scales: {
       x: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: 'rgba(148,163,184,0.7)', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
@@ -411,10 +477,10 @@ function Analytics() {
   };
 
   const stateData = {
-    labels,
+    labels: stateLabels,
     datasets: boolMetrics.map((m, i) => ({
       label: displayName(m),
-      data: seriesByMetric[m].map((p) => p.v),
+      data: alignToAxis(stateAxis, seriesByMetric[m] || [], (p) => p.v),
       borderColor: PALETTE[i % PALETTE.length],
       backgroundColor: PALETTE[i % PALETTE.length] + '22',
       borderWidth: 2,
@@ -432,6 +498,7 @@ function Analytics() {
     plugins: {
       legend: { labels: { color: 'rgba(148,163,184,0.9)', boxWidth: 12, font: { size: 10 } } },
       tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y ? 'ON' : 'OFF'}` } },
+      zoom: zoomCfg,
     },
     scales: {
       x: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: 'rgba(148,163,184,0.7)', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
@@ -524,18 +591,30 @@ function Analytics() {
           {/* Combined trend: analog on the left axis, digital/boolean (step
               "state" lines, 0/1) on the right axis — one chart, not split. */}
           <Card title={`Trends · ${range}`} icon={LineChart}>
-            <div className="h-[360px]">
-              <Line data={trendData} options={trendOptions} />
+            <div className="flex items-center justify-end gap-1.5 mb-2">
+              <button type="button" title="Zoom in" onClick={() => trendRef.current?.zoom(1.2)} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><ZoomIn className="w-3.5 h-3.5" /></button>
+              <button type="button" title="Zoom out" onClick={() => trendRef.current?.zoom(0.8)} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><ZoomOut className="w-3.5 h-3.5" /></button>
+              <button type="button" title="Reset zoom" onClick={() => trendRef.current?.resetZoom()} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><Maximize2 className="w-3.5 h-3.5" /></button>
             </div>
+            <div className="h-[360px]">
+              <Line ref={trendRef} data={trendData} options={trendOptions} />
+            </div>
+              <p className="text-[9px] text-slate-500 mt-1.5 uppercase tracking-wider">Scroll to zoom · drag to box-zoom · shift-drag to pan</p>
 
-          </Card>
+            </Card>
 
-          {/* Dedicated state graph for boolean/digital metrics, below the trend */}
+            {/* Dedicated state graph for boolean/digital metrics, below the trend */}
           {boolMetrics.length > 0 && (
             <Card title={`Digital states · ${range}`} icon={Activity}>
-              <div className="h-[220px]">
-                <Line data={stateData} options={stateOptions} />
+              <div className="flex items-center justify-end gap-1.5 mb-2">
+                <button type="button" title="Zoom in" onClick={() => stateRef.current?.zoom(1.2)} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><ZoomIn className="w-3.5 h-3.5" /></button>
+                <button type="button" title="Zoom out" onClick={() => stateRef.current?.zoom(0.8)} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><ZoomOut className="w-3.5 h-3.5" /></button>
+                <button type="button" title="Reset zoom" onClick={() => stateRef.current?.resetZoom()} className="p-1.5 border border-emerald-500/20 text-slate-300 hover:text-emerald-300 hover:border-emerald-500/50 transition-colors cursor-pointer" style={{ lineHeight: 0 }}><Maximize2 className="w-3.5 h-3.5" /></button>
               </div>
+              <div className="h-[220px]">
+                <Line ref={stateRef} data={stateData} options={stateOptions} />
+              </div>
+                <p className="text-[9px] text-slate-500 mt-1.5 uppercase tracking-wider">Scroll to zoom · drag to box-zoom · shift-drag to pan</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
                 {boolMetrics.map((m) => {
                   const pts = seriesByMetric[m];

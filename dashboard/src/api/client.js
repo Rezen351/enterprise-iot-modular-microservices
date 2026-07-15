@@ -132,7 +132,12 @@ export async function request(path, { method = 'GET', body, auth = false, header
       notifyServerError(data?.error || data?.message || `Server error (${res.status})`);
     }
 
-    const message = data?.error || data?.message || `Request failed (${res.status})`;
+    const message =
+    (data?.error && typeof data.error === 'object'
+      ? data.error.message
+      : data?.error) ||
+    data?.message ||
+    `Request failed (${res.status})`;
     const err = new Error(message);
     err.status = res.status;
     err.type = res.status === 401 ? 'unauthorized' : res.status >= 500 ? 'server' : 'client';

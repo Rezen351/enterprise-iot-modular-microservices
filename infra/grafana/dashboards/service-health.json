@@ -1,5 +1,5 @@
 {
-  "uid": "service-health",
+  "uid": "service-health-iot",
   "annotations": {
     "list": [
       {
@@ -24,6 +24,152 @@
   "liveNow": false,
   "panels": [
     {
+      "id": 90,
+      "title": "Services DOWN \u2014 Detail",
+      "type": "row",
+      "description": "Daftar service yang sedang DOWN (up==0) beserta instance-nya.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "panels": []
+    },
+    {
+      "id": 91,
+      "title": "Services DOWN \u2014 Which ones?",
+      "type": "table",
+      "description": "Service yang gagal di-scrape (up==0). Kosong = semua sehat.",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "up"
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "instance"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "DOWN",
+                        "color": "red"
+                      },
+                      "1": {
+                        "text": "UP",
+                        "color": "green"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "up == 0",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "id": 1,
       "title": "Service Overview",
       "type": "row",
@@ -39,7 +185,7 @@
     },
     {
       "id": 2,
-      "title": "Services UP",
+      "title": "Services UP (count)",
       "type": "stat",
       "description": "Target Prometheus sehat (up==1).",
       "gridPos": {
@@ -103,7 +249,7 @@
     },
     {
       "id": 3,
-      "title": "Services DOWN",
+      "title": "Services DOWN (count)",
       "type": "stat",
       "description": "Target gagal di-scrape (up==0).",
       "gridPos": {
@@ -167,7 +313,7 @@
     },
     {
       "id": 4,
-      "title": "Total Targets",
+      "title": "Total Targets (count)",
       "type": "stat",
       "description": "Total target yang di-scrape Prometheus.",
       "gridPos": {
@@ -227,7 +373,7 @@
     },
     {
       "id": 5,
-      "title": "Avg Request Rate",
+      "title": "Avg Request Rate (req/s)",
       "type": "stat",
       "description": "Total throughput semua service (req/s).",
       "gridPos": {
@@ -287,7 +433,7 @@
     },
     {
       "id": 6,
-      "title": "Avg p95 Latency",
+      "title": "Avg p95 Latency (ms)",
       "type": "stat",
       "description": "Latensi p95 agregat semua service.",
       "gridPos": {
@@ -316,7 +462,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "ms",
           "color": {
             "mode": "thresholds"
           },
@@ -339,7 +485,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m]))) * 1000",
           "legendFormat": " ",
           "refId": "A"
         }
@@ -347,7 +493,7 @@
     },
     {
       "id": 7,
-      "title": "Avg Error Rate",
+      "title": "Avg Error Rate (%)",
       "type": "stat",
       "description": "Persentase request 4xx/5xx agregat.",
       "gridPos": {
@@ -414,6 +560,420 @@
       ]
     },
     {
+      "id": 55,
+      "title": "Resource Usage Summary",
+      "type": "row",
+      "description": "Aggregate resource consumption across all scraped services.",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
+    },
+    {
+      "id": 56,
+      "title": "Total RAM Usage (MB)",
+      "type": "stat",
+      "description": "Sum of resident memory across all services (MB).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megabytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2048
+              },
+              {
+                "color": "red",
+                "value": 4096
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(process_resident_memory_bytes) / 1024 / 1024",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "title": "Peak RAM / Service (MB)",
+      "type": "stat",
+      "description": "Highest single-service resident memory (MB).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 4,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megabytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1024
+              },
+              {
+                "color": "red",
+                "value": 2048
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(process_resident_memory_bytes) / 1024 / 1024",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "title": "Avg RAM / Service (MB)",
+      "type": "stat",
+      "description": "Average resident memory per service (MB).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 8,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megabytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 512
+              },
+              {
+                "color": "red",
+                "value": 1024
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "avg(process_resident_memory_bytes) / 1024 / 1024",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "title": "Total CPU Usage (%)",
+      "type": "stat",
+      "description": "Aggregate CPU utilization across services (%).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 12,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(process_cpu_seconds_total[2m])) * 100",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "title": "Peak CPU / Service (%)",
+      "type": "stat",
+      "description": "Highest single-service CPU utilization (%).",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(rate(process_cpu_seconds_total[2m])) * 100",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "title": "Total Goroutines (count)",
+      "type": "stat",
+      "description": "Sum of Go goroutines across all services.",
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 20,
+        "y": 11
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "percentChangeConfig": {
+          "color": "red",
+          "hasArrow": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3274D9",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(go_goroutines)",
+          "legendFormat": " ",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "id": 8,
       "title": "Service Status & Health",
       "type": "row",
@@ -423,20 +983,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 14
       },
       "panels": []
     },
     {
       "id": 9,
-      "title": "Target Status",
+      "title": "Target Status (count)",
       "type": "table",
       "description": "Status semua target (1=UP, 0=DOWN).",
       "gridPos": {
         "h": 10,
         "w": 16,
         "x": 0,
-        "y": 5
+        "y": 15
       },
       "options": {
         "cellHeight": "sm",
@@ -451,7 +1011,7 @@
         "showHeader": true,
         "sortBy": [
           {
-            "desc": true,
+            "desc": false,
             "displayName": "up"
           }
         ]
@@ -549,14 +1109,14 @@
     },
     {
       "id": 10,
-      "title": "Request Rate by Service",
+      "title": "Request Rate by Service (req/s)",
       "type": "timeseries",
       "description": "Throughput per service secara live.",
       "gridPos": {
         "h": 10,
         "w": 8,
         "x": 16,
-        "y": 5
+        "y": 15
       },
       "options": {
         "legend": {
@@ -639,7 +1199,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 25
       },
       "panels": []
     },
@@ -652,7 +1212,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 26
       },
       "options": {
         "legend": {
@@ -734,7 +1294,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 26
       },
       "options": {
         "legend": {
@@ -809,14 +1369,14 @@
     },
     {
       "id": 14,
-      "title": "HTTP Latency (p50 / p95 / p99)",
+      "title": "HTTP Latency (p50 / p95 / p99) (ms)",
       "type": "timeseries",
       "description": "Distribusi latensi HTTP per service.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 34
       },
       "options": {
         "legend": {
@@ -863,7 +1423,7 @@
             "sort": "desc"
           }
         },
-        "unit": "s",
+        "unit": "ms",
         "color": {
           "mode": "palette-classic"
         },
@@ -883,7 +1443,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "expr": "histogram_quantile(0.50, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m]))) * 1000",
           "legendFormat": "p50 {{job}}",
           "refId": "A"
         },
@@ -892,7 +1452,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m]))) * 1000",
           "legendFormat": "p95 {{job}}",
           "refId": "B"
         },
@@ -901,7 +1461,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\"}[2m]))) * 1000",
           "legendFormat": "p99 {{job}}",
           "refId": "C"
         }
@@ -909,14 +1469,14 @@
     },
     {
       "id": 15,
-      "title": "HTTP Requests In-Flight",
+      "title": "HTTP Requests In-Flight (count)",
       "type": "timeseries",
       "description": "Jumlah request sedang diproses per service.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 34
       },
       "options": {
         "legend": {
@@ -999,20 +1559,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 42
       },
       "panels": []
     },
     {
       "id": 17,
-      "title": "Memory (RSS)",
+      "title": "Memory (RSS) (MB)",
       "type": "timeseries",
       "description": "Resident set size per service.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 43
       },
       "options": {
         "legend": {
@@ -1059,7 +1619,7 @@
             "sort": "desc"
           }
         },
-        "unit": "bytes",
+        "unit": "megabytes",
         "color": {
           "mode": "palette-classic"
         },
@@ -1079,7 +1639,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_resident_memory_bytes",
+          "expr": "process_resident_memory_bytes / 1024 / 1024",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -1094,7 +1654,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 43
       },
       "options": {
         "legend": {
@@ -1169,14 +1729,14 @@
     },
     {
       "id": 19,
-      "title": "Goroutines",
+      "title": "Goroutines (count)",
       "type": "timeseries",
       "description": "Jumlah goroutine (indikator beban/koroutine leak).",
       "gridPos": {
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 51
       },
       "options": {
         "legend": {
@@ -1258,7 +1818,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 41
+        "y": 51
       },
       "options": {
         "legend": {
@@ -1341,20 +1901,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 58
       },
       "panels": []
     },
     {
       "id": 22,
-      "title": "Connections",
+      "title": "Connections (count)",
       "type": "timeseries",
       "description": "Koneksi aktif per instance MariaDB.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 49
+        "y": 59
       },
       "options": {
         "legend": {
@@ -1429,14 +1989,14 @@
     },
     {
       "id": 23,
-      "title": "Queries / sec (QPS)",
+      "title": "Queries / sec (QPS) (ops)",
       "type": "timeseries",
       "description": "Query per detik per instance.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 49
+        "y": 59
       },
       "options": {
         "legend": {
@@ -1511,14 +2071,14 @@
     },
     {
       "id": 24,
-      "title": "Slow Queries / sec",
+      "title": "Slow Queries / sec (ops)",
       "type": "timeseries",
       "description": "Query lambat per detik.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 49
+        "y": 59
       },
       "options": {
         "legend": {
@@ -1593,14 +2153,14 @@
     },
     {
       "id": 25,
-      "title": "Aborted Connects / sec",
+      "title": "Aborted Connects / sec (ops)",
       "type": "timeseries",
       "description": "Koneksi tertolak per detik (indikasi masalah auth/limit).",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 49
+        "y": 59
       },
       "options": {
         "legend": {
@@ -1683,20 +2243,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 67
       },
       "panels": []
     },
     {
       "id": 27,
-      "title": "Memory Used vs Max",
+      "title": "Memory Used vs Max (MB)",
       "type": "timeseries",
       "description": "Memori terpakai vs batas maxmemory.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 58
+        "y": 68
       },
       "options": {
         "legend": {
@@ -1743,7 +2303,7 @@
             "sort": "desc"
           }
         },
-        "unit": "bytes",
+        "unit": "megabytes",
         "color": {
           "mode": "palette-classic"
         },
@@ -1763,7 +2323,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "redis_memory_used_bytes",
+          "expr": "redis_memory_used_bytes / 1024 / 1024",
           "legendFormat": "used",
           "refId": "A"
         },
@@ -1772,7 +2332,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "redis_memory_max_bytes",
+          "expr": "redis_memory_max_bytes / 1024 / 1024",
           "legendFormat": "max",
           "refId": "B"
         }
@@ -1787,7 +2347,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 58
+        "y": 68
       },
       "options": {
         "legend": {
@@ -1862,14 +2422,14 @@
     },
     {
       "id": 29,
-      "title": "Operations / sec",
+      "title": "Operations / sec (ops)",
       "type": "timeseries",
       "description": "Perintah Redis diproses per detik.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 58
+        "y": 68
       },
       "options": {
         "legend": {
@@ -1944,14 +2504,14 @@
     },
     {
       "id": 30,
-      "title": "Connected Clients",
+      "title": "Connected Clients (count)",
       "type": "timeseries",
       "description": "Klien Redis terhubung.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 58
+        "y": 68
       },
       "options": {
         "legend": {
@@ -2034,20 +2594,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 76
       },
       "panels": []
     },
     {
       "id": 32,
-      "title": "Connections (backends)",
+      "title": "Connections (backends) (count)",
       "type": "timeseries",
       "description": "Jumlah backend/connection aktif.",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 67
+        "y": 77
       },
       "options": {
         "legend": {
@@ -2122,14 +2682,14 @@
     },
     {
       "id": 33,
-      "title": "Transactions / sec (TPS)",
+      "title": "Transactions / sec (TPS) (ops)",
       "type": "timeseries",
       "description": "Commit & rollback per detik.",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 67
+        "y": 77
       },
       "options": {
         "legend": {
@@ -2220,7 +2780,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 67
+        "y": 77
       },
       "options": {
         "legend": {
@@ -2303,20 +2863,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 85
       },
       "panels": []
     },
     {
       "id": 36,
-      "title": "NATS Connections & JetStream",
+      "title": "NATS Connections & JetStream (count)",
       "type": "timeseries",
       "description": "Koneksi NATS dan state JetStream.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 76
+        "y": 86
       },
       "options": {
         "legend": {
@@ -2418,14 +2978,14 @@
     },
     {
       "id": 37,
-      "title": "NATS Msg Rate",
+      "title": "NATS Msg Rate (ops)",
       "type": "timeseries",
       "description": "Throughput pesan NATS masuk/keluar.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 76
+        "y": 86
       },
       "options": {
         "legend": {
@@ -2509,14 +3069,14 @@
     },
     {
       "id": 38,
-      "title": "MQTT Clients & Subscriptions",
+      "title": "MQTT Clients & Subscriptions (count)",
       "type": "timeseries",
       "description": "Klien & subscription aktif MQTT.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 84
+        "y": 94
       },
       "options": {
         "legend": {
@@ -2609,14 +3169,14 @@
     },
     {
       "id": 39,
-      "title": "MQTT Msg Rate & Bytes",
+      "title": "MQTT Msg Rate & Bytes (ops)",
       "type": "timeseries",
       "description": "Throughput pesan & byte MQTT.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 84
+        "y": 94
       },
       "options": {
         "legend": {
@@ -2726,20 +3286,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 92
+        "y": 102
       },
       "panels": []
     },
     {
       "id": 41,
-      "title": "Requests / sec",
+      "title": "Requests / sec (req/s)",
       "type": "timeseries",
       "description": "Total request melalui Kong.",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 93
+        "y": 103
       },
       "options": {
         "legend": {
@@ -2821,7 +3381,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 93
+        "y": 103
       },
       "options": {
         "legend": {
@@ -2905,14 +3465,14 @@
     },
     {
       "id": 43,
-      "title": "Bandwidth",
+      "title": "Bandwidth (B/s)",
       "type": "timeseries",
       "description": "Throughput bandwidth Kong (egress/ingress).",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 93
+        "y": 103
       },
       "options": {
         "legend": {
@@ -2987,14 +3547,14 @@
     },
     {
       "id": 44,
-      "title": "Upstream Target Health",
+      "title": "Upstream Target Health (count)",
       "type": "table",
       "description": "Kesehatan tiap target upstream Kong (1=sehat).",
       "gridPos": {
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 101
+        "y": 111
       },
       "options": {
         "cellHeight": "sm",
@@ -3119,14 +3679,14 @@
     },
     {
       "id": 45,
-      "title": "Datastore Reachable",
+      "title": "Datastore Reachable (count)",
       "type": "timeseries",
       "description": "Apakah datastore Kong (DB) dapat dijangkau (1=ya).",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 101
+        "y": 111
       },
       "options": {
         "legend": {
@@ -3209,20 +3769,20 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 109
+        "y": 119
       },
       "panels": []
     },
     {
       "id": 47,
-      "title": "Request Rate",
+      "title": "Request Rate (req/s)",
       "type": "timeseries",
       "description": "Request rate service terpilih.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 110
+        "y": 120
       },
       "options": {
         "legend": {
@@ -3304,7 +3864,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 110
+        "y": 120
       },
       "options": {
         "legend": {
@@ -3379,14 +3939,14 @@
     },
     {
       "id": 49,
-      "title": "p95 Latency",
+      "title": "p95 Latency (ms)",
       "type": "timeseries",
       "description": "Latensi p95 service terpilih.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 110
+        "y": 120
       },
       "options": {
         "legend": {
@@ -3433,7 +3993,7 @@
             "sort": "desc"
           }
         },
-        "unit": "s",
+        "unit": "ms",
         "color": {
           "mode": "palette-classic"
         },
@@ -3453,7 +4013,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\", job=~\"$service\"}[2m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\".*_http_request_duration_seconds_bucket\", job=~\"$service\"}[2m]))) * 1000",
           "legendFormat": "p95",
           "refId": "A"
         }
@@ -3461,14 +4021,14 @@
     },
     {
       "id": 50,
-      "title": "Memory (RSS)",
+      "title": "Memory (RSS) (MB)",
       "type": "timeseries",
       "description": "Memori service terpilih.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 110
+        "y": 120
       },
       "options": {
         "legend": {
@@ -3515,7 +4075,7 @@
             "sort": "desc"
           }
         },
-        "unit": "bytes",
+        "unit": "megabytes",
         "color": {
           "mode": "palette-classic"
         },
@@ -3535,7 +4095,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_resident_memory_bytes{job=~\"$service\"}",
+          "expr": "process_resident_memory_bytes{job=~\"$service\"} / 1024 / 1024",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -3550,7 +4110,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 118
+        "y": 128
       },
       "options": {
         "legend": {
@@ -3625,14 +4185,14 @@
     },
     {
       "id": 52,
-      "title": "Goroutines",
+      "title": "Goroutines (count)",
       "type": "timeseries",
       "description": "Goroutine service terpilih.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 118
+        "y": 128
       },
       "options": {
         "legend": {
@@ -3714,7 +4274,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 118
+        "y": 128
       },
       "options": {
         "legend": {
@@ -3789,14 +4349,14 @@
     },
     {
       "id": 54,
-      "title": "Service UP?",
+      "title": "Service UP? (count)",
       "type": "stat",
       "description": "Status 1=UP / 0=DOWN untuk service terpilih.",
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 118
+        "y": 128
       },
       "options": {
         "colorMode": "background",
@@ -3891,7 +4451,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Service Health \u2014 IOT Modular Microservice",
-  "uid": "service-health-iot",
   "version": 2,
   "weekStart": ""
 }

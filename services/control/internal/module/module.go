@@ -1,6 +1,7 @@
 package module
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -103,4 +104,35 @@ func (c *Client) ListActuatorTags(nodeID string) ([]Tag, error) {
 		return nil, err
 	}
 	return out.Tags, nil
+}
+
+// IsNodeRegistered reports whether a node_id is known to the Module Service.
+// Used by the Control Service to reject commands/schedules targeted at
+// unregistered nodes (prevents node-id spoofing).
+func (c *Client) IsNodeRegistered(ctx context.Context, nodeID string) (bool, error) {
+	if c.baseURL == "" {
+		return false, fmt.Errorf("module service url not configured")
+	}
+	url := fmt.Sprintf("%s/nodes/%s", c.baseURL, nodeID)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return false, err
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	default:
+		body, _ := io.ReadAll(resp.Body)
+		return false, fmt.Errorf("module service returned %d: %s", resp.StatusCode, string(body))
+	}
 }

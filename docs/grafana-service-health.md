@@ -45,6 +45,12 @@ secara keseluruhan.
 > **Cara cepat ambil kesimpulan:** kalau *Services DOWN* = 0 dan *Avg Error Rate*
 > kecil (hijau), sistem dalam keadaan sehat.
 
+### 2.1 Tabel "Services DOWN — Which ones?"
+Tepat di bawah ringkasan ada tabel khusus yang **langsung menuliskan nama
+service yang DOWN** (kolom `job` + `instance`) beserta jumlahnya di footer.
+Jadi kalau kartu *Services DOWN* = 1, lihat tabel ini untuk tahu persis
+service mana yang mati — tidak perlu menerka. Tabel kosong = semua sehat.
+
 ---
 
 ## 3. Section: Service Status & Health

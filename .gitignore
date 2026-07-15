@@ -6,6 +6,8 @@ volumes/
 
 # Build artifacts
 dashboard/dist/
+firmware/aeroponic-node/.pio/
+.pio/
 
 # OS / editor
 .DS_Store

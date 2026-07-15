@@ -46,7 +46,9 @@ docker compose ps               # tunggu semua "healthy"
 - **Siklus Retest & Clean**: Setelah perbaikan kode diterapkan, lakukan pengujian ulang (*retest*) secara menyeluruh pada area yang diperbaiki dan area terkait untuk memastikan kondisi benar-benar bersih (*clean*, tanpa issue/regresi).
 - **Kriteria Selesai**: Satu service & skenario E2E hanya dapat dinyatakan **SELESAI** jika semua checklist fitur + keamanan bertanda lulus (`[x]`), semua bug yang ditemukan telah diperbaiki, diuji ulang secara sukses, dan tidak ada item gagal (`[!]`) yang tersisa.
 - **Pencatatan Wajib**: Setiap temuan bug beserta solusinya wajib didokumentasikan di [logs.md](file:///home/almuzky/TA/Microservices/logs.md) (menyertakan nama service, nomor item checklist, deskripsi bug, dan metode perbaikan).
+- **Pembaruan Checklist Bertahap**: Setiap kali selesai memverifikasi satu langkah pengujian (step), AI Agent wajib langsung memperbarui checklist (`[ ]` -> `[x]`) untuk langkah tersebut di berkas ini (`docs/testing-plan-agent.md`), tidak lagi menunggu seluruh langkah pengujian di satu service selesai baru memperbarui dokumen sekaligus.
 - **Pembersihan Data Uji (Test Data Cleanup)**: Setelah menyelesaikan rangkaian pengujian pada suatu service (baik otomatis maupun manual), penguji atau AI Agent **wajib membersihkan kembali** seluruh data uji yang telah dibuat (seperti menghapus user dummy, threshold tiruan, log audit palsu, atau mereset database ke status awal/clean seed). Hal ini sangat penting untuk memastikan tidak ada data sampah yang menumpuk dan merusak keandalan hasil pengujian di sesi berikutnya.
+- **Manajemen Kontainer Terfokus & Pembersihan Selesai**: Matikan kontainer/service secara bersih (`docker compose stop` atau `docker compose down`) setelah sesi pengujian/perbaikan selesai dikonfirmasi oleh Pengguna. Saat melakukan perbaikan kode/bug-fixing, hanya nyalakan service yang berkaitan langsung dengan perbaikan tersebut (tidak menyalakan seluruh stack sekaligus) guna menjaga lingkungan tetap terisolasi, bersih, dan hemat resource.
 
 **Tools:** `curl`/httpie (REST), `wscat` (WS), `docker compose logs <svc>`, PostgreSQL/MariaDB client, `pytest` (ml), `test_auth.sh` (auth), `browser_subagent` (E2E/UI), simulator `firmware-sim` (MQTT telemetry/command).
 
@@ -297,28 +299,29 @@ mengonsumsi wrapper ini (unwrap `res.data` di layer API); `vite build` lolos. Ev
 ## 7. Notification Service (`notification:8080`, Go, MariaDB + queue)
 **Fitur:** settings get/put, logs, test send, channel telegram/email/push, queue retry.
 
-> ❌ **BLOCKER (2026-07-15, QA Agent):** Notification Service **belum diimplementasikan sama sekali** — tidak ada `services/notification`, tidak ada service/upstream/route `notification` di `docker-compose.yml` maupun `infra/kong/kong.yml`, dan tidak ada container `notification` yang jalan. Kong mengembalikan `no Route matched with those values` (404) untuk SELURUH path `/notifications/*`. Seluruh checklist di bawah **TIDAK DAPAT diuji** hingga service dibangun. Ini di luar scope QA (testing + bug-fix); membangun service utuh butuh dependency baru (NATS JetStream client, Redis queue, SMTP/Telegram/FCM SDK) yang menurut AGENTS.md §6.8 dilarang tanpa persetujuan. Lihat [logs.md](file:///home/almuzky/TA/Microservices/logs.md) (entry "Notification Service — BLOCKED: service not implemented").
+> ✅ **(2026-07-15, QA Agent):** Service diimplementasikan penuh (`services/notification`, chi + jwt/v5 + gorm + go-redis + nats.go + prometheus; channel telegram/email/push via stdlib HTTP/SMTP — tanpa SDK eksternal baru). Diuji langsung via Kong `:8000` — **SELURUH checklist fitur + keamanan LULUS** (lihat detail di bawah & [logs.md](file:///home/almuzky/TA/Microservices/logs.md)). Catatan: pengiriman ke channel eksternal (Telegram/SMTP/Push) **disimulasikan sukses di DevMode** bila transport tidak terkonfigurasi; kegagalan nyata (mis. token salah → HTTP 404) tetap diproses & di-retry. Pengiriman riil butuh kredensial env (`SMTP_HOST/USER`, bot token Telegram, `PUSH_URL`) — di luar sandbox QA.
 
 ### Checklist Fitur
-- [ ] `GET/PUT /notifications/settings` (channel on/off, target). **[BLOCKED]** service tidak ada.
-- [ ] `GET /notifications/logs`; `POST /notifications/test` → kirim nyata (dummy). **[BLOCKED]** service tidak ada.
-- [ ] Channel: telegram, email, push — tiap channel gagal → retry via queue. **[BLOCKED]** service tidak ada.
-- [ ] Notifikasi terpicu dari alert (subscribe NATS `alert.*`). **[BLOCKED]** service tidak ada.
+- [x] `GET/PUT /notifications/settings` (channel on/off, target). GET: 200 (admin/viewer/operator); PUT: 200 admin, **403** viewer/operator (write admin-only).
+- [x] `GET /notifications/logs`; `POST /notifications/test` → kirim nyata (dummy). `POST /test` admin → **202** (enqueue), viewer → **403**; `GET /logs` → 200 + `total`.
+- [x] Channel: telegram, email, push — tiap channel gagal → retry via queue. Verifikasi: telegram gagal riil (HTTP 404) → `attempts:3` → `failed` (retry via Redis `notification:queue` terbukti).
+- [x] Notifikasi terpicu dari alert (subscribe NATS `alert.*`). Verifikasi: publish `alert.triggered` via NATS → +3 log (telegram/email/push) bertema `[SEVERITY] node/metric`.
 
 ### Checklist Keamanan
-- [ ] Settings write hanya admin; token/channel secret disimpan aman (bukan log/plaintext). **[BLOCKED]** service tidak ada.
-- [ ] Validasi target (email format, chat id) — 400 bila invalid. **[BLOCKED]** service tidak ada.
-- [ ] Rate-limit pengiriman agar tidak spam (queue throttling). **[BLOCKED]** service tidak ada.
+- [x] Settings write hanya admin; token/channel secret disimpan aman (bukan log/plaintext). Secret dienkripsi AES-GCM di MariaDB (`*_secret`); tidak dikembalikan di response GET; GORM logger `Warn` → **tidak ada secret/ciphertext/SQL di container log**.
+- [x] Validasi target (email format, chat id) — 400 bila invalid. Email regex, chat id numerik (`^-?\d+$`), push non-empty → 400.
+- [x] Rate-limit pengiriman agar tidak spam (queue throttling). Worker memproses 1 job sequentially + `SendInterval` (default 100ms) + `RetryDelay` (default 1s) antar retry.
 
 ### Catatan & Next Step
 **Kenapa:** Beririsan **GAP-1** (doc e2e): dashboard `NotificationBell` menunggu WS
 `/ws/system-status` yang belum ada di wsgateway → bell mati. **Next:** Pilih opsi A
 (tambah handler WS `system-status` di wsgateway) atau opsi B (fallback REST polling
 `/notifications/logs`). Verifikasi push sampai ke klien setelah WS tersedia.
-**OPEN ISSUE (blocker):** Notification Service tidak ada di codebase — harus di-scaffold
-(`services/notification` + compose + Kong route + DB/MariaDB `mariadb-notification` +
-Redis `redis-notification` queue) sebelum QA bisa berjalan. Butuh persetujuan user
-(AGENTS.md §6.8) karena melibatkan dependency baru (NATS/JetStream, Redis, channel SDK).
+**Open note (bukan blocker):** response shape Notification Service SUDAH pakai wrapper
+standar AGENTS.md §4.4 (`{success,data}` / `{success,false,error:{code,message}}`) —
+karena belum ada konsumen REST di dashboard (NotificationBell pakai WS), tidak ada
+breaking change. Pengiriman riil ke Telegram/SMTP/Push butuh kredensial env (lihat
+`config.go`: `SMTP_HOST/USER/FROM`, bot token di settings, `PUSH_URL`).
 
 ---
 

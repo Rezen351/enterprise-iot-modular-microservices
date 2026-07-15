@@ -136,6 +136,7 @@ Jika tugas dijalankan oleh AI Agent:
    - Jalankan perintah kompilasi (`go build` atau compiler Vite React) dan pengujian lokal setelah melakukan perubahan kode, guna memastikan tidak ada sintaks rusak atau pengujian yang gagal sebelum melaporkan pekerjaan selesai.
 5. **Batasan Pengujian Manual & Cakupan Uji API (Manual vs API Testing Scope)**:
    - **Cakupan Uji API (DIPERBOLEHKAN bagi Agent):** AI Agent **sangat dianjurkan** untuk melakukan pengujian backend secara riil, termasuk menjalankan container, mengeksekusi request HTTP (`curl`, `httpie`), mengetes WebSocket (`wscat`), memeriksa database, dan memverifikasi bahwa skema data/payload respons API cocok dengan ekspektasi dashboard. Agent **diperbolehkan** memperbarui status checklist (`[ ]` menjadi `[x]`) pada berkas rencana pengujian backend (**[testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md)**) setelah melakukan verifikasi sukses.
+     - **Pembaruan Checklist Bertahap:** Setiap kali selesai memverifikasi satu langkah pengujian (step), Agent **wajib** langsung memperbarui checklist (`[ ]` -> `[x]`) untuk langkah tersebut di **[testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md)**, tidak lagi menunggu seluruh langkah pengujian di satu service selesai untuk diperbarui sekaligus.
    - **Cakupan Uji UI/Visual (DILARANG bagi Agent):** Pengujian visual, tata letak (layout), kegunaan (UX), dan interaksi antarmuka di browser pada berkas **[testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md)** (seperti checklist `D1`-`D12`) **wajib** dilakukan secara manual oleh Pengguna (User). Agent **dilarang keras** mengubah status checklist UI di berkas tersebut seolah-olah Agent mengujinya secara visual.
    - **Peran Agent dalam Pengujian Manual UI:**
      - Memeriksa kesesuaian skenario pengujian UI dengan perubahan kode.
@@ -147,6 +148,9 @@ Jika tugas dijalankan oleh AI Agent:
    - **DILARANG KERAS** memodifikasi, menghapus, atau melemahkan asersi (*assertions*) pada unit test yang sudah ada hanya agar tes tersebut "lolos" secara paksa setelah adanya modifikasi kode. Jika tes gagal, cari letak kesalahan pada kode implementasi baru, bukan mengubah tesnya—kecuali jika spesifikasi fitur tersebut memang sengaja diubah oleh Pengguna.
 8. **Larangan Dependensi Tanpa Izin (Unmanaged Dependencies Restriction)**:
    - **DILARANG KERAS** menginstal atau mengimpor library, package, atau dependensi eksternal baru (`go get`, `npm install`, dll.) ke dalam proyek tanpa persetujuan tertulis atau instruksi eksplisit dari Pengguna.
+9. **Pembersihan Lingkungan & Manajemen Kontainer Terfokus (Focused Container Management & Cleanup)**:
+   - Setelah Pengguna memberikan konfirmasi bahwa pengujian/perbaikan suatu service telah selesai, Agent **wajib mematikan/menghapus kontainer terkait** secara bersih (`docker compose stop <service>` atau `docker compose down`) dan membersihkan data uji agar lingkungan kembali steril.
+   - Saat akan melakukan perbaikan kode (*bug-fixing*), Agent **dilarang menyalakan seluruh service sekaligus** via `docker compose up -d`. Agent **hanya boleh menyalakan service yang berkaitan langsung** dengan perbaikan tersebut (misalnya: `docker compose up -d <service_name> <dependent_db_name>`) agar pengujian terisolasi dan penggunaan sumber daya tetap efisien.
 
 ---
 

@@ -118,13 +118,13 @@ func main() {
 	if natsConn != nil {
 		if js, jerr := natsConn.JetStream(); jerr == nil {
 			_, serr := js.AddStream(&nats.StreamConfig{
-				Name:     "TELEMETRY_BATCH",
-				Subjects: []string{"telemetry.batch"},
+				Name:      "TELEMETRY_BATCH",
+				Subjects:  []string{"telemetry.batch"},
 				Retention: nats.LimitsPolicy,
-				Storage:  nats.FileStorage,
-				MaxAge:   24 * time.Hour,
-				MaxMsgs:  1_000_000,
-				Replicas: 1,
+				Storage:   nats.FileStorage,
+				MaxAge:    24 * time.Hour,
+				MaxMsgs:   1_000_000,
+				Replicas:  1,
 			})
 			if serr != nil {
 				log.Printf("WARN: NATS JetStream stream ensure failed: %v — batch falls back to core NATS", serr)

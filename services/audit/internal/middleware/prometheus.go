@@ -10,8 +10,8 @@ import (
 )
 
 var auditMetrics = struct {
-	httpRequestsTotal   *prometheus.CounterVec
-	httpRequestDuration *prometheus.HistogramVec
+	httpRequestsTotal    *prometheus.CounterVec
+	httpRequestDuration  *prometheus.HistogramVec
 	httpRequestsInflight prometheus.Gauge
 }{
 	httpRequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{

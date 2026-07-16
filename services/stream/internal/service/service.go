@@ -174,15 +174,15 @@ func (s *StreamService) UpdateStream(ctx context.Context, id string, req model.U
 			}
 		}
 		source := st.SourceRTSP
-	if req.SourceRTSP != nil && *req.SourceRTSP != "" {
-		source = *req.SourceRTSP
-	}
-	if req.NodeID != nil {
-		current.NodeID = *req.NodeID
-	}
-	if req.ModuleID != nil {
-		current.ModuleID = *req.ModuleID
-	}
+		if req.SourceRTSP != nil && *req.SourceRTSP != "" {
+			source = *req.SourceRTSP
+		}
+		if req.NodeID != nil {
+			current.NodeID = *req.NodeID
+		}
+		if req.ModuleID != nil {
+			current.ModuleID = *req.ModuleID
+		}
 		if err := s.media.AddPath(ctx, st.Name, source); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrMediaMTX, err)
 		}

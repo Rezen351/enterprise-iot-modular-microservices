@@ -116,12 +116,12 @@ func main() {
 
 			// Admin-only — user management
 			r.Group(func(r chi.Router) {
-			r.Use(middleware.RequireRole("admin"))
-			r.Get("/users", h.ListUsers)
-			r.Get("/roles", h.ListRoles)
-			r.Get("/users/{id}", h.GetUser)
-			r.Put("/users/{id}", h.UpdateUser)
-			r.Delete("/users/{id}", h.DeleteUser)
+				r.Use(middleware.RequireRole("admin"))
+				r.Get("/users", h.ListUsers)
+				r.Get("/roles", h.ListRoles)
+				r.Get("/users/{id}", h.GetUser)
+				r.Put("/users/{id}", h.UpdateUser)
+				r.Delete("/users/{id}", h.DeleteUser)
 			})
 		})
 	})

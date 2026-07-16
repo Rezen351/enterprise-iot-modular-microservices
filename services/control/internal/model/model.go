@@ -39,11 +39,11 @@ const (
 
 // Automatic schedule types (server-side scheduler).
 const (
-	SchedInterval  = "interval"  // ON on_sec / OFF off_sec, repeating
-	SchedSchedule  = "schedule"  // time-of-day ON/OFF (cron-like)
-	SchedThreshold = "threshold" // sensor value + hysteresis
-	SchedDuration  = "duration"  // ON for total_sec once, then OFF
-	SchedRamp      = "ramp"      // PWM ramp from → to over duration
+	SchedInterval    = "interval"     // ON on_sec / OFF off_sec, repeating
+	SchedSchedule    = "schedule"     // time-of-day ON/OFF (cron-like)
+	SchedThreshold   = "threshold"    // sensor value + hysteresis
+	SchedDuration    = "duration"     // ON for total_sec once, then OFF
+	SchedRamp        = "ramp"         // PWM ramp from → to over duration
 	SchedWindowPulse = "window_pulse" // pulse (on_sec/off_sec) only inside a time-of-day window
 )
 
@@ -196,11 +196,11 @@ type RampParams struct {
 // Outside the window the output is forced OFF. Combines a day/night
 // schedule with a repeating pulse within that window.
 type WindowPulseParams struct {
-	OnAt    string `json:"on_at"`   // "06:00" window start
-	OffAt   string `json:"off_at"`  // "18:00" window end
+	OnAt     string `json:"on_at"`   // "06:00" window start
+	OffAt    string `json:"off_at"`  // "18:00" window end
 	Days     []int  `json:"days"`    // 0=Sun..6=Sat; empty = every day
-	OnSec   int    `json:"on_sec"`  // pulse ON duration (sec)
-	OffSec  int    `json:"off_sec"` // pulse OFF duration (sec)
-	ValueOn int     `json:"value_on"`
+	OnSec    int    `json:"on_sec"`  // pulse ON duration (sec)
+	OffSec   int    `json:"off_sec"` // pulse OFF duration (sec)
+	ValueOn  int    `json:"value_on"`
 	ValueOff int    `json:"value_off"`
 }

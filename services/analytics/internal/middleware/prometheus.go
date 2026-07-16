@@ -11,8 +11,8 @@ import (
 )
 
 var analyticsMetrics = struct {
-	httpRequestsTotal   *prometheus.CounterVec
-	httpRequestDuration *prometheus.HistogramVec
+	httpRequestsTotal    *prometheus.CounterVec
+	httpRequestDuration  *prometheus.HistogramVec
 	httpRequestsInFlight prometheus.Gauge
 }{
 	httpRequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{
@@ -75,8 +75,8 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 // normalizePath collapses dynamic segments to keep label cardinality bounded.
 func normalizePath(p string) string {
 	known := map[string]bool{
-		"/health":     true,
-		"/metrics":    true,
+		"/health":          true,
+		"/metrics":         true,
 		"/analytics/nodes": true,
 	}
 	if known[p] {

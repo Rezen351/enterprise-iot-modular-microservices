@@ -58,11 +58,11 @@ func (c *Client) WithRTSPURL(u string) *Client {
 
 // addPathConf is the request body for config/paths/add. Only the fields we set.
 type addPathConf struct {
-	Source                    string `json:"source"`
-	SourceOnDemand            bool   `json:"sourceOnDemand"`
+	Source                     string `json:"source"`
+	SourceOnDemand             bool   `json:"sourceOnDemand"`
 	SourceOnDemandStartTimeout string `json:"sourceOnDemandStartTimeout"`
-	SourceOnDemandCloseAfter  string `json:"sourceOnDemandCloseAfter"`
-	Record                    bool   `json:"record"`
+	SourceOnDemandCloseAfter   string `json:"sourceOnDemandCloseAfter"`
+	Record                     bool   `json:"record"`
 }
 
 // pathGetResponse is a subset of the runtime Path object returned by /v3/paths/get.
@@ -82,11 +82,11 @@ type pathGetResponse struct {
 // AddPath registers a path config that pulls `source` on demand.
 func (c *Client) AddPath(ctx context.Context, name, source string) error {
 	body, _ := json.Marshal(addPathConf{
-		Source:                    source,
-		SourceOnDemand:            true,
+		Source:                     source,
+		SourceOnDemand:             true,
 		SourceOnDemandStartTimeout: "20s",
-		SourceOnDemandCloseAfter:  "15s",
-		Record:                    false,
+		SourceOnDemandCloseAfter:   "15s",
+		Record:                     false,
 	})
 	url := fmt.Sprintf("%s/v3/config/paths/add/%s", c.baseURL, name)
 	if err := c.do(ctx, http.MethodPost, url, body); err != nil {

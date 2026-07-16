@@ -8,13 +8,13 @@ import (
 
 // Config holds all configuration for the Notification Service.
 type Config struct {
-	Port      string
-	DBDSN     string
-	RedisAddr string
+	Port          string
+	DBDSN         string
+	RedisAddr     string
 	RedisPassword string
-	RedisDB   int
-	NATSUrl   string
-	JWTSecret string
+	RedisDB       int
+	NATSUrl       string
+	JWTSecret     string
 	// SecretKey is used to derive the AES key that encrypts channel secrets
 	// (telegram bot token, SMTP password, push server key) at rest.
 	SecretKey string
@@ -28,11 +28,11 @@ type Config struct {
 	PushURL  string
 
 	// Worker behaviour.
-	MaxAttempts   int
-	RetryDelay    time.Duration
-	SendInterval  time.Duration // throttle between sends to avoid spam
-	DevMode       bool          // simulate delivery when transport unavailable
-	ForceFail     bool          // test/debug: force every send to fail (exercises retry)
+	MaxAttempts  int
+	RetryDelay   time.Duration
+	SendInterval time.Duration // throttle between sends to avoid spam
+	DevMode      bool          // simulate delivery when transport unavailable
+	ForceFail    bool          // test/debug: force every send to fail (exercises retry)
 }
 
 // Load reads configuration from environment variables with dev-friendly defaults.

@@ -40,9 +40,9 @@ type Claims struct {
 
 // AuthService handles authentication and token lifecycle.
 type AuthService struct {
-	repo   *repository.UserRepository
-	cfg    *config.Config
-	nats   NATSPublisher
+	repo *repository.UserRepository
+	cfg  *config.Config
+	nats NATSPublisher
 }
 
 // NATSPublisher is a minimal interface for publishing audit events.

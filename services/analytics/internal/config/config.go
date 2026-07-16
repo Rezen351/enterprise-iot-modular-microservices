@@ -25,7 +25,7 @@ func Load() (*Config, error) {
 		Port: getEnv("PORT", "8080"),
 		TimescaleDSN: getEnv("TIMESCALE_DSN",
 			"postgres://analytics_user:analytics_pass@timescaledb-analytics:5432/analytics_ts?sslmode=disable"),
-		NATSUrl: getEnv("NATS_URL", "nats://nats:4222"),
+		NATSUrl:   getEnv("NATS_URL", "nats://nats:4222"),
 		JWTSecret: getEnv("JWT_SECRET", ""),
 	}
 	return cfg, nil

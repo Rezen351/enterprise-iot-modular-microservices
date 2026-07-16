@@ -25,21 +25,21 @@ func (Stream) TableName() string { return "streams" }
 // so the dashboard can overlay bounding boxes without depending on the ML
 // bucket's public URL).
 type Snapshot struct {
-	ID          string    `gorm:"column:id;type:char(36);primaryKey"`
-	StreamID    string    `gorm:"column:stream_id;type:char(36);index"`
-	StreamName  string    `gorm:"column:stream_name;type:varchar(64)"`
-	ModuleID    string    `gorm:"column:module_id;type:char(36);index"` // owning module (denormalized from stream)
-	ObjectKey   string    `gorm:"column:object_key;type:varchar(512);not null"`
-	URL         string    `gorm:"column:url;type:varchar(1024);not null"`
-	ContentType string    `gorm:"column:content_type;type:varchar(64)"`
-	Size        int64     `gorm:"column:size"`
-	Kind        string    `gorm:"column:kind;type:varchar(16);default:snapshot"`
+	ID          string `gorm:"column:id;type:char(36);primaryKey"`
+	StreamID    string `gorm:"column:stream_id;type:char(36);index"`
+	StreamName  string `gorm:"column:stream_name;type:varchar(64)"`
+	ModuleID    string `gorm:"column:module_id;type:char(36);index"` // owning module (denormalized from stream)
+	ObjectKey   string `gorm:"column:object_key;type:varchar(512);not null"`
+	URL         string `gorm:"column:url;type:varchar(1024);not null"`
+	ContentType string `gorm:"column:content_type;type:varchar(64)"`
+	Size        int64  `gorm:"column:size"`
+	Kind        string `gorm:"column:kind;type:varchar(16);default:snapshot"`
 
 	// AI vision detection metadata (kind="detection" only).
 	ModelID       string  `gorm:"column:model_id;type:varchar(64)"`
 	ModelName     string  `gorm:"column:model_name;type:varchar(255)"`
 	NumDetections int     `gorm:"column:num_detections"`
-	Classes       string  `gorm:"column:classes;type:text"`    // JSON array string
+	Classes       string  `gorm:"column:classes;type:text"`          // JSON array string
 	Detections    string  `gorm:"column:detections;type:mediumtext"` // JSON array string
 	ConfidenceAvg float64 `gorm:"column:confidence_avg"`
 	Duration      float64 `gorm:"column:duration"` // recorded clip length in seconds (kind="recording")
@@ -69,7 +69,6 @@ type SnapshotView struct {
 	ConfidenceAvg float64 `json:"confidence_avg,omitempty"`
 	Duration      float64 `json:"duration,omitempty"` // recorded clip length in seconds
 }
-
 
 // ─── Request DTOs ─────────────────────────────────────────────────────────────
 
@@ -104,17 +103,17 @@ type UpdateStreamRequest struct {
 
 // StreamView is what the dashboard receives: metadata + live status + playback URLs.
 type StreamView struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	DeviceLabel string     `json:"device_label"`
-	Location    string     `json:"location"`
-	SourceRTSP  string     `json:"source_rtsp"`
-	NodeID      string     `json:"node_id,omitempty"`
-	ModuleID    string     `json:"module_id,omitempty"`
-	Enabled     bool       `json:"enabled"`
-	Status      string     `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
-	HlsURL      string     `json:"hls_url"`
-	WebRTCURL   string     `json:"webrtc_url"` // playback (WHEP) endpoint, host-direct
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	DeviceLabel string    `json:"device_label"`
+	Location    string    `json:"location"`
+	SourceRTSP  string    `json:"source_rtsp"`
+	NodeID      string    `json:"node_id,omitempty"`
+	ModuleID    string    `json:"module_id,omitempty"`
+	Enabled     bool      `json:"enabled"`
+	Status      string    `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
+	HlsURL      string    `json:"hls_url"`
+	WebRTCURL   string    `json:"webrtc_url"` // playback (WHEP) endpoint, host-direct
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

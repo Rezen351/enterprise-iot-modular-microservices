@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	errInvalidToken    = errors.New("invalid token")
+	errInvalidToken     = errors.New("invalid token")
 	errInvalidSignature = errors.New("invalid signature")
-	errExpired         = errors.New("token expired")
+	errExpired          = errors.New("token expired")
 )
 
 type claims struct {

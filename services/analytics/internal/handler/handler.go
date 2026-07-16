@@ -35,7 +35,7 @@ func Health(w http.ResponseWriter, r *http.Request) {
 // capped to 31 days to cover the dashboard's widest range (30d) plus a
 // margin; the research CSV export allows up to a year.
 const (
-	maxLiveWindow = 31 * 24 * time.Hour
+	maxLiveWindow   = 31 * 24 * time.Hour
 	maxExportWindow = 366 * 24 * time.Hour
 )
 
@@ -109,16 +109,17 @@ func parseTime(v string) (time.Time, bool) {
 }
 
 // MetricsHandler returns aggregated time-series for one or more nodes/metrics.
-//   Query: ?node_id&metric&interval=1h&from&to&discrete
-//   node_id and metric accept comma-separated lists (batched) so the dashboard
-//   can fetch an entire node's telemetry in a single request instead of one
-//   HTTP call per metric — this keeps the endpoint below Kong's rate limit and
-//   scales to many nodes × many sensors.
-//   discrete=true (bool) applies to every requested metric; discrete may also
-//   be a comma-separated list of metric names to mark only those as digital/state
-//   (0/1) so they stay at raw 1-minute resolution instead of the hourly/daily
-//   aggregates.
-//   Response: { interval, series: { node_id: { metric: [{t,v}] } } }
+//
+//	Query: ?node_id&metric&interval=1h&from&to&discrete
+//	node_id and metric accept comma-separated lists (batched) so the dashboard
+//	can fetch an entire node's telemetry in a single request instead of one
+//	HTTP call per metric — this keeps the endpoint below Kong's rate limit and
+//	scales to many nodes × many sensors.
+//	discrete=true (bool) applies to every requested metric; discrete may also
+//	be a comma-separated list of metric names to mark only those as digital/state
+//	(0/1) so they stay at raw 1-minute resolution instead of the hourly/daily
+//	aggregates.
+//	Response: { interval, series: { node_id: { metric: [{t,v}] } } }
 func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodeParam := q.Get("node_id")
@@ -200,7 +201,8 @@ func splitCSV(s string) []string {
 }
 
 // SummaryHandler returns a statistical summary for a node/metric.
-//   Query: ?node_id&metric&from&to
+//
+//	Query: ?node_id&metric&from&to
 func (h *Handler) SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodeID := q.Get("node_id")
@@ -265,8 +267,10 @@ func (h *Handler) Routes(r chi.Router, authMw func(http.Handler) http.Handler) {
 }
 
 // ExportHandler streams a CSV export of aggregated telemetry for research use.
-//   Query: ?node_id&metric&resolution=day&from&to
-//   resolution: raw | hour | day  (default day — best for long-range research)
+//
+//	Query: ?node_id&metric&resolution=day&from&to
+//	resolution: raw | hour | day  (default day — best for long-range research)
+//
 // The CSV carries bucket, node_id, metric, count, sum, min, max, avg, last so
 // a researcher can recompute their own aggregates from the exported history.
 func (h *Handler) ExportHandler(w http.ResponseWriter, r *http.Request) {

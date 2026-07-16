@@ -16,14 +16,14 @@ const QueueKey = "notification:queue"
 // Job describes a single delivery attempt. It intentionally carries NO secret;
 // the worker reads the (decrypted) secret from the in-memory settings cache.
 type Job struct {
-	LogID   string `json:"log_id"`
-	Channel string `json:"channel"`
-	Target  string `json:"target"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
-	AlertID string `json:"alert_id"`
-	UserID  string `json:"user_id"`
-	Attempts int  `json:"attempts"`
+	LogID    string `json:"log_id"`
+	Channel  string `json:"channel"`
+	Target   string `json:"target"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
+	AlertID  string `json:"alert_id"`
+	UserID   string `json:"user_id"`
+	Attempts int    `json:"attempts"`
 }
 
 // Queue wraps a Redis client for enqueue/dequeue operations.

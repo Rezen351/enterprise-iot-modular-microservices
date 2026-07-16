@@ -75,10 +75,10 @@ func (h *Handler) ListAlerts(w http.ResponseWriter, r *http.Request) {
 		dtos = append(dtos, model.ToAlertDTO(a))
 	}
 	respond(w, http.StatusOK, map[string]any{
-		"alerts":  dtos,
-		"total":   total,
-		"limit":   limit,
-		"offset":  offset,
+		"alerts": dtos,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
 	})
 }
 
@@ -123,12 +123,12 @@ func (h *Handler) ListThresholds(w http.ResponseWriter, r *http.Request) {
 }
 
 type thresholdRequest struct {
-	NodeID  string   `json:"node_id"`
-	Metric  string   `json:"metric"`
-	Min     *float64 `json:"min"`
-	Max     *float64 `json:"max"`
-	Enabled *bool    `json:"enabled"`
-	Severity string  `json:"severity"`
+	NodeID   string   `json:"node_id"`
+	Metric   string   `json:"metric"`
+	Min      *float64 `json:"min"`
+	Max      *float64 `json:"max"`
+	Enabled  *bool    `json:"enabled"`
+	Severity string   `json:"severity"`
 }
 
 // CreateThreshold adds a new threshold configuration.

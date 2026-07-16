@@ -10,9 +10,9 @@ import (
 )
 
 var alertMetrics = struct {
-	httpRequestsTotal     *prometheus.CounterVec
-	httpRequestDuration   *prometheus.HistogramVec
-	httpRequestsInflight  prometheus.Gauge
+	httpRequestsTotal    *prometheus.CounterVec
+	httpRequestDuration  *prometheus.HistogramVec
+	httpRequestsInflight prometheus.Gauge
 }{
 	httpRequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "alert",

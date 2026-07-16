@@ -124,27 +124,27 @@ func (s *Service) UpdateSettings(ctx context.Context, patch model.SettingsPatch,
 func (s *Service) enqueueChannel(ctx context.Context, channel, target, subject, body, alertID, userID string) error {
 	logID := uuid.NewString()
 	l := &model.NotificationLog{
-		ID:      logID,
-		Channel: channel,
-		Target:  target,
-		Subject: subject,
-		Body:    body,
-		Status:  "queued",
+		ID:       logID,
+		Channel:  channel,
+		Target:   target,
+		Subject:  subject,
+		Body:     body,
+		Status:   "queued",
 		Attempts: 0,
-		AlertID: alertID,
-		UserID:  userID,
+		AlertID:  alertID,
+		UserID:   userID,
 	}
 	if err := s.store.CreateLog(ctx, l); err != nil {
 		return err
 	}
 	job := queue.Job{
-		LogID:   logID,
-		Channel: channel,
-		Target:  target,
-		Subject: subject,
-		Body:    body,
-		AlertID: alertID,
-		UserID:  userID,
+		LogID:    logID,
+		Channel:  channel,
+		Target:   target,
+		Subject:  subject,
+		Body:     body,
+		AlertID:  alertID,
+		UserID:   userID,
 		Attempts: 0,
 	}
 	return s.queue.Enqueue(ctx, job)

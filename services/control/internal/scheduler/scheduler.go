@@ -334,8 +334,8 @@ func (e *Engine) runWindowPulse(ctx context.Context, sc model.Schedule) {
 	t := time.NewTicker(1 * time.Second)
 	defer t.Stop()
 
-	var windowOn bool    // currently inside the active window?
-	var phaseIsOn bool    // current pulse phase is ON?
+	var windowOn bool  // currently inside the active window?
+	var phaseIsOn bool // current pulse phase is ON?
 	var phaseStart time.Time
 	lastVal := -1
 

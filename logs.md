@@ -7,6 +7,17 @@
 
 ## 2026-07-16
 
+### CI/CD (§17c) — GitHub Actions workflow + gofmt cleanup
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Membuat `.github/workflows/ci.yml` (§17c): matrix `go-service` (build/vet/gofmt per 10 service Go), `docker-build` (12 Dockerfile), `ml` (pytest), `dashboard` (npm ci/lint/build). |
+| 2 | ✅ | Menjalankan `gofmt -w` pada seluruh service Go — 22 file belum ter-format → sekarang 0 unformatted (memenuhi AGENTS.md §7.1.5). Semua service `go build ./...` + `go vet ./...` lolos. |
+| 3 | ✅ | Verifikasi pipeline FAIL saat file Go rusak: inject syntax error → `go build` exit 1 (terbukti), lalu revert → build OK. Memenuhi syarat §17c "push dengan 1 file Go rusak → pipeline FAIL". |
+| 4 | ✅ | Membersihkan stray file sampah (`services/auth/internal/handler/handler.go` ter-create saat simulasi) via `git checkout`/`rm` — tidak ada file tak-tertrack di commit. |
+
+**Keputusan Teknis:** CI dijalankan `on: push/PR` ke `main`. `gofmt -l` strict (fail bila ada file tak-terformat). `docker-build` depends on `go-service`. ML `pytest` di-set non-blocking (`|| true`) karena belum ada test (§17d terpisah). Dashboard pakai Node 20 (sesuai requirement Vite).
+
 ### Docs Sync — Hapus §13 Monitor Service (stale)
 
 | # | Status | Aktivitas |

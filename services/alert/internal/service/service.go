@@ -214,15 +214,15 @@ func (s *Service) publishSystem(a *model.Alert, event string) {
 		return
 	}
 	payload, err := json.Marshal(map[string]any{
-		"type":     "alert",
-		"level":    a.Severity,
-		"node_id":  a.NodeID,
-		"metric":   a.Metric,
-		"value":    a.Value,
-		"message":  a.Message,
-		"status":   event,
-		"event":    event,
-		"ts":       time.Now().UnixMilli(),
+		"type":    "alert",
+		"level":   a.Severity,
+		"node_id": a.NodeID,
+		"metric":  a.Metric,
+		"value":   a.Value,
+		"message": a.Message,
+		"status":  event,
+		"event":   event,
+		"ts":      time.Now().UnixMilli(),
 	})
 	if err != nil {
 		return
@@ -268,10 +268,10 @@ func (s *Service) CreateThreshold(ctx context.Context, t *model.Threshold, by st
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
 	s.publishAudit("alert.threshold.created", map[string]string{
 		"threshold_id": t.ID,
-		"node_id":       t.NodeID,
-		"metric":        t.Metric,
-		"severity":      t.Severity,
-		"by":            by,
+		"node_id":      t.NodeID,
+		"metric":       t.Metric,
+		"severity":     t.Severity,
+		"by":           by,
 	})
 	return t, nil
 }
@@ -303,10 +303,10 @@ func (s *Service) UpdateThreshold(ctx context.Context, id string, patch map[stri
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
 	s.publishAudit("alert.threshold.updated", map[string]string{
 		"threshold_id": t.ID,
-		"node_id":       t.NodeID,
-		"metric":        t.Metric,
-		"severity":      t.Severity,
-		"by":            by,
+		"node_id":      t.NodeID,
+		"metric":       t.Metric,
+		"severity":     t.Severity,
+		"by":           by,
 	})
 	return t, nil
 }
@@ -320,9 +320,9 @@ func (s *Service) DeleteThreshold(ctx context.Context, id string, by string) err
 	s.cache.ClearThreshold(ctx, t.NodeID, t.Metric)
 	s.publishAudit("alert.threshold.deleted", map[string]string{
 		"threshold_id": t.ID,
-		"node_id":       t.NodeID,
-		"metric":        t.Metric,
-		"by":            by,
+		"node_id":      t.NodeID,
+		"metric":       t.Metric,
+		"by":           by,
 	})
 	return nil
 }

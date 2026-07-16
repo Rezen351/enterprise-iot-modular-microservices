@@ -25,13 +25,13 @@ const (
 // so the consumer works regardless of which service started first.
 func ensureBatchStream(js nats.JetStreamContext) error {
 	_, err := js.AddStream(&nats.StreamConfig{
-		Name:     batchStream,
-		Subjects: []string{batchSubject},
+		Name:      batchStream,
+		Subjects:  []string{batchSubject},
 		Retention: nats.LimitsPolicy,
-		Storage:  nats.FileStorage,
-		MaxAge:   24 * time.Hour,
-		MaxMsgs:  1_000_000,
-		Replicas: 1,
+		Storage:   nats.FileStorage,
+		MaxAge:    24 * time.Hour,
+		MaxMsgs:   1_000_000,
+		Replicas:  1,
 	})
 	return err
 }

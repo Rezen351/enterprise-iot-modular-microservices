@@ -12,7 +12,7 @@
 
 ## 📊 Status Keseluruhan
 
-**Fase 0 (Infrastruktur) ✅ · Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module) ✅ · Fase 3 (Analytics + WS-Gateway) ✅ · Fase 4 (Control) ✅ · Fase 5 (Alert + Stream + ML/Vision) ✅ · Monitor Service ✅ · Fase 6 (Snapshot→AI + CCTV Recording) ✅ · Audit Service ✅ · Dashboard Lengkap ✅**
+**Fase 0 (Infrastruktur) ✅ · Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module) ✅ · Fase 3 (Analytics + WS-Gateway) ✅ · Fase 4 (Control) ✅ · Fase 5 (Alert + Notification + Stream + ML/Vision) ✅ · Monitor Service ✅ · Fase 6 (Snapshot→AI + CCTV Recording) ✅ · Audit Service ✅ · Fase 9b (Export Service / Data API) ✅ · Dashboard Lengkap ✅**
 
 ### Yang sudah berjalan end-to-end:
 | Alur | Status |
@@ -31,14 +31,14 @@
 | Seed akun admin default + Manajemen Akun (Admin only) | ✅ |
 | Alert Service (threshold eval + publish `alert.triggered`/`alert.resolved`/`system.status`) | ✅ |
 | Audit Service (consume `audit.log` → `mariadb-audit`, `GET /audit/logs`) | ✅ |
+| Notification Service (subscribe `alert.triggered`/`alert.resolved` → Telegram/Email/Push + log `mariadb-notification` + queue `redis-shared` DB2) | ✅ |
+| Export Service / Data API (`/export/v1/*` via Kong, timescaledb-module read + `redis-shared` DB3 cache) | ✅ |
 | Observability (Prometheus + exporter: mysqld/postgres/redis/mosquitto/nats + node-exporter + cAdvisor) | ✅ |
 | CCTV Capture Cron (`services/cctv-capture`) | ✅ (job eksternal, bukan microservice) |
 
 ### Yang belum dikerjakan (sisa) — selaras dengan `planning.md`:
 | Service / Item | Fase (skema planning) | Prioritas | Kategori |
 |---------|------|-----------|-----------|
-| Notification Service | Fase 5 (Notification) | 🔴 P1 | Dikerjakan di TA (blocker fungsional) |
-| Export Service / Data API | Fase 9b | 🟢 P3 | Future (sebagian via Analytics) |
 | OTA Service | Fase 10 | ⬜ P4 | Future |
 | Prometheus Metrics Service | Fase 11 | ⬜ P4 | Future |
 | Cloudflare Tunnel | Fase 12 | ⬜ P4 | Future |
@@ -48,7 +48,7 @@
 | **Unit Test 80%** | — | 🟡 P2 | **Dikerjakan di TA** |
 | **Transactional Outbox** | — | 🟡 P2 | Dikerjakan di TA (lihat planning) |
 
-> **Catatan:** Dashboard Alert & History (Fase 10 di skema lama) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Notification Service (pengiriman ke Telegram/Email/Push) masih `⬜` — ini yang membuat alert "mati di ujung" dan wajib dikerjakan di TA.
+> **Catatan:** Dashboard Alert & History (Fase 10 di skema lama) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Notification Service (pengiriman ke Telegram/Email/Push) **sudah ✅ SELESAI** (subscribe `alert.triggered`/`alert.resolved` → log `mariadb-notification` + queue `redis-shared` DB2) sehingga pipeline alert bernilai end-to-end.
 
 ---
 
@@ -97,8 +97,8 @@
 | Status | Item | Deskripsi |
 |---|---|---|
 | `[x]` | `mosquitto.conf` | Listener port 1883, persistence on, log level info |
-| `[x]` | `acl.conf` | Per-topic per-service: Module bisa publish `sensor/#`, Control bisa publish `cmd/#` |
-| `[x]` | Password file | Credentials ESP32 + Module Svc + Control Svc |
+| `[/]` | `acl.conf` | Template per-topic per-service sudah ada tapi **ter-comment** (belum di-enforce) — `allow_anonymous true` masih aktif. Lihat **§ Remediasi Keamanan Terbuka (O1)** |
+| `[/]` | Password file | Template credential ada, tapi `allow_anonymous false` + distribusi `MQTT_USER`/`MQTT_PASS` ke `.env` & firmware **belum** dilakukan. Lihat **§ Remediasi Keamanan Terbuka (O1)** |
 
 ### MQTT Topic Contract
 
@@ -367,7 +367,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🔴 Fase 5 — Notification Service (P1 — Prioritas TA)
+## 🔴 Fase 5 — Notification Service (P1 — ✅ SELESAI)
 
 > Mengirim notifikasi ke pengguna berdasarkan alert yang dipicu. **Ini blocker fungsional**: Alert Service sudah publish `alert.triggered`/`alert.resolved` tapi belum ada subscriber → alert "mati di ujung". Wajib dikerjakan di TA (selaras `planning.md` TA-Scale Roadmap).
 
@@ -375,15 +375,15 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 | Status | Item | Deskripsi | Estimasi |
 |---|---|---|---|
-| `[ ]` | Scaffold Go service | Struktur `internal/` | 1 hari |
-| `[ ]` | Subscribe NATS `alert.triggered` | Terima event alert | 0.5 hari |
-| `[ ]` | Subscribe NATS `alert.resolved` | Terima event alert resolved | 0.5 hari |
-| `[ ]` | Kirim Push Notification | Integrasi Firebase FCM | 1 hari |
-| `[ ]` | Kirim Email | Integrasi SMTP | 1 hari |
-| `[ ]` | Kirim Telegram | Bot API Telegram | 1 hari |
-| `[ ]` | Queue di `redis-shared` (DB2) | Antrian notifikasi (retry mechanism) | 0.5 hari |
-| `[ ]` | Simpan log notifikasi | Di `mariadb-notification` | 0.5 hari |
-| `[ ]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Scaffold Go service | Struktur `internal/` | 1 hari |
+| `[x]` | Subscribe NATS `alert.triggered` | Terima event alert | 0.5 hari |
+| `[x]` | Subscribe NATS `alert.resolved` | Terima event alert resolved | 0.5 hari |
+| `[x]` | Kirim Push Notification | Integrasi Firebase FCM | 1 hari |
+| `[x]` | Kirim Email | Integrasi SMTP | 1 hari |
+| `[x]` | Kirim Telegram | Bot API Telegram | 1 hari |
+| `[x]` | Queue di `redis-shared` (DB2) | Antrian notifikasi (retry mechanism) | 0.5 hari |
+| `[x]` | Simpan log notifikasi | Di `mariadb-notification` | 0.5 hari |
+| `[x]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
 
 **Total estimasi: 3-5 hari**
 
@@ -642,7 +642,7 @@ User (dashboard/API) ──Kong /ml/detect──▶ Vision API
 
 ---
 
-## 🟢 Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
+## 🟢 Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL ✅ SELESAI]
 
 > Melayani akses data untuk mahasiswa/peneliti via REST API. Memungkinkan import langsung ke Python pandas, R, Excel, dan tools analisis data lainnya.
 
@@ -754,21 +754,21 @@ df = pd.read_parquet("data.parquet")
 
 | Status | Item | Deskripsi | Estimasi |
 |---|---|---|---|
-| `[ ]` | Scaffold service (Go/Python) | Struktur internal, go.mod/requirements.txt | 1 hari |
-| `[ ]` | Koneksi ke TimescaleDB (module + analytics) | Read-only query pool | 0.5 hari |
-| `[ ]` | Koneksi ke MariaDB (module + auth) | Read-only query untuk metadata | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/telemetry` | Query + streaming CSV/JSON/Parquet | 1 hari |
+| `[x]` | Scaffold service (Go/Python) | Struktur internal, go.mod/requirements.txt | 1 hari |
+| `[x]` | Koneksi ke TimescaleDB (module + analytics) | Read-only query pool | 0.5 hari |
+| `[x]` | Koneksi ke MariaDB (module + auth) | Read-only query untuk metadata | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/telemetry` | Query + streaming CSV/JSON/Parquet | 1 hari |
 | `[x]` | Endpoint `/export/v1/telemetry/aggregate` | **Delivered via Analytics Service `GET /analytics/export`** (CSV, resolusi day/hour/raw) — lihat keputusan Opsi A | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/nodes` | Metadata node & module | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/alerts` | History alert | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/audit` (admin only) | Audit log | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/discover` | Self-documenting schema | 0.5 hari |
-| `[ ]` | Redis caching (`redis-shared` DB3) | Cache query results, TTL configurable | 0.5 hari |
-| `[ ]` | Kong route + rate limiting | `/export` route, 5 req/min limit | 0.5 hari |
-| `[ ]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
-| `[ ]` | Prometheus metrics | `export_http_requests_total` | 0.5 hari |
-| `[ ]` | Dokumentasi API untuk mahasiswa | Contoh pandas, R, Excel | 1 hari |
+| `[x]` | Endpoint `/export/v1/nodes` | Metadata node & module | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/alerts` | History alert | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/audit` (admin only) | Audit log | 0.5 hari |
+| `[x]` | Endpoint `/export/v1/discover` | Self-documenting schema | 0.5 hari |
+| `[x]` | Redis caching (`redis-shared` DB3) | Cache query results, TTL configurable | 0.5 hari |
+| `[x]` | Kong route + rate limiting | `/export` route, 5 req/min limit | 0.5 hari |
+| `[x]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[x]` | Prometheus metrics | `export_http_requests_total` | 0.5 hari |
+| `[x]` | Dokumentasi API untuk mahasiswa | Contoh pandas, R, Excel | 1 hari |
 
 **Total estimasi: 5-7 hari**
 
@@ -784,6 +784,7 @@ df = pd.read_parquet("data.parquet")
 | `[ ]` | Trigger update ke ESP32 via MQTT | Push URL firmware ke device |
 | `[ ]` | Tracking status update | Per device: pending, downloading, installing, done, failed |
 | `[ ]` | Verifikasi checksum firmware | SHA-256 hash untuk integritas |
+| `[ ]` | **Verifikasi signature firmware (ED25519/ECDSA)** | ⚠️ **BELUM** — endpoint `/api/ota` (`WebConfigPortal.cpp`) hanya mengecek `checkAuthToken()` web portal; image tanpa/tidak cocok signature tetap diterima. Lihat **§ Remediasi Keamanan Terbuka (O3)** |
 
 ---
 
@@ -829,9 +830,9 @@ df = pd.read_parquet("data.parquet")
 | 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 | — |
 | 8 | ML/Vision | Python | MariaDB + MinIO (bucket `ml-vision`, shared) | ✅ Selesai | P3 | Fase 6 |
 | 9 | Alert | Go | MariaDB + Redis (shared DB1) | ✅ Selesai | P1 | Fase 5 |
-| 10 | Notification | Go | MariaDB + Redis (shared DB2) | ⬜ Belum | **P1** | Fase 5 |
+| 10 | Notification | Go | MariaDB + Redis (shared DB2) | ✅ Selesai | P1 | Fase 5 |
 | 11 | Audit | Go | MariaDB | ✅ Selesai | P1 | Fase 8 (Audit) |
-| 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis (shared DB3) | ⬜ Belum | P3 | Fase 9b |
+| 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis (shared DB3) | ✅ Selesai | P3 | Fase 9b |
 | 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 | Fase 10 |
 | 14 | Prometheus Metrics | Go | - | ⬜ Belum | P4 | Fase 11 |
 | 15 | Webhook | Go | MariaDB | ⬜ Belum | P4 | (belum bernomor) |
@@ -943,3 +944,17 @@ Hasil *stress test & penetration test* (`stress-test/`) ditemukan & diperbaiki:
 | Metrik host (node-exporter + cAdvisor) di Prometheus | 🟢 P3 | [x] | `docker-compose.yml` + `infra/prometheus/prometheus.yml` |
 
 **Verifikasi:** jalankan `python3 stress-test/cli.py pentest` (ekspektasi: *Protected routes reject unauthenticated access* → PASS) dan `python3 stress-test/cli.py metrics` (ekspektasi job `node-exporter` & `cadvisor` muncul).
+
+---
+
+## 🟡 Remediasi Keamanan Terbuka (Open Items — Belum Selesai)
+
+Temuan berikut **masih terbuka** (status 🟡 di `planning.md` §Keamanan) dan tercatat sebagai pekerjaan remediation yang belum dikerjakan. Sumber: `security-audit.md` (O1–O3) dan `logs.md` (Keamanan #1, Firmware S12 Keamanan #1/#2).
+
+| # | Temuan | Status | Rencana Remediasi |
+|---|--------|--------|-------------------|
+| O1 | Mosquitto `allow_anonymous true` masih aktif; `acl.conf` template per-service ter-comment → koneksi anonim diterima (terverifikasi client tanpa user/pass connect `rc=0`). | 🟡 Open | Set `allow_anonymous false` + aktifkan `password_file` di `infra/mosquitto/config/mosquitto.conf`; uncomment & distribusikan `acl.conf` (topic `esp32`/`module-svc`/`control-svc`); isi `MQTT_USER`/`MQTT_PASS` ke `.env` dan firmware agar seluruh stack tidak lagi anonim. |
+| O2 | MinIO masih pakai root credential (belum scoped per-service per bucket). | 🟡 Open | Buat access key ter-scoped per service (Stream rw `stream`, ML rw `ml-vision` ro `stream`, OTA rw `ota`) via `mc admin user/accesskey`; distribusikan ke masing-masing service melalui env (bukan root credential). |
+| O3 | OTA firmware (`WebConfigPortal.cpp` `/api/ota`) **belum** verifikasi signature (ED25519/ECDSA) — hanya `checkAuthToken()` web portal. | 🟡 Open | Tambahkan verifikasi signature firmware sebelum `Update.begin` (ED25519/ECDSA); tolak image tanpa/tidak cocok signature. |
+
+> Remediasi O1–O3 **di luar scope** hardening pentest di atas dan belum diimplementasikan. Mosquitto `acl.conf`/`password_file` status `[/]` lihat **Fase 1 — Mosquitto Config**; OTA signature lihat **Fase 10 — OTA Service**.

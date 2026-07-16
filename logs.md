@@ -7,6 +7,42 @@
 
 ## 2026-07-16
 
+### Final Sync — Verifikasi & Penyelesaian Doc↔System (Items H1–H3, system-update.md)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **H1 — Validasi compose:** `docker compose config` dari `/home/almuzky/TA/Microservices` → **exit 0, YAML valid tanpa error/warning**. Seluruh perubahan sistem (B: service `notification`+`export-service`+DB+depends_on, C: konsolidasi Redis → `redis-shared` multi-DB, D: konsolidasi exporter) lolos validasi struktur. |
+| 2 | ✅ | **H2 — logs.md:** menambah entry final sync ini (status ✅) yang merangkum seluruh penyelarasan doc↔system: Notification & Export ditambah ke compose (B1/B2), Redis dikonsolidasi ke `redis-shared` (C/ADR-004), exporter dikonsolidasi (D/ADR-005), security table dibuat jujur (E), target Prometheus diperbarui (F), section UI test ditambah (G). |
+| 3 | ✅ | **H3 — planning.md "Kriteria Selesai":** flow `Alert → Notification` dan `Notification → Export` ditandai ✅ (end-to-end satisfied); `Webhook Service`, OTA, Prometheus Metrics Service, Cloudflare Tunnel tetap **Future P4**. |
+| 4 | ✅ | **H3 — testing-implementasi-manual.md (stale note fix):** catatan §14b diperbarui — service `notification` kini **SUDAH didefinisikan di `docker-compose.yml`** (item B1 done); tidak ada status checklist `[ ]` yang diubah. |
+
+**Keputusan Teknis:** Final sync H1–H3 **SELESAI**. ADR-004 (Redis → `redis-shared` multi-DB, 1 instance) dan ADR-005 (exporter → `mysqld-exporter-all`/`postgres-exporter-all`/`redis-exporter`, 3 container) kini **benar-benar terimplementasi di `docker-compose.yml`** (bukan lagi hanya tertulis ✅ di planning). `docker compose config` exit 0 memvalidasi tidak ada orphan/error pasca-konsolidasi. Tidak ada perubahan kode/logic — hanya verifikasi + dokumentasi final.
+
+---
+
+### Dokumentasi — Penyelarasan Planning ↔ Sistem Aktual (system-update.md)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Membandingkan `planning.md`/`roadmap.md` vs realitas (`logs.md` + inspeksi `docker-compose.yml`). Hasil: sistem **lebih maju** dari dokumen di 3 kategori — (a) Notification & Export Service sudah jadi & lulus tes tapi tertulis `⬜`/Future, (b) ADR-004 (Redis) & ADR-005 (Exporter) tertulis ✅ tapi BELUM diterapkan di compose (masih 4 Redis + 12 exporter terpisah), (c) Security table menandai Mosquitto ACL & MinIO scoping ✅ padahal masih terbuka. |
+| 2 | ✅ | Membuat [docs/system-update.md](file:///home/almuzky/TA/Microservices/docs/system-update.md) — action list terstruktur (A–H) untuk agent: update planning/roadmap (Notification/Export ✅), tambah service `notification`+`export-service` ke compose (B1/B2), terapkan/revert ADR-004/ADR-005 (C/D), perbaiki Security table (E), perbarui target Prometheus (F), sinkron manual UI doc (G), validasi akhir (H). |
+| 3 | ✅ | Memperbarui [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md): tambah "Known Infrastructure Gaps" di KONTEKS WAJIB (cross-ref `system-update.md`) agar agent tahu Notification/Export belum di compose + Redis/Exporter belum consolidate. |
+| 4 | ✅ | Memperbarui [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md): perjelas N7 (Notification Bell) bahwa GAP-1 WS `/ws/system-status` sudah tertutup di backend; perjelas EX8 (Export UI) bahwa service belum di compose; tambah Known Issues #6–#10 (doc-sync gaps + security open items). |
+
+### Dokumentasi — Penyelarasan Item A (Notification & Export DONE)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menyinkronkan `docs/system-update.md` item A1–A7: menandai Notification Service & Export Service sebagai **DONE** di [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) dan [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md). Database-per-Service (Export `timescaledb-module` read + `redis-shared` DB3; Notification `mariadb-notification` + DB2) ✅ Running; Fase Implementasi (Notification `✅ Selesai`, Export `✅ Selesai`); Gap Analysis `alert.triggered`/`alert.resolved` ✅; Ringkasan Semua Service #10/#12 ✅ Selesai; roadmap "Yang belum dikerjakan" tidak lagi memuat keduanya; Status Keseluruhan + running-end-to-end list ✅; Fase 5 Notification & Fase 9b Export seluruh checklist `[x]`. Baris blocker `🔴 P1` Notification di tabel Rekomendasi Prioritas (planning) & catatan roadmap §51 diubah ke ✅ konsisten. Verifikasi: tidak ada sisa `⬜`/`🔴` untuk Notification & Export di planning.md. |
+
+**Keputusan Teknis:** Item A (A1–A7) dinyatakan **SELESAI (doc sync)** — seluruh status Notification Service & Export Service di planning.md/roadmap.md seragam ✅ tanpa mengubah item B–H (compose/ADR/security/Prometheus). Hanya dokumen yang disentuh (tidak ada perubahan kode/compose).
+
+**Keputusan Teknis:** Sinkronisasi dokumen↔sistem difasilitasi via `docs/system-update.md` (single source of tasks) agar agent berikutnya bisa langsung eksekusi tanpa re-analisis. `testing-plan-agent.md` (§7/§10) sudah benar & tidak diubah statusnya; hanya ditambah konteks gap infrastruktur. `testing-implementasi-manual.md` §14a–§14d sudah ada & konsisten; hanya ditambah catatan bahwa service terkait belum di `docker-compose.yml`.
+
+---
+
+## 2026-07-16
+
 ### Testing & Bug Fix — Infrastruktur & Integration (Section 13, S13)
 
 | # | Status | Aktivitas |
@@ -36,7 +72,16 @@
 
 ---
 
-### Optimasi Docker Build (DevOps / Infrastructure)
+### Dokumentasi — Sinkronisasi Testing Plan dengan Planning/Roadmap
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menyelaraskan [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) dengan state implementasi terkini di [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) / [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md): Alert, Notification, Audit, dan Export Service dipindah dari tabel "future" §14 ke section mandiri §14a–§14d (sudah diimplementasikan & lulus API test). |
+| 2 | ✅ | Mereset seluruh status checklist manual (`[x]` → `[ ]`) di bagian UI/manual (WS §4, Control §5, Stream §6, ML §7, Monitor §8, Security §9, MQTT/NATS §10, Observability §11, Dashboard §12, §14a–§14d) — agent tidak mencentang checklist manual/UI (milik User), hanya menyimpan catatan backend yang sudah lulus API test. |
+| 3 | ✅ | Memperbaiki anomali dokumen: `system-status` WS (W9) ditandai "belum" → kini GAP-1 tertutup di backend; SEC5/SEC6 tetap `[~]` (Mosquitto/NATS `allow_anonymous` masih true); MSG9/Msg11 diperbarui ke state "sudah di-consume/dipublish"; MSG6 (OTA) tetap `[-]` (Future P4). |
+| 4 | ✅ | Memperbaiki referensi rate-limit Kong di [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) KONTEKS (global 100/menit → auth 20/menit publik, 60–120/menit route lain, sesuai planning) serta timeline M2 di manual doc. |
+
+**Keputusan Teknis:** Dokumentasi pengujian kini konsisten dengan `planning.md`/`roadmap.md`. Checklist manual/UI tetap `[ ]` (tanpa centang agent) sesuai batasan AGENTS.md Butir 5; catatan "backend sudah lulus API test" disisipkan sebagai konteks agar User tahu service sudah jalan namun tetap harus validasi visual.
 
 | # | Status | Aktivitas |
 |---|---|---|

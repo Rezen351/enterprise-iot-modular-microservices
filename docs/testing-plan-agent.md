@@ -53,6 +53,12 @@ lain), `cors` (origins localhost:3000/5173 + `FRONTEND_URL`), `prometheus`.
 
 **Tools:** `curl`/httpie (REST), `wscat` (WS), `docker compose logs <svc>`, PostgreSQL/MariaDB client, `pytest` (ml), `test_auth.sh` (auth), `browser_subagent` (E2E/UI), simulator `firmware-sim` (MQTT telemetry/command).
 
+**Known Infrastructure Gaps (2026-07-16, lihat [docs/system-update.md](file:///home/almuzky/TA/Microservices/docs/system-update.md)):**
+- `notification` & `export-service` SUDAH diuji lulus (§7/§10) tapi **BELUM ada di `docker-compose.yml`** → saat `docker compose up -d`, keduanya tidak jalan. Jika mau uji ulang end-to-end, tambahkan definisi service (B1/B2) atau jalankan binary manual.
+- Redis belum di-consolidate (masih `redis-module/alert/notification/export`, bukan `redis-shared`) — ADR-004 di planning tertulis ✅ tapi belum diterapkan.
+- Exporter belum di-consolidate (masih 8 mysqld + 2 postgres + 2 redis exporter) — ADR-005 tertulis ✅ tapi belum diterapkan.
+- Mosquitto `allow_anonymous true` masih aktif; MinIO masih root credential — security table di planning perlu di-mark 🟡 (bukan ✅).
+
 ---
 
 ## 1. Auth Service (`auth:8080`, Go, MariaDB)

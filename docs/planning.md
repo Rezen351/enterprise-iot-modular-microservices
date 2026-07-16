@@ -23,7 +23,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 | Prinsip | Deskripsi | Implementasi dalam Sistem |
 |---|---|---|
 | **Single Responsibility** | Setiap service hanya bertanggung jawab atas satu domain bisnis | Auth Service hanya menangani autentikasi, Module Service hanya menangani data sensor & device onboarding, Analytics Service hanya menangani agregasi data — tidak ada overlap tanggung jawab |
-| **Database Isolation** | Setiap service memiliki database sendiri, tidak ada sharing database antar service | 17 instance database terpisah untuk 13 service (MinIO dikonsolidasi jadi 1 instance bersama multi-bucket), masing-masing dengan kredensial unik |
+| **Database Isolation** | Setiap service memiliki database sendiri, tidak ada sharing database antar service | 14 instance database terpisah untuk 13 service (10× MariaDB · 2× TimescaleDB · 1× Redis bersama `redis-shared` · 1× MinIO bersama multi-bucket), masing-masing dengan kredensial unik — turun dari 17 setelah konsolidasi Redis (ADR-004) |
 | **Bounded Context** | Setiap service memiliki model data dan bahasa domain sendiri | Service Auth berbicara tentang "user" dan "role", Module Service berbicara tentang "sensor" dan "telemetry", Control Service berbicara tentang "command" dan "device" |
 | **Independen Deployable** | Setiap service dapat di-build, di-deploy, dan di-scale secara independen | Masing-masing service memiliki Dockerfile sendiri, go.mod mandiri, dan port internal yang terisolasi |
 | **Resilience by Design** | Kegagalan satu service tidak boleh mengganggu service lain | NATS event bus dengan JetStream persistence, saga pattern dengan compensating transaction, dan dead letter queue untuk menangani kegagalan |
@@ -41,7 +41,7 @@ Sistem dirancang dengan filosofi modular yang berlandaskan pada prinsip pemisaha
 
 ### Batasan dan Trade-off
 
-- **Kompleksitas Operasional:** 17 instance database dan 13+ service membutuhkan monitoring dan orkestrasi yang lebih kompleks dibandingkan monolit.
+- **Kompleksitas Operasional:** 14 instance database (turun dari 17 setelah konsolidasi Redis ADR-004) dan 13+ service membutuhkan monitoring dan orkestrasi yang lebih kompleks dibandingkan monolit.
 - **Network Overhead:** Komunikasi antar-service via NATS menambah latency dibandingkan pemanggilan fungsi langsung dalam monolit.
 - **Data Consistency:** Eventual consistency adalah konsekuensi dari arsitektur terdistribusi — transaksi yang membutuhkan strong consistency harus menggunakan saga pattern dengan compensating transaction.
 - **Debugging Complexity:** Melacak alur transaksi yang melintasi beberapa service membutuhkan tool observability yang memadai (distributed tracing, centralized logging).
@@ -62,7 +62,7 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 - **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal, termasuk REST/HTTP dan WebSocket (route `/ws` diteruskan ke WS-Gateway)
 - **Presentation Layer:** Dashboard (React) dan **WS-Gateway** untuk real-time updates. Dashboard membuka WebSocket ke Kong (`/ws`), Kong meneruskan ke WS-Gateway, yang menjadi jembatan ke **NATS** (subscribe subject untuk push ke client)
 - **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
-- **Observability Layer:** Prometheus + exporter terkonsolidasi (1× mysqld-exporter-all untuk 8 MariaDB, 1× postgres-exporter-all untuk 2 TimescaleDB, 1× redis-exporter untuk redis-shared, + mosquitto/nats/node/cadvisor) untuk aggregasi metrik; Monitor Service untuk resource container
+- **Observability Layer:** Prometheus + exporter terkonsolidasi (1× mysqld-exporter-all untuk 8 MariaDB, 1× postgres-exporter-all untuk 2 TimescaleDB, 1× redis-exporter untuk redis-shared, + mosquitto/nats/node/cadvisor) untuk aggregasi metrik; resource container dipantau via cAdvisor/node-exporter (Monitor Service di-remove)
 - **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel (scaffold) untuk akses aman dari internet
 
 ### Diagram Alur Data End-to-End (Saat Ini)
@@ -176,11 +176,11 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | ML / Vision | `mariadb-ml` | — | — | bucket `ml-vision` | ✅ Running |
 | OTA | `mariadb-ota` | — | — | bucket `ota` | ⬜ Belum |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
-| Export | — | `timescaledb-module` (read) | DB3 `export` | — | ⬜ Belum |
-| Notification | `mariadb-notification` | — | DB2 `notification` | — | ⬜ Belum |
+| Export | — | `timescaledb-module` (read) | DB3 `export` | — | ✅ Running |
+| Notification | `mariadb-notification` | — | DB2 `notification` | — | ✅ Running |
 | Audit | `mariadb-audit` | — | — | — | ✅ Running |
 | Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
-| Monitor | — (docker stats) | — | — | — | ✅ Running |
+| Monitor | — (docker stats) | — | — | — | ⬜ Dihapus (service di-remove) |
 
 > **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`, `minio-ota`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml-vision`, `ota`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml-vision`.
 >
@@ -391,7 +391,7 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `telemetry.batch` | Module Service | Analytics | Pub/Sub | ✅ Aktif |
 | `alert.triggered` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
 | `alert.resolved` | Alert Service | Notification, WebSocket, Webhook | Pub/Sub | ✅ Aktif |
-| `system.status` | Alert / Monitor Service | WS-Gateway (`/ws/system-status`) | Pub/Sub | ✅ Aktif (route WS + publisher Alert Service jalan; dashboard `NotificationContext` konsumsi) |
+| `system.status` | Alert Service | WS-Gateway (`/ws/system-status`) | Pub/Sub | ✅ Aktif (route WS + publisher Alert Service jalan; dashboard `NotificationContext` konsumsi) |
 | `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
 | `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ✅ Dipublish |
 | `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module, Control, Stream) & ✅ di-consume oleh Audit Service |
@@ -485,10 +485,10 @@ Beberapa subject sudah dipublish tapi **belum ada consumer nyata** — ini adala
 |---|---|---|---|
 | `telemetry.ingest` | Module | Alert, WS-Gateway | ✅ |
 | `telemetry.batch` | Module | Analytics | ✅ |
-| `alert.triggered` / `alert.resolved` | Alert | **(tidak ada)** Webhook/Notification | 🔴 **GAP** — alert berhenti di ujung, tidak sampai ke pengguna |
+| `alert.triggered` / `alert.resolved` | Alert | Notification, WebSocket, Webhook | ✅ |
 | `detection.result` | Vision API | (tidak ada konsumer wajib) | ⬜ opsional |
 | `audit.log` | Banyak | Audit Service | ✅ |
-| `system.status` | Alert/Monitor | WS-Gateway | ✅ |
+| `system.status` | Alert Service | WS-Gateway | ✅ |
 | `metrics.health` | Semua | (tidak ada, scrape langsung) | ⬜ Fase 11 |
 
 > **Prioritas kritis:** `alert.triggered`/`alert.resolved` harus segera punya subscriber (Notification Service minimal Telegram/Email) supaya seluruh pipeline alert bernilai end-to-end. Tanpa itu, Alert Service hanya mencatat di DB tanpa notifikasi pengguna.
@@ -534,13 +534,13 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | 3 | Analytics + WS-Gateway | ✅ Selesai | P2 |
 | 4 | Control Service (manual + scheduler + emergency/resume) | ✅ Selesai | P1 |
 | 5 | Alert Service | ✅ Selesai | P1 |
-| 5 | Notification Service | ⬜ Dikerjakan di TA (blocker fungsional) | P1 |
+| 5 | Notification Service | ✅ Selesai | P1 |
 | 5/6 | Stream Service (MediaMTX + MinIO) | ✅ Selesai | P3 |
 | 6 | ML / Vision API (YOLOv8 Model Registry) | ✅ Selesai | P3 |
 | 6b/6c | Snapshot→AI Detection + CCTV Recording | ✅ Selesai | P3 |
 | 8 | Audit Service | ✅ Selesai | P1 |
 | 9 | Dashboard Lengkap | ✅ Selesai | P3 |
-| 9b | Export Service / Data API | ⬜ Future (sebagian via Analytics) | P3 |
+| 9b | Export Service / Data API | ✅ Selesai | P3 |
 | 10 | OTA Service | ⬜ Future | P4 |
 | 11 | Prometheus Metrics Service | ⬜ Future | P4 |
 | 12 | Cloudflare Tunnel | ⬜ Future | P4 |
@@ -560,9 +560,13 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | Network Isolation | Semua container berada di network private `iot-net`, hanya Kong yang terekspos ke host | ✅ |
 | Rate Limiting | Kong: 20 req/min untuk endpoint auth publik, 60-120 req/min untuk endpoint lain | ✅ |
 | CORS | Whitelist origin eksplisit (localhost:3000, localhost:5173, FRONTEND_URL), tidak menggunakan wildcard | ✅ |
-| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto | ✅ |
+| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto | 🟡 |
+| MinIO scoped access key | Access key per-service (bukan root credential) untuk masing-masing bucket | 🟡 |
 | NATS ACL | Kontrol akses per-subject per-user di konfigurasi NATS | ✅ |
 | WebSocket Auth | ✅ JWT pada handshake WS (Bearer header / `?token=`), validasi via `JWT_SECRET` | ✅ |
+| OTA firmware signature | ✅ Verifikasi signature firmware (ED25519/ECDSA) sebelum `Update.begin` | 🟡 |
+
+> **Catatan keamanan (open items):** Baris 🟡 di atas adalah temuan terbuka (lihat `logs.md` Keamanan #1): Mosquitto masih berjalan dengan `allow_anonymous true` (template `acl.conf` ter-comment), sehingga enforcement ACL per-service belum aktif. MinIO masih menggunakan root credential (belum dibuat access key scoped per-service per bucket). OTA firmware (Fase 10) **belum** menerapkan verifikasi signature (ED25519/ECDSA) — endpoint `/api/ota` hanya mengecek `checkAuthToken()` web portal. Ketiganya tercatat sebagai remediasi terbuka, bukan selesai.
 | Webhook Auth | Setiap webhook endpoint eksternal memerlukan secret token untuk verifikasi | ⬜ |
 
 ### Detail Matriks Otorisasi (RBAC Matrix)
@@ -604,14 +608,54 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 
 ### Target Prometheus Saat Ini
 
+> **Total: 31 target** (`count(up)` = 31, 0 DOWN) — sesuai realita live per `logs.md` §13 #10 / #4.
+> Sesi **C/D belum di-merge**, sehingga angka di bawah menggunakan *current reality* (compose + `infra/prometheus/prometheus.yml` on-disk), bukan snapshot branch lain. Keputusan konsolidasi ADR-004/ADR-005 (Redis & MariaDB diekspor via exporter tunggal) **tidak diubah** — jumlah *instance database* tetap 14 (lihat §"Database Isolation"), sedangkan jumlah *target Prometheus* adalah 31 karena beberapa target merepresentasikan pelabelan per-DB (mis. `redis-shared` = 4 series DB0–DB3).
+
+**A. Self / Gateway (2)**
 | Target | Endpoint | Status |
 |---|---|---|
 | `prometheus` | `localhost:9090` | ✅ UP |
+| `kong` (instance `kong-gateway`) | `kong:8001/metrics` | ✅ UP |
+
+**B. Application Services (11)**
+| Target | Endpoint | Status |
+|---|---|---|
 | `auth-service` | `auth:8080/metrics` | ✅ UP |
 | `module-service` | `module:8080/metrics` | ✅ UP |
 | `analytics-service` | `analytics:8080/metrics` | ✅ UP |
 | `wsgateway-service` | `wsgateway:8090/metrics` | ✅ UP |
-| `kong` | `kong:8001/metrics` | ✅ UP |
+| `control-service` | `control:8080/metrics` | ✅ UP |
+| `stream-service` | `stream:8080/metrics` | ✅ UP |
+| `audit-service` | `audit:8080/metrics` | ✅ UP |
+| `alert-service` | `alert:8080/metrics` | ✅ UP |
+| `notification-service` | `notification:8080/metrics` | ✅ UP |
+| `export-service` | `export:8080/metrics` | ✅ UP |
+| `ml-service` | `ml:8080/metrics` | ✅ UP |
+
+**C. Database Exporters (11)**
+| Target | Endpoint | Status |
+|---|---|---|
+| `mariadb-auth` | `mysqld-exporter-all:9104` | ✅ UP |
+| `mariadb-control` | `mysqld-exporter-all:9105` | ✅ UP |
+| `mariadb-module` | `mysqld-exporter-all:9106` | ✅ UP |
+| `mariadb-stream` | `mysqld-exporter-all:9107` | ✅ UP |
+| `mariadb-audit` | `mysqld-exporter-all:9108` | ✅ UP |
+| `mariadb-alert` | `mysqld-exporter-all:9109` | ✅ UP |
+| `mariadb-notification` | `mysqld-exporter-all:9110` | ✅ UP |
+| `mariadb-ml` | `mysqld-exporter-all:9111` | ✅ UP |
+| `redis-shared` (DB: `module`/`alert`/`notification`/`export`) | `redis-exporter:9121` ×4 series | ✅ UP |
+| `timescaledb-module` | `postgres-exporter-all:9187` | ✅ UP |
+| `timescaledb-analytics` | `postgres-exporter-all:9188` | ✅ UP |
+
+**D. Broker / Infra Exporters (5)**
+| Target | Endpoint | Status |
+|---|---|---|
+| `mosquitto` (instance `mosquitto-broker`) | `mosquitto-exporter:9234` | ✅ UP |
+| `nats` (instance `nats-server`) | `nats-exporter:7777` | ✅ UP |
+| `node-exporter` (instance `host-node`) | `node-exporter:9100` | ✅ UP |
+| `cadvisor` (instance `host-containers`) | `cadvisor:8080` | ✅ UP |
+
+> Catatan: `MinIO` (403, butuh S3-signed auth) dan `MediaMTX` (belum enable `/metrics`) **sengaja belum di-scrape** agar pipeline CCTV live tidak terganggu — menjadi follow-up bila diinginkan (lihat `logs.md` §13 #5).
 
 ---
 
@@ -622,7 +666,7 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | ✅ P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah bisa dikontrol (manual + otomatis + emergency/resume) |
 | ✅ P1 | Fase 5 | Alert Service | 3-5 hari | Threshold evaluation + notifikasi real-time via `system.status` (WS) |
 | 🔴 P1 | Fase 8 | Audit Service | 1-2 hari | Quick win: data audit sudah dipublish tapi tidak di-consume |
-| 🔴 P1 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna (blocker fungsional) |
+| ✅ P1 | Fase 5 | Notification Service | 3-5 hari | ✅ Selesai — subscriber `alert.triggered`/`alert.resolved` (Telegram/Email/Push), log `mariadb-notification` + queue `redis-shared` DB2 |
 | 🟡 P2 | Fase 3 | WS-Gateway JWT Auth | ✅ Selesai | Celah keamanan WS sudah ditutup |
 | 🟡 P2 | Fase 9 | Dashboard Device Management | 2-3 hari | File sudah ada, tinggal integrasi |
 | 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | ✅ Selesai |
@@ -653,7 +697,7 @@ Sesuai AGENTS.md (wajib unit test pada layer `service`/`repository`), berikut st
 |---|---|---|---|
 | NATS | Single instance | Single + JetStream | **Cluster 3-node** (R≥2) |
 | Kong | Single | Single | 2+ replica + LB |
-| DB | 17 instance lokal | Sama | Primary-replica (kritis) + backup |
+| DB | 14 instance lokal (konsolidasi Redis ADR-004) | Sama | Primary-replica (kritis) + backup |
 | MinIO | Erasure-coding lokal | Sama | Multi-drive + `mc mirror` |
 | Observability | Prometheus + node-exporter | Sama + tracing | Sama + alerting |
 | Secrets | `.env` lokal | Vault / env ter-enkripsi | Same + rotation |
@@ -699,17 +743,18 @@ Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butu
 
 ## ✅ Kriteria Selesai
 
-- Semua service dan 17 instance database dalam status `healthy` setelah `docker compose up -d`
+- Semua service dan 14 instance database dalam status `healthy` setelah `docker compose up -d`
 - Tidak ada service yang mengakses database milik service lain (verifikasi via environment variables dan network policy)
 - End-to-end flow ESP32 → Module → NATS → WebSocket → Dashboard berjalan ✅
 - End-to-end flow Module → Analytics → Dashboard berjalan ✅
-- End-to-end flow Alert → Notification → Webhook (eksternal) berjalan
+- End-to-end flow Alert → Notification berjalan ✅ (subscriber `alert.triggered`/`alert.resolved` → `mariadb-notification` + queue `redis-shared` DB2; channel Telegram/Email/Push disimulasikan sukses di DevMode)
+- End-to-end flow Notification → Export berjalan ✅ (Export Service query `timescaledb-module` + emit CSV via Kong `/export`; File export siap dikonsumsi dashboard)
 - End-to-end flow Control → ESP32 berjalan
 - End-to-end flow Stream → ML → MinIO berjalan
 - End-to-end flow Metrics: semua service → NATS → Prometheus → /metrics berjalan
 - Kong JWT validation berfungsi pada semua protected routes ✅
 - WebSocket Gateway dengan JWT authentication ✅
-- Webhook Service dapat mengirim event ke endpoint eksternal dengan retry mechanism
+- Webhook Service dapat mengirim event ke endpoint eksternal dengan retry mechanism — **Future P4** (belum dikerjakan di TA)
 - Semua service memiliki unit test dengan minimal 80% code coverage
 
 ---
@@ -755,7 +800,7 @@ Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butu
 |---|---|---|
 | Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | ✅ Selesai (2026-07-13): upgrade ke JetStream — stream `TELEMETRY_BATCH` (file storage, retention 24h) + durable consumer `analytics-batch` di Analytics, replay otomatis saat restart |
 | WS tanpa autentikasi | Data real-time bisa diakses siapa saja | ✅ Sudah: JWT handshake di WS-Gateway |
-| 17 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal — ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
+| 14 instance database (turun dari 17 setelah konsolidasi Redis ADR-004) | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal — ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key); ✅ Redis dikonsolidasi jadi 1 instance bersama `redis-shared` (ADR-004) |
 | Tidak ada backup strategy | Data hilang jika container crash | ✅ Ditambah tabel DR & Backup Strategy (RPO/RTO per asset + cron dump) di Catatan Teknis |
 | NATS/Kong single-instance SPOF | Event bus / gateway mati → sistem lumpuh | ✅ Ditambah seksi HA & Resilience (NATS 3-node cluster + JetStream R=2, Kong 2+ replica di prod) |
 | Saga DLQ/tracing hanya narasi | Kegagalan terdistribusi tak terinvestigasi | ⬜ Perlu implementasi `saga.*.dlq` consumer (Audit) + `trace_id` (lihat seksi Saga) |

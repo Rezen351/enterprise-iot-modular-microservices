@@ -747,3 +747,17 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 4 | ⬜ | **Implementasi (menyusul):** buat `infra/mysqld-exporter/run-all.sh` + `infra/postgres-exporter/run-all.sh` (jalankan N proses exporter per port); edit `docker-compose.yml` (3 container pengganti 11 lama, mount semua `my.*.cnf` + DSN env per port); `docker compose up -d --remove-orphans`; verifikasi tiap target UP di Prometheus `/targets`. |
 
 **Keputusan Teknis:** Exporter adalah side-car metrik ringan — menggabungnya per tipe tidak mengurangi cakupan/metrik (tiap DB tetap punya target & label sendiri di Prometheus). cAdvisor/node-exporter/mosquitto-exporter/nats-exporter/kong sudah 1 masing-masing (shared). Total container exporter 11 → 3 (gain -8).
+
+---
+
+### Update Testing Plan — Penyelarasan dgn Fitur planning.md & Sistem Aktual
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Sinkronisasi `docs/testing-plan-agent.md` dengan `planning.md` v2.16 + `docker-compose.yml` on-disk.** Hapus "Known Infrastructure Gaps" yang sudah stale (Notification/Export kini ADA di compose; Redis `redis-shared` + exporter konsolidasi ADR-004/ADR-005 SUDAH terapan). |
+| 2 | ✅ | **Tambah §13 Monitor Service** (CLI `docker stats`, halaman Version/Security) — sebelumnya tidak ada section padahal `monitor` ✅ di roadmap. Checklist fitur + keamanan (belum diuji, `[ ]`). |
+| 3 | ✅ | **Renumber & perbarui §14 Infrastruktur:** Redis/Exporter/MinIO/HLS disesuaikan status konsolidasi (31 target Prometheus, bucket private, HLS Kong-only). Mosquitto `allow_anonymous` & MinIO scoped key ditandai 🟡 open (O1/O2). |
+| 4 | ✅ | **Tutup GAP-1/2/3:** §7/§11/§16 diperbarui — WS `/ws/system-status`, `?token=` WS, & Export di-UI SUDAH SELESAI (bukan gap lagi). Matriks Prioritas diubah jadi status ✅ + item cross-cutting baru. |
+| 5 | ✅ | **Tambah §17 Cross-Cutting TA-Scale Regression:** DLQ Saga via NATS Advisory (P1), Transactional Outbox (P2), CI/CD GitHub Actions (P2), Unit Test 80% (P2), CCTV→ML full path (P3) — semua ⬜ (belum dikerjakan) + E2E5 diperluas path `from-stream`. |
+
+**Keputusan Teknis:** testing-plan-agent.md kini mencerminkan realitas sistem (13 service + Monitor + firmware + 3 infra block) dan roadmap TA-Scale. Checklist service 1–12 tetap `[x]` (lulus), §13/§17 masih `[ ]` (perlu diuji/implementasi). Tidak ada perubahan kode — murni dokumentasi pengujian.

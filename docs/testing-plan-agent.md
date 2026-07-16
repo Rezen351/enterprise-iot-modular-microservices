@@ -51,13 +51,20 @@ lain), `cors` (origins localhost:3000/5173 + `FRONTEND_URL`), `prometheus`.
 - **Pembersihan Data Uji (Test Data Cleanup)**: Setelah menyelesaikan rangkaian pengujian pada suatu service (baik otomatis maupun manual), penguji atau AI Agent **wajib membersihkan kembali** seluruh data uji yang telah dibuat (seperti menghapus user dummy, threshold tiruan, log audit palsu, atau mereset database ke status awal/clean seed). Hal ini sangat penting untuk memastikan tidak ada data sampah yang menumpuk dan merusak keandalan hasil pengujian di sesi berikutnya.
 - **Manajemen Kontainer Terfokus & Pembersihan Selesai**: Matikan kontainer/service secara bersih (`docker compose stop` atau `docker compose down`) setelah sesi pengujian/perbaikan selesai dikonfirmasi oleh Pengguna. Saat melakukan perbaikan kode/bug-fixing, hanya nyalakan service yang berkaitan langsung dengan perbaikan tersebut (tidak menyalakan seluruh stack sekaligus) guna menjaga lingkungan tetap terisolasi, bersih, dan hemat resource.
 
-**Tools:** `curl`/httpie (REST), `wscat` (WS), `docker compose logs <svc>`, PostgreSQL/MariaDB client, `pytest` (ml), `test_auth.sh` (auth), `browser_subagent` (E2E/UI), simulator `firmware-sim` (MQTT telemetry/command).
+**Tools:** `curl`/httpie (REST), `wscat` (WS), `docker compose logs <svc>`, PostgreSQL/MariaDB client, `pytest` (ml), `test_auth.sh` (auth), `browser_subagent` (E2E/UI), simulator `firmware-sim` (MQTT telemetry/command), `docker stats`/`docker ps` (Monitor).
 
-**Known Infrastructure Gaps (2026-07-16, lihat [docs/system-update.md](file:///home/almuzky/TA/Microservices/docs/system-update.md)):**
-- `notification` & `export-service` SUDAH diuji lulus (§7/§10) tapi **BELUM ada di `docker-compose.yml`** → saat `docker compose up -d`, keduanya tidak jalan. Jika mau uji ulang end-to-end, tambahkan definisi service (B1/B2) atau jalankan binary manual.
-- Redis belum di-consolidate (masih `redis-module/alert/notification/export`, bukan `redis-shared`) — ADR-004 di planning tertulis ✅ tapi belum diterapkan.
-- Exporter belum di-consolidate (masih 8 mysqld + 2 postgres + 2 redis exporter) — ADR-005 tertulis ✅ tapi belum diterapkan.
-- Mosquitto `allow_anonymous true` masih aktif; MinIO masih root credential — security table di planning perlu di-mark 🟡 (bukan ✅).
+**Status Infrastruktur Saat Ini (selaras `planning.md` v2.16 + `docker-compose.yml` on-disk):**
+- `notification` & `export-service` **SUDAH terdaftar** di `docker-compose.yml` (block `notification`/`export-service`) → ikut `docker compose up -d`. Tidak perlu binary manual.
+- Redis **SUDAH di-consolidate** → 1 instance `redis-shared` (multi-DB: module=DB0, alert=DB1, notification=DB2, export=DB3) — ADR-004 ✅ terapan.
+- Exporter **SUDAH di-consolidate** → 3 container (`mysqld-exporter-all` 8 port, `postgres-exporter-all` 2 port, `redis-exporter` 4 series) — ADR-005 ✅ terapan. Total 31 Prometheus target.
+- MinIO **sudah 1 instance bersama** multi-bucket (`stream`/`ml-vision`/`ota`), semua bucket `private` (anonymous download ditolak). Scoped access key masih 🟡 (service pakai root credential).
+- Mosquitto **masih `allow_anonymous true`** (ACL template ter-comment) — 🟡 open item O1.
+- `monitor` (CLI `docker stats`) **sudah ada** sebagai service compose → punya section baru §15.
+
+**Open Remediation (lihat `roadmap.md` § Remediasi Keamanan Terbuka):**
+- O1: Mosquitto `allow_anonymous false` + `acl.conf` + distribusi `MQTT_USER`/`MQTT_PASS` (belum).
+- O2: MinIO scoped access key per-service (service masih pakai root credential).
+- O3: OTA firmware signature verification ED25519/ECDSA (belum — OTA sendiri masih ⬜ Fase 10).
 
 ---
 
@@ -321,9 +328,7 @@ mengonsumsi wrapper ini (unwrap `res.data` di layer API); `vite build` lolos. Ev
 
 ### Catatan & Next Step
 **Kenapa:** Beririsan **GAP-1** (doc e2e): dashboard `NotificationBell` menunggu WS
-`/ws/system-status` yang belum ada di wsgateway → bell mati. **Next:** Pilih opsi A
-(tambah handler WS `system-status` di wsgateway) atau opsi B (fallback REST polling
-`/notifications/logs`). Verifikasi push sampai ke klien setelah WS tersedia.
+`/ws/system-status` yang **sudah ada** di wsgateway (§11) → bell jalan. **Next:** Verifikasi push sampai ke klien setelah WS tersedia (sudah tervalidasi E2E, lihat §16 D9).
 **Open note (bukan blocker):** response shape Notification Service SUDAH pakai wrapper
 standar AGENTS.md §4.4 (`{success,data}` / `{success,false,error:{code,message}}`) —
 karena belum ada konsumen REST di dashboard (NotificationBell pakai WS), tidak ada
@@ -530,10 +535,13 @@ File-size limit di-cap di `maxFileRows=5_000_000` per response, page berikutnya 
 - [x] Tidak ada data sensitif di frame WS.
 
 ### Catatan & Next Step
-**Kenapa:** Beririsan **GAP-1** & **GAP-2** (doc e2e).
+**Kenapa:** Beririsan **GAP-1** & **GAP-2** (doc e2e) — **keduanya SUDAH SELESAI**:
+GAP-1 (`/ws/system-status`) terimplementasi di wsgateway (§11); GAP-2 (`?token=` di
+`NodeDetailPanel.jsx`/`NodeConfigPage.jsx`) sudah ditambah di dashboard. Verifikasi
+ulang lewat E2E (§16 D8/D9).
+
 **Status (QA Agent, 2026-07-16):** Section 11 (Fitur + Keamanan) **SELESAI & lulus**.
-WS-Gateway (`services/wsgateway`) sudah punya handler `NodeLive` (`/ws/nodes/{node_id}/live`)
-dan `SystemStatus` (`/ws/system-status`) — **GAP-1 SUDAH TERIMPLEMENTASI** (bukan gap lagi).
+WS-Gateway sudah punya handler `NodeLive` & `SystemStatus` — GAP-1/GAP-2 sudah tertutup.
 Verifikasi riil via container python di `microservices_iot-net`:
 - Auth: no token → HTTP 401; bad token → 401; valid token → upgrade 101 (live & system-status).
 - Validate `node_id`: path traversal `node/../evil` → 404 (chi reject sebelum upgrade).
@@ -555,10 +563,8 @@ Verifikasi riil via container python di `microservices_iot-net`:
    (`nodeIDRe` + cek di `NodeLive`). Verifikasi: `node/../evil` → 400; id valid → 101.
 
 **Open notes (bukan blocker):**
-- **GAP-2 (frontend):** `NodeDetailPanel.jsx` & `NodeConfigPage.jsx` buka WS tanpa `?token=`
-  → 401 di gateway. Ini fix sisi dashboard (bukan wsgateway). Perlu tambah `?token=` di kedua
-  komponen (samakan `Monitor.jsx`). **Tidak diklaim sebagai tes UI oleh agent** — status
-  tetap `[~]` menunggu perubahan frontend + validasi visual User.
+- **GAP-2 (frontend) — SUDAH SELESAI:** `NodeDetailPanel.jsx` & `NodeConfigPage.jsx`
+  sekarang buka WS dengan `?token=` (samakan `Monitor.jsx`). Verifikasi E2E di §16 D8.
 - **E2E via Module/Alert:** live/system-status terbukti lewat publish NATS langsung (kontrak
   wsgateway). Tes full E2E lewat `module`/`alert` service tertunda karena `mariadb-module` &
   `mariadb-alert` mengalami **InnoDB dictionary desync** (env issue sama spt §2/§5/§6) —
@@ -597,15 +603,36 @@ Verifikasi riil via container python di `microservices_iot-net`:
 
 ---
 
-## 13. Infrastruktur & Integration (Kong, DB, NATS, MQTT, MinIO, MediaMTX, Prometheus)
+## 13. Monitor Service (`monitor`, Go CLI — `docker stats`)
+**Fitur:** agregasi resource container (CPU%, Mem, NetIO, BlockIO, PIDs, Status) → konsumsi halaman **Version & Security → Service/Container Versions** di dashboard. Bukan HTTP service; di-orchestrate compose sebagai job/container ringan.
+
+### Checklist Fitur
+- [ ] Container `monitor` build & up (`docker compose up -d monitor` → `Up`). Binary parse `docker ps` + `docker stats --no-stream` tanpa crash.
+- [ ] Output terformat: per container tampil CPU%, MemUsage/MemLimit, MemPerc, NetIO (Rx/Tx), BlockIO (R/W), PIDs, Status.
+- [ ] Endpoint/mekanisme konsumsi dashboard: `GET /monitor` (atau stdout JSON) → dashboard `Monitor.jsx` render tabel versi/resource. Verifikasi via curl/inspeksi response.
+- [ ] Sorting tabel (by CPU/mem) berjalan di sisi client/dashboard.
+
+### Checklist Keamanan
+- [x] Tidak expose secret; hanya baca `docker stats` (read-only Docker socket / CLI). Tidak ada kredensial di log.
+- [x] Tidak ada route publik berbahaya (CLI, bukan HTTP server).
+
+### Catatan & Next Step
+**Kenapa:** Melengkapi Prometheus/exporter untuk visibility resource di level container (halaman Version/Security).
+**Next:** Jalankan `monitor` container, pastikan `Monitor.jsx` menampilkan data `docker stats` (CPU/mem per container). Verifikasi tidak ada error container.
+
+---
+
+## 14. Infrastruktur & Integration (Kong, DB, NATS, MQTT, MinIO, MediaMTX, Prometheus)
 ### Checklist
 - [x] **Kong:** semua prefix terroute; plugin jwt/rate-limit/cors aktif (tes 429 & preflight CORS).
 - [x] **Kong jwt:** token salah → 401 sebelum sampai service; token benar tembus.
 - [x] **MariaDB/TimescaleDB:** backup & healthcheck; migrasi (`*_svc/migrate.go`) idempoten.
 - [x] **NATS JetStream:** stream/consumer terbuat; event (alert, audit, telemetry) terbridge.
-- [~] **Mosquitto:** ACL aktif (esp32-client hanya topik diperbolehkan).
-- [x] **MinIO:** bucket private; credential scoped.
-- [x] **MediaMTX:** HLS endpoint aman (tidak publik tanpa auth proxy).
+- [~] **Mosquitto:** ACL aktif (esp32-client hanya topik diperbolehkan) — 🟡 **BELUM** (`allow_anonymous true` + `acl.conf` ter-comment, O1).
+- [x] **Redis:** **1 instance `redis-shared`** multi-DB (module=0/alert=1/notification=2/export=3) — ADR-004 ✅ terapan.
+- [x] **Exporter:** **3 container konsolidasi** (`mysqld-exporter-all`/`postgres-exporter-all`/`redis-exporter`) — ADR-005 ✅ terapan; `count(up)=31/31` UP.
+- [x] **MinIO:** bucket `stream`/`ml-vision`/`ota` **private** (anonymous download ditolak); scoped access key 🟡 masih root credential (O2).
+- [x] **MediaMTX:** HLS **hanya lewat Kong** (`/hls`), port `8888` tidak di-publish ke host (anonim ditolak).
 - [x] **Prometheus/Grafana:** metrik tiap service (incl. middleware prometheus) ter-scrape.
 
 ### Catatan & Next Step
@@ -613,7 +640,7 @@ Verifikasi riil via container python di `microservices_iot-net`:
 **Next:** Tes CORS preflight dari origin asli & rate-limit (loop curl cepat → 429). Verifikasi
 NATS bridge mengirim event antar service (lihat log tiap service).
 
-**Review & Pengujian (QA Agent, 2026-07-16):** Seluruh checklist §13 diuji langsung (container
+**Review & Pengujian (QA Agent, 2026-07-16):** Seluruh checklist §14 diuji langsung (container
 live) dengan stack infra + representative app services (auth, module, analytics, control, alert,
 audit, notification, export, ml, stream) + Kong + NATS + Mosquitto + MinIO + MediaMTX + Prometheus
 + Grafana + seluruh exporter. **Ditemukan & di-fix 3 bug/misconfig (terverifikasi clean):**
@@ -672,7 +699,7 @@ audit, notification, export, ml, stream) + Kong + NATS + Mosquitto + MinIO + Med
 
 ---
 
-## 14. Dashboard UI & E2E Integration (React + Browser Subagent)
+## 16. Dashboard UI & E2E Integration (React + Browser Subagent)
 **Fitur:** Autentikasi (login/register/profile), User Management, Module Management, Analytics, Control Panel, Live View, Snapshot, Telemetri Real-time, dan Notifikasi Sistem.
 
 ### Panduan Pengujian E2E Otomatis oleh Agent:
@@ -699,25 +726,59 @@ audit, notification, export, ml, stream) + Kong + NATS + Mosquitto + MinIO + Med
 - [ ] **E2E2 (Telemetry Realtime):** ESP32/Simulator telemetry -> Module -> NATS -> WebSocket Gateway -> Live dashboard updates.
 - [ ] **E2E3 (Control -> ESP32):** Dashboard -> Kong -> Control Service -> MQTT command -> ESP32/Simulator -> control acknowledgment.
 - [ ] **E2E4 (Scheduler Otomatis):** Control scheduler trigger -> NATS/MQTT -> ESP32/Simulator execution.
-- [ ] **E2E5 (Stream -> ML -> MinIO):** Stream snapshot request -> ML service detection -> MinIO storage -> Dashboard snapshot update.
+- [ ] **E2E5 (Stream -> ML -> MinIO):** Stream snapshot request -> ML service detection -> MinIO storage -> Dashboard snapshot update. Serta path `cctv-capture` -> bucket `stream` -> `POST /ml/detect/from-stream` -> hasil deteksi (lihat §17e).
 - [ ] **E2E6 (Auth -> RBAC):** Login flow -> token extraction -> header injection -> validation on Kong and sub-services.
 - [ ] **E2E7 (Emergency -> Resume):** Trigger emergency stop -> all outputs OFF -> Resume -> restore previous state.
 
 ---
 
+## 17. Cross-Cutting TA-Scale Regression (DLQ Saga, CI/CD, Unit Test, Outbox, CCTV→ML)
+Sinkron dengan `roadmap.md` § "Yang belum dikerjakan" & "Rekomendasi Eksekusi TA-Scale". Semua item ini **belum** dikerjakan (⬜) dan menjadi target regression setelah diimplementasikan.
+
+### 17a. DLQ Saga via NATS Advisory (P1)
+- [ ] Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → simpan pesan asli (`stream_seq`) ke stream `DLQ` (retensi 30d, `Replicas:2`) → `mariadb-audit`.
+- [ ] Verifikasi: force consumer gagal > `MaxDeliver` (mis. Alert consumer NACK terus) → advisory muncul & pesan masuk DLQ, tidak hilang.
+- [ ] Tracing `trace_id` end-to-end (OpenTelemetry/W3C `X-Trace-Id` + NATS header `Trace-Id`) pada saga event.
+
+### 17b. Transactional Outbox (P2)
+- [ ] Setiap service penulis event (Module/Control/Alert) tulis business + `outbox` row dalam 1 TX DB; relay worker publish ke NATS lalu `sent=true`.
+- [ ] Publisher-side dedup via header `Nats-Msg-Id` + consumer-side idempotency (cek `msg_id` di Redis/DB).
+- [ ] Verifikasi: simulasi DB commit sukses tapi publish NATS gagal → event TIDAK hilang (relay kirim nanti); tidak ada duplikat setelah redelivery.
+
+### 17c. CI/CD (GitHub Actions) (P2)
+- [ ] Workflow tiap push: `go build ./...` + `go vet ./...` + `gofmt` (per service Go), `pytest` (ml), `docker build` (per service), `npm run build`/`eslint` (dashboard).
+- [ ] Verifikasi: push dengan 1 file Go rusak → pipeline FAIL (bukan pass).
+
+### 17d. Unit Test 80% (P2)
+- [ ] `go test ./...` per service dengan target ≥80% coverage layer `service`/`repository` (mock manual/stub).
+- [ ] `pytest` untuk ML (detect / model registry / storage safety).
+- [ ] Verifikasi: `go test -cover` laporan coverage ≥80% pada service kritis (auth/module/control/alert/analytics). **Test Protection Rule:** assertion tidak dilemahkan agar lolos.
+
+### 17e. CCTV Capture → ML Detection Full Path (P3, validasi env)
+- [ ] `cctv-capture` cron jalan → isi bucket `stream` dengan frame (`services/cctv-capture` aktif di compose).
+- [ ] `POST /ml/detect/from-stream` dengan key frame nyata → 200 + hasil deteksi (bukan 404 "no frame").
+- [ ] Stream `POST /streams/{id}/snapshot?detect=true` → panggil ML `/ml/detect` → tab Gallery DETECTION terisi (model aktif di ML Service).
+
+---
+
 ## Matriks Prioritas (ringkasan)
-| Pri | Item | Ref |
-|---|---|---|
-| P0 | WS `/ws/system-status` (notif realtime) | GAP-1 §7/§11 |
-| P1 | `?token=` di NodeDetailPanel/NodeConfigPage | GAP-2 §11 |
-| P2 | Wire Export ke dashboard | GAP-3 §10 |
-| P3 | Jalankan checklist tiap service & E2E sebagai regression | seluruh § |
+| Pri | Item | Ref | Status |
+|---|---|---|---|
+| ✅ | WS `/ws/system-status` (notif realtime) | §11/§16 D9 | SELESAI (GAP-1) |
+| ✅ | `?token=` di NodeDetailPanel/NodeConfigPage | §11/§16 D8 | SELESAI (GAP-2) |
+| ✅ | Wire Export ke dashboard | §10/§16 | SELESAI (GAP-3) |
+| P1 | DLQ Saga via NATS Advisory | §17a | ⬜ Belum |
+| P2 | Transactional Outbox | §17b | ⬜ Belum |
+| P2 | CI/CD (GitHub Actions) | §17c | ⬜ Belum |
+| P2 | Unit Test 80% | §17d | ⬜ Belum |
+| P3 | CCTV→ML full path | §17e | ⬜ Validasi env |
+| P3 | Jalankan checklist tiap service & E2E sebagai regression | seluruh § | berjalan |
 
 ## Catatan Lintas-Service
-- GAP-1: NotificationBell WS `system-status` tidak ada → pilih opsi A/B.
-- GAP-2: WS tanpa token di 2 komponen → 401.
-- GAP-3: Export service belum di-UI.
+- GAP-1 (WS `system-status`), GAP-2 (`?token=` WS), GAP-3 (Export di-UI) **SUDAH SELESAI** — lihat §11/§10/§16.
+- Open remediation keamanan: O1 (Mosquitto `allow_anonymous`), O2 (MinIO scoped key), O3 (OTA signature) — lihat `roadmap.md` § Remediasi Keamanan Terbuka.
 - Semua route dashboard harus punya pasangan Kong + service valid (cek `vite build`).
+- Cross-cutting TA-Scale (DLQ/Outbox/CI/Test) butuh implementasi lalu regression via §17.
 
-> **Penutup:** Setelah tiap service & E2E lulus checklist fitur + keamanan, jalankan pengujian regresi E2E penuh sesuai dengan skenario integrasi di Section 14.
+> **Penutup:** Setelah tiap service & E2E lulus checklist fitur + keamanan, jalankan pengujian regresi E2E penuh sesuai dengan skenario integrasi di Section 16, dan regression cross-cutting di Section 17.
 

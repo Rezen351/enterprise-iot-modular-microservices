@@ -7,6 +7,16 @@
 
 ## 2026-07-16
 
+### Docs Sync — Hapus §13 Monitor Service (stale)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Konfirmasi user: service `monitor` memang sengaja dihapus (commit `b444390`). §13 di `docs/testing-plan-agent.md` dihapus seluruhnya (checklist `[!]` + block "Bug ditemukan") agar doc tidak merujuk service yang tidak ada. |
+| 2 | ✅ | Ganti §13 dengan catatan "REMOVED" — visibility resource container kini via `cadvisor` + `node-exporter` (Prometheus, ter-scrape Grafana), selaras `planning.md`. |
+| 3 | ✅ | Perbaiki KONTEKS line 62 (tidak lagi menyebut §13 stale `[!]`). Referensi `Monitor.jsx` di §4/§11 tetap valid (komponen dashboard telemetry/node WS, bukan service CLI monitor). |
+
+**Keputusan Teknis:** `testing-plan-agent.md` kini konsisten dengan `planning.md` — tidak ada section yang merujuk service terhapus. Tidak ada perubahan kode.
+
 ### QA — Section 14 (Infrastructure & Integration) Re-verifikasi langsung (QA Agent)
 
 | # | Status | Aktivitas |

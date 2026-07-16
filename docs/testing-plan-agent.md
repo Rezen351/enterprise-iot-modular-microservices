@@ -59,7 +59,7 @@ lain), `cors` (origins localhost:3000/5173 + `FRONTEND_URL`), `prometheus`.
 - Exporter **SUDAH di-consolidate** → 3 container (`mysqld-exporter-all` 8 port, `postgres-exporter-all` 2 port, `redis-exporter` 4 series) — ADR-005 ✅ terapan. Total 31 Prometheus target.
 - MinIO **sudah 1 instance bersama** multi-bucket (`stream`/`ml-vision`/`ota`), semua bucket `private` (anonymous download ditolak). Scoped access key masih 🟡 (service pakai root credential).
 - Mosquitto **masih `allow_anonymous true`** (ACL template ter-comment) — 🟡 open item O1.
-- `monitor` (CLI `docker stats`) **SUDAH DI-REMOVE** (commit `b444390`, 2026-07-15); visibility resource container kini via `cadvisor` + `node-exporter` (Prometheus). §13 di test plan kini stale dan ditandai `[!]` (service tidak ada).
+- `monitor` (CLI `docker stats`) **SUDAH DI-REMOVE** (commit `b444390`, 2026-07-15); visibility resource container kini via `cadvisor` + `node-exporter` (Prometheus). §13 di test plan telah dihapus agar tidak merujuk service yang tidak ada.
 
 **Open Remediation (lihat `roadmap.md` § Remediasi Keamanan Terbuka):**
 - O1: Mosquitto `allow_anonymous false` + `acl.conf` + distribusi `MQTT_USER`/`MQTT_PASS` (belum).
@@ -728,26 +728,8 @@ Verifikasi riil via container python di `microservices_iot-net`:
 
 ---
 
-## 13. Monitor Service (`monitor`, Go CLI — `docker stats`)
-**Fitur:** agregasi resource container (CPU%, Mem, NetIO, BlockIO, PIDs, Status) → konsumsi halaman **Version & Security → Service/Container Versions** di dashboard. Bukan HTTP service; di-orchestrate compose sebagai job/container ringan.
-
-### Checklist Fitur
-- [!] Container `monitor` build & up (`docker compose up -d monitor` → `Up`). Binary parse `docker ps` + `docker stats --no-stream` tanpa crash. **FAIL:** service `monitor` tidak ada — di-remove di commit `b444390` (`chore(monitor): remove monitor service and its scrape job`); tidak ada `services/monitor`, tidak ada block `monitor` di `docker-compose.yml`, tidak ada image. `docker compose up -d monitor` → `service "monitor" not found`. Lihat "Bug ditemukan".
-- [!] Output terformat: per container tampil CPU%, MemUsage/MemLimit, MemPerc, NetIO (Rx/Tx), BlockIO (R/W), PIDs, Status. **FAIL:** tidak ada binary/service yang menghasilkan output tersebut. Monitoring resource container level sekarang via `cadvisor` + `node-exporter` (Prometheus), bukan CLI `monitor`.
-- [!] Endpoint/mekanisme konsumsi dashboard: `GET /monitor` (atau stdout JSON) → dashboard `Monitor.jsx` render tabel versi/resource. Verifikasi via curl/inspeksi response. **FAIL:** tidak ada endpoint `/monitor` (bukan HTTP service, dan service sudah di-remove). `Monitor.jsx` saat ini adalah halaman telemetry node WS/health, BUKAN tabel resource container `docker stats`.
-- [!] Sorting tabel (by CPU/mem) berjalan di sisi client/dashboard. **FAIL:** tidak ada tabel resource container di dashboard untuk di-sort (fitur dependen step 3).
-
-### Checklist Keamanan
-- [x] Tidak expose secret; hanya baca `docker stats` (read-only Docker socket / CLI). Tidak ada kredensial di log. (Masih akurat sebagai prinsip; service memang tidak expose secret.)
-- [x] Tidak ada route publik berbahaya (CLI, bukan HTTP server). (Masih akurat; service memang bukan HTTP server.)
-
-### Catatan & Next Step
-**Kenapa:** Melengkapi Prometheus/exporter untuk visibility resource di level container (halaman Version/Security).
-**Status:** Service `monitor` (CLI `docker stats`) **sudah di-remove secara sengaja** (commit `b444390`, 2026-07-15). `planning.md:183` menandai Monitor sebagai "⬜ Dihapus (service di-remove)" dan `planning.md:65` memindahkan visibility resource container ke `cadvisor` + `node-exporter` (Prometheus). Section 13 ini stale: ditambahkan kembali di commit `a7ed1ee` namun merujuk service yang sudah tidak ada, dan kontradiktif dengan `planning.md`.
-**Next (opsional, di luar scope QA ini):** Jika fitur container-resource di dashboard masih diinginkan, pilih salah satu: (a) re-implement `services/monitor` (Go CLI) + compose block + endpoint `/monitor` + tabel di `Monitor.jsx`; atau (b) ganti dengan dashboard cAdvisor/Prometheus yang sudah jalan. Atau hapus §13 ini agar doc konsisten dengan `planning.md`.
-
-### Bug ditemukan
-1. [!] **§13 Monitor Service stale & kontradiktif — service `monitor` sudah di-remove** — Testing plan §13 (ditambah `a7ed1ee`) mengharuskan `docker compose up -d monitor` + parsing `docker ps`/`docker stats` + endpoint `/monitor`, padahal service tersebut **dihapus** di `b444390` (dan `planning.md:183`/`planning.md:65` sudah mencatat removal + penggantian via cAdvisor/node-exporter). **Fix (QA):** Tidak dibuat ulang (di luar scope, dan removal sengaja). Doc diperbaiki: baris 62 KONTEKS ("`monitor` ... sudah ada ... section baru §15") dikoreksi karena keliru; 4 step fitur ditandai `[!]` (fail, service tidak ada). Catatan bug + rekomendasi tercatat di `logs.md`. Verifikasi: `grep "monitor" docker-compose.yml` → hanya komentar NATS; `ls services/monitor` → tidak ada; `docker compose up -d monitor` → error "service not found".
+## 13. Monitor Service — REMOVED
+Service `monitor` (CLI `docker stats`) **sudah di-remove secara sengaja** (commit `b444390`, 2026-07-15). `planning.md` menandai Monitor sebagai dihapus dan memindahkan visibility resource container ke `cadvisor` + `node-exporter` (Prometheus, ter-scrape ke Grafana). Section ini dihapus dari testing plan agar tidak merujuk service yang tidak ada. Resource container kini dipantau via exporter tersebut, bukan CLI `monitor`.
 
 ---
 

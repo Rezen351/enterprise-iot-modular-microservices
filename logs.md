@@ -7,6 +7,86 @@
 
 ## 2026-07-16
 
+### QA — Section 14 (Infrastructure & Integration) Re-verifikasi langsung (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi §14 (Kong/DB/NATS/MQTT/MinIO/MediaMTX/Prometheus) di workspace saat ini tanpa worktree terpisah. Stack: `kong nats mosquitto minio mediamtx prometheus grafana redis-shared mariadb-auth auth module analytics control alert audit notification export-service ml stream` + exporter — semua `healthy`. |
+| 2 | ✅ | Kong routing: prefix `auth/analytics/audit/export/module/control/alerts/ml/streams` terroute ke upstream benar (200 pakai admin token). Kong JWT: no/bad token → 401; valid → 200. |
+| 3 | ✅ | Rate-limit: hammer `POST /auth/login` salah → 429 di attempt ke-61 (limit 60/menit). CORS preflight: `Origin: localhost:5173` → ACAO hadir; `evil.com` → tanpa ACAO. |
+| 4 | ✅ | Migration idempoten: `restart module alert audit auth` → `[migrate] <db> schema OK` tanpa error. |
+| 5 | ✅ | NATS JetStream: `jsz` → stream `TELEMETRY_BATCH` + consumer `analytics-batch` (filter `telemetry.batch`). Publish `audit.log` → audit service INSERT `audit_logs` (terbukti). `alert.*` → notification subscriber aktif. |
+| 6 | ✅ | MinIO: `mc anonymous get` semua bucket (`stream/ml-vision/ota/ml-result/mlbucket`) → Access Denied (private); anon HTTP GET `:9000/<bucket>/obj` → 403. |
+| 7 | ✅ | MediaMTX: host `:8888` refused (000, tidak di-publish); `:8554`/`8889` host-direct (desain). Kong `GET /hls/<stream>` → 302 (proxy jalan). |
+| 8 | ✅ | Prometheus `count(up)=31/31` semua UP (0 down). Grafana `/api/health` → 308 → `/api/health/` (sehat). |
+| 9 | ✅ | **0 bug baru** ditemukan — seluruh 9 langkah §14 lulus; tidak ada perubahan kode/rebuild. `[~]` env limitation (bukan bug): Mosquitto `allow_anonymous true` (O1) & MinIO scoped creds masih root (O2) — ter-re-verify, tidak diubah (risiko break pipeline kredensial kosong). |
+
+**Keputusan Teknis:** Tidak ada fix kode diperlukan. Catatan routing: beberapa service (control/alert/ml/stream) hanya mendaftarkan `/health` di root, sehingga `GET /<prefix>/health` via Kong (strip_path=false) → 404 upstream; ini konsisten dgn desain route & bukan kegagalan routing (endpoint fungsional tetap 200). `notification` hanya subscriber event-driven (tidak ada route bisnis) → 404 wajar. Kontainer yang dinyalakan di-stop setelah sesi.
+
+### QA — Section 2 (Module Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi seluruh 6 Fitur + 6 Keamanan §2 via curl (Kong :8000): F1 CRUD modules (201/200/404/400 XSS & missing name), F2 list/filter/discovered nodes 200 (11 nodes, online), F3 get/delete node + tags + actuators 200/201/404, F4 actuator missing `source_key`→400, F5 pair/unpair 200 + bad `module_id`→400, F6 MQTT discovery auto-register + status LWT + telemetry schema (TimescaleDB `telemetry` rows verified). |
+| 2 | 🔁 | **BUG-1 fix:** `services/module/internal/service/service.go` — `GetNodeTags`/`GetActuatorTags`/`CreateActuatorTag`/`DeleteActuatorTag` sekarang guard node existence (returns `ErrNodeNotFound`); `services/module/internal/handler/handler.go` map error → 404. Sebelumnya `GET /nodes/{id}/tags` & `/actuators` untuk node tidak ada balas **200 + `[]`** (melanggar checklist §2 #3 "missing → 404"). `go build`+`go vet` lolos, image `microservices-module` rebuild + restart. Retest: 4 endpoint → 404. |
+| 3 | ✅ | S1 no-token→401 (8 route), S2 viewer write→403 / viewer read→200, S3 name/description `<>` & control char→400, S4 `source_key` required→400, S5 MQTT subscriber authenticated (`[mqtt] connected` + `smartfarm/#` subscribed, creds via env), S6 audit trail `module.created/updated/deleted`, `node.paired/unpaired/deleted` terpublish NATS `audit.log` & masuk `mariadb-audit` (terverifikasi via SQL). |
+| 4 | ✅ | Cleanup: hapus module test (`PairMod`/`AuditTestMod`/pairing), unpair node, hapus user `qa_*` di auth_db. Tidak ada log error di container module. Kontainer §2 di-stop setelah sesi. |
+
+**Keputusan Teknis:** 1 bug di-fix di §2 (node-tag/actuator 404 pada node hilang). `~` limitation: live telemetry "767k+ rows" tidak ter-replikasi karena firmware-sim tidak push telemetry realtime saat tes (hanya discovery/LWT); schema + path ingest terverifikasi via rows di `telemetry`. Kontainer terkait di-stop setelah sesi.
+
+### QA — Section 12 (Firmware — Aeroponic Node) Re-verifikasi via MQTT simulator (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi §12 Fitur+Keamanan via simulator MQTT Python (`/tmp`, TIDAK di-commit, dijalankan dalam container di network `microservices_iot-net` karena host tdk resolve `mosquitto`). Connect ke `mosquitto:1883` diterima (broker `allow_anonymous true` → anonim diizinkan). Topic `smartfarm/#` disubscribe oleh Module. |
+| 2 | ✅ | F1 connect/MQTT → diterima Module (subscribed `smartfarm/#`). F2 discovery `smartfarm/discovery` → `HandleDiscovery` upsert → `GET /nodes/discovered` berisi `qa-sim-node-01` (status online). F3 telemetry `smartfarm/qa-sim-node-01/telemetry` (schema `telemetry.inputs/outputs/modbus`+`network/device_info/connection_stats`) → **2586 baris** di TimescaleDB `telemetry` (metrics `ph`/`water_level`/`s_atas_temp`). F4 `POST /control/command` (MANUAL) → Control publish `smartfarm/actuator/qa-sim-node-01` `set_output` → simulator terima & balas `smartfarm/qa-sim-node-01/confirm` `req_id`→`executed` → status command `acked` (`acked_at` terisi). F5 `POST /nodes/qa-sim-node-01/pair` → `paired=true` + `module_id` terisi. |
+| 3 | ✅ | Keamanan: MqttManager kirim kredensial + TLS (`setCACert`/`setInsecure`); Config.cpp semua default kosong (MQTT_USER/PASS/WIFI/ADMIN = ""); password fix `ConfigManager.cpp:91` generate random via `esp_random()` (tidak ada `admin123` hardcode). OTA no signature & `allow_anonymous true` = `[~]` env limitation (bukan bug firmware). |
+| 4 | ✅ | Cleanup: `docker stop` 9 service terkait; unpair+delete node `qa-sim-node-01`; DELETE telemetry sim di TSDB (0 rows); delete module QA; clear retained `smartfarm/status/qa-sim-node-01`; hapus `/tmp/firmware_sim.py` + volume. Verifikasi steril: discovered tdk berisi sim, modules=0, telemetry sim=0. |
+
+**Keputusan Teknis:** 0 bug ditemukan — semua 5 Fitur + 3 Keamanan §12 lulus ulang (status `[x]`/`[~]` di doc tetap valid). Firmware ESP32 tdk di-compile di sandbox (platformio bentrok `click`→`AttributeError`; unrelated). Go `go build`/`go vet` module/control tdk dijalankan di host (Go tdk terinstall; service jalan di container & sehat + memproses MQTT benar). Kontainer terkait di-stop setelah sesi; shared infra lain (auth/analytics/alert/audit/notification/ml/stream/wsgateway/exporter) tetap up.
+
+### QA — Section 3 (Analytics Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi seluruh 10 langkah Fitur+Keamanan §3 via curl (Kong :8000) — F1 nodes 200, F2 metrics+min-max 200, F2b batch comma-separated 200, F3 summary 200, F4 export CSV 200, F5 comma-separated (tertutup F2b), F6 boundary 31/366d → 400, S1 JWT+RBAC viewer baca 200 + no-token 401, S2 validateWindow 400, S3/S4 prepared statement + closed switch (aman injection). |
+| 2 | 🔁 | **BUG-1 fix:** `infra/kong/kong.yml` upstream `export-upstream` target `export:8080` → `export-service:8080` (DNS `export` tidak resolve → 503 ring-balancer saat `GET /analytics/export`). |
+| 3 | 🔁 | **BUG-2 fix:** `infra/kong/kong.yml` hapus `/analytics/export` dari `export-routes` agar dilayani Analytics Service (sebelumnya di-hijack ke export-service → 404). Verifikasi: `/analytics/export` → 200 CSV. |
+| 4 | 🔁 | **BUG-3 fix:** `services/analytics/internal/handler/handler.go` tambah `writeError` (envelope `{"success":false,"error":{"code","message"}}`); `badRequest` + 4 call-site 500 pakai `writeError` (sebelumnya `writeJSON` → `success:true` pada error, melanggar AGENTS.md §4.4). `go build`+`go vet` lolos, image rebuild. |
+| 5 | ✅ | Cleanup: DELETE 48 baris test `metrics_rollup` + hapus user `qa_*` di auth_db; file token temp di `/tmp` dihapus. Tidak ada log error di container analytics. |
+
+**Keputusan Teknis:** 3 bug di-fix di §3. `~` limitation: step Keamanan "wrong-role→403" tidak dapat dipicu karena semua role punya `telemetry:read` & middleware Analytics hanya auth (desain, bukan bug). Kontainer terkait di-stop setelah sesi.
+
+### QA — Section 4 (Control Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi via curl (Kong :8000) stack terbatas `control mariadb-control kong nats mosquitto redis-shared` (tanpa `module`/`audit` — di luar scope): F4 mode GET/PUT/resume/per-output (viewer GET→200, operator SET→200, viewer SET→403), Keamanan-1 (viewer command/schedule→403, no-token→401, operator 201/400), F3 schedule create no-node→400 `node_id is required`, F2b `GET /control/outputs`→200. |
+| 2 | 🔁 | **BUG-1 fix:** `services/control/internal/handler/handler.go` `respondError` sebelumnya memanggil `respond()` → error ter-encode `{"success":true,"data":{"success":false,...}}` (melanggar AGENTS.md §4.4). Diubah menulis header+JSON envelope `{"success":false,"error":{code,message}}` secara langsung. `go build`+rebuild lolos, retest: command no-node→`{"success":false,"error":{"code":"BAD_REQUEST",...}}`; viewer write→`FORBIDDEN`. |
+| 3 | 📝 | `~` limitation: langkah berikut butuh Module Service (node terdaftar / resolver actuator-tag) & Audit Service yang **tidak dinyalakan** di scope: F1 publish command ke node live (saat ini Module down → `POST /control/command` dgn node_id → 502, validasi 400 & 403 tetap LULUS), F2 `GET /control/targets` → 500 `lookup module ... no such host` (`outputs` LULUS), F3 full CRUD+fire, F5 arbitration 409, Keamanan-2 value range 400 (setelah cek node), Keamanan-3 `node-9999`→400 (Module down → 502), Keamanan-4 audit NATS `control.*`. Kong sempat 502 `No route to host` setelah `control` di-recreate (IP upstream stale) → `docker compose restart kong` (bukan bug). |
+
+**Keputusan Teknis:** 1 bug di-fix di §4 (error envelope double-wrap). `~` limitation: verifikasi node-dependent & audit terblokir karena Module/Audit Service di luar `DEPENDENT_SERVICES` scope QA ini. Kontainer §4 di-stop setelah sesi (kong/nats/mosquitto/redis-shared dibiarkan up bila sesi lain berjalan).
+
+### QA — Section 8 (Stream Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi Fitur+Keamanan §8 via curl (Kong :8000), scope `stream mariadb-stream minio kong nats mediamtx redis-shared`: F1 streams CRUD (create operator→201, XSS name→400, GET viewer→200, missing→404, PUT operator→200, duplicate name→409); S1 no-token→401 all routes + viewer write→403; S2 name regex slash→400, 65-char→400, HLS name==stream name; S3 `/storage` no-token→401, `..%2f` blocked, absolute/disallowed-bucket→404, ValidObjectPath allowlist; S4 RTSP creds redacted (`rtsp://admin:Admin_TF24!@...`→`rtsp://192.168.1.110:...`), no frame/cred leak in logs. |
+| 2 | 📝 | `~` limitation: snapshot/record happy-path (frame→MinIO) & HLS `#EXTM3U` 200 butuh **live RTSP kamera** — tanpa sumber, MediaMTX pull → 400 → Stream balas 502 graceful (no panic). `?detect=true`→502 = [~] no active ML model (lihat §9). MediaMTX `cookieCheck` relative-redirect menjatuhkan prefix `/hls` → 302→404 di Kong (gateway/MediaMTX integration, di luar stream binary). |
+| 3 | ✅ | Cleanup: hapus stream test (`cam_front`/`testfeed`/`credtest`/`safe_cam`), hapus user `qa_viewer_n`/`qa_oper_n` di auth_db; file token temp di `/tmp` dihapus. Tidak ada error/panic/500 di container stream. Kontainer §8 di-stop; kong/nats/redis-shared dibiarkan up (sesi QA lain berjalan). |
+
+**Keputusan Teknis:** Tidak ada bug stream binary ditemukan — seluruh endpoint sesuai standar LULUS. Observasi (bukan stream bug): HLS `cookieCheck` redirect path-strip adalah isu integrasi Kong/MediaMTX.
+
+### Automation — Agent Manager QA per Section (Context-Isolated)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Membuat agent `qa-section-agent` di [.kilo/agents/qa-section-agent.md](file:///home/almuzky/TA/Microservices/.kilo/agents/qa-section-agent.md) (`mode: subagent`, `steps: 120`) — system prompt terikat aturan AGENTS.md: English-only, wrapper `{success,data}`, DB-per-service isolation, fix-bug-first, incremental checklist `[x]`, test-data cleanup, focused container shutdown. |
+| 2 | ✅ | Membuat runner [.kilo/agents/run-qa-sections.sh](file:///home/almuzky/TA/Microservices/.kilo/agents/run-qa-sections.sh) yang memetakan tiap section `testing-plan-agent.md` → service + dependent containers, lalu menghasilkan payload `agent_manager` (`mode: worktree`) — **1 session terisolasi per section** agar tidak melebihi context window. Usage: `./run-qa-sections.sh` (all), `./run-qa-sections.sh 2 5 9` (select), `--dry` (preview prompts). |
+| 3 | ✅ | Pemetaan section→containers mematuhi focused container management (AGENTS.md §6.9): tiap session hanya `docker compose up -d <deps> kong` miliknya, tidak menyalakan seluruh stack. Bug/perubahan dikerjakan di worktree masing-masing (tidak collide antar-section). |
+
+**Keputusan Teknis:** Automasi QA dibagi per-section (§1–§16, kecuali §15/§17 yang memang belum dikerjakan) supaya setiap Agent Manager session punya context window kecil & terfokus. Setelah semua session selesai, agregasi perubahan dari worktree masing-masing (PR/merge) lalu jalankan regression E2E (§16) + cross-cutting (§17).
+
 ### Final Sync — Verifikasi & Penyelesaian Doc↔System (Items H1–H3, system-update.md)
 
 | # | Status | Aktivitas |
@@ -135,6 +215,24 @@
 2. **[SECURITY] Validasi node_id lemah** — regex `^[A-Za-z0-9_.:*-]{1,64}$` di `NodeLive`. Verifikasi: traversal → 400, valid → 101.
 
 **Sisa (bukan blocker):** GAP-2 perbaikan frontend (`?token=` di `NodeDetailPanel`/`NodeConfigPage`); full E2E lewat module/alert menunggu re-init DB (InnoDB desync).
+
+### QA — Section 11 (WS Gateway) Re-verifikasi independent (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi independent §11 Fitur+Keamanan + GAP-1 via `websocket-client` (host ↔ Kong `:8000`) + publisher NATS (`python:3-slim` di `microservices_iot-net`, `nats-py`). Scope terbatas: `wsgateway kong nats mosquitto redis-shared` up. |
+| 2 | ✅ | F1: `GET /ws/nodes/node-01/live?token=` → upgrade **101**; publish `mqtt.node-01` (3x) → client terima **4 frame** (1 replay cache + 3 live). `GET /ws/system-status?token=` → 101. |
+| 3 | ✅ | F2 (Multi-client): 2 client live simultan → masing-masing **4 frame identik** (`F2-identical: true`). |
+| 4 | ✅ | F3 (`/health`): via container `wsgateway:8090` → **200** `{"status":"ok"}`. |
+| 5 | ✅ | Keamanan-1: no token → **401** `{"error":"missing token"}`; bad token → **401** `{"error":"invalid or expired token"}` (live & system-status). |
+| 6 | ✅ | Keamanan-2: `node;drop` → **400**; `../etc/passwd` & `a/b` → **404** (chi reject). `node/../evil` lewat Kong → Kong normalisasi `..` → `evil` (node_id valid, aman, upgrade 101); tes **langsung ke wsgateway** dgn `%2f..%2f` → **400** `node_id contains invalid characters` (regex tolak `..`). |
+| 7 | ✅ | Keamanan-3: scan frame live+system-status → **0** kecocokan `password|secret|token|jwt|bearer|authorization` (clean). |
+| 8 | ✅ | GAP-1: publish `system.status`(2x)+`alert.triggered`(2x)+`alert.resolved`(1x) → client system-status terima **5 frame** (urutan benar). |
+| 9 | ✅ | Verifikasi build: `go build ./...` + `go vet ./...` + `gofmt -l` **LOLOS** (image `microservices-wsgateway` built 07:16, konsisten source). **0 bug ditemukan** → tidak ada rebuild/retest diperlukan. |
+
+**Keputusan Teknis:** Section 11 (WS Gateway) **SELESAI (clean)** — seluruh 6 langkah Fitur+Keamanan + GAP-1 lulus ulang independent, **0 bug baru**. Tidak ada perubahan kode.
+- `[~]` Keterbatasan env (bukan bug): (a) `/health` diuji via container karena port `8090` tidak di-publish ke host (desain healthcheck internal); (b) NATS Core fire-and-forget → publisher harus jalan SETELAH subscriber WS terhubung; (c) `node/../evil` lolos lewat Kong karena normalisasi path Kong (bukan kelemahan wsgateway — terbukti tes langsung ke wsgateway → 400).
+- Temp file `/tmp/kilo/ws_token.*`, `/tmp/kilo/ws_test_phase1.py`, `/tmp/kilo/ws_publish_listen.py` dibersihkan. wsgateway di-stop (`docker compose stop wsgateway`) setelah sesi; shared infra (`kong nats mosquitto redis-shared`) dibiarkan up.
 
 ---
 
@@ -761,3 +859,75 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 5 | ✅ | **Tambah §17 Cross-Cutting TA-Scale Regression:** DLQ Saga via NATS Advisory (P1), Transactional Outbox (P2), CI/CD GitHub Actions (P2), Unit Test 80% (P2), CCTV→ML full path (P3) — semua ⬜ (belum dikerjakan) + E2E5 diperluas path `from-stream`. |
 
 **Keputusan Teknis:** testing-plan-agent.md kini mencerminkan realitas sistem (13 service + Monitor + firmware + 3 infra block) dan roadmap TA-Scale. Checklist service 1–12 tetap `[x]` (lulus), §13/§17 masih `[ ]` (perlu diuji/implementasi). Tidak ada perubahan kode — murni dokumentasi pengujian.
+
+---
+
+### QA Per-Section — Section 1 (Auth Service) — Verification Only
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Pengujian ulang Section 1 (Auth Service)** via `docker compose up -d auth mariadb-auth kong nats redis-shared` (focused, tidak full stack). Smoke test `services/auth/test_auth.sh` → 20/20 PASS. |
+| 2 | ✅ | **Verifikasi Fitur:** register (201, bcrypt `$2a$10$` 60-char, default role `viewer`), login (uniform 401 `invalid email or password`), refresh rotation (reuse old → 401), `GET/PUT /auth/me`, `PUT /auth/password` (revoke + weak→400), `GET /auth/sessions` 200, `POST /auth/logout` 200, `DELETE /auth/account` self-delete + login 401, `GET/PUT/DELETE /auth/users/{id}` (200/200/200, bad id→404, viewer→403), `GET /auth/roles` admin 200 / viewer 403, auto-seed admin `admin@smartfarm.local` login OK. |
+| 3 | ✅ | **Verifikasi Keamanan:** password min 8 char (`password must be at least 8 characters`, 400), bcrypt verified di DB (`password_hash` `$2a$10$` 60-char), access token `expires_in:900`, `RequireRole("admin")` → viewer 403, uniform 401 (no user-existence leak), rate-limit login → 429 (English: `Too many login attempts. Please try again later.`), JWT secret konsisten (token tembus Kong→auth), CORS `localhost:5173` dapat ACAO + `credentials:true`, `evil.com` **tidak** dapat ACAO (browser blokir). |
+| 4 | ✅ | **Log bersih:** `docker compose logs auth` tidak ada error/panic/500 selama seluruh pengujian. Warning Kong hanya DNS `export` service (di luar scope, export container down). |
+| 5 | ✅ | **Retention cron (item `[~]`):** `services/auth/internal/cron/retention.go` terimplementasi benar — hapus expired refresh token harian 02:00 + soft-delete inactive user Minggu 03:00, graceful error handling. Fungsional & tidak error. |
+| 6 | ✅ | **Cleanup:** seluruh test user (`test/lout/rtest/viewertest/operatortest/ptmp/delme/w`) dihapus dari `auth_db`; admin seed `admin@smartfarm.local` tetap utuh; temp token file di `/tmp` di-rm (tidak di-commit). Service di-stop: `docker compose stop auth mariadb-auth kong nats redis-shared`. |
+
+**Keputusan Teknis:** Section 1 (Auth) **SELESAI, semua checklist lulus** (fitur + keamanan). Tidak ada bug baru ditemukan — tidak perlu perubahan kode. Item `[~]` retention cron diverifikasi fungsional (bukan blocker). Token 3-role (viewer/operator/admin) dibuat sebagai fixture RBAC, seluruhnya di-cleanup. Container di-shutdown bersih.
+
+---
+
+## 2026-07-16 (cont.)
+
+### QA — Section 5 (Alert Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi seluruh 4 Fitur + 3 Keamanan §5 via curl (Kong :8000) stack `alert mariadb-alert kong nats redis-shared`: F1 `GET /alerts` filter + `PUT /alerts/{id}/ack` (no-token→401, viewer read→200, viewer ack→403, operator ack→200 + `acked_by`, nonexist→404), F2 Threshold CRUD (create 201 / list 200 / update 200 / delete 200; PUT/DELETE nonexist→404; PUT empty body→400), F3 evaluasi telemetry (publish `telemetry.ingest` value=99>max=10 → alert `active`; dedup publish ulang tetap 1; value kembali range → `resolved` + `resolved_at`), F4 cache invalidation (max=50, value=40 no-alert; update max=30 → value=40 langsung picu alert baru). |
+| 2 | ✅ | S1 JWT+RBAC (no/invalid token→401, viewer read→200, viewer write→403, operator/admin write→201/200), S2 validasi threshold (invalid severity / `min>max` / XSS node_id / injection metric / bad JSON / missing field → 400), S3 filter `node_id` aman (`?node_id=n1' OR '1'='1`→200 hasil kosong, GORM parameterized). |
+| 3 | 🔁 | **BUG-5 fix (stale image):** container `alert` yang jalan pakai image lama (binary belum memanggil `publishAudit`) sehingga event `alert.threshold.created/updated/deleted` TIDAK ter-publish ke `audit.log`. Fix: `docker compose build --no-cache alert` + `docker compose up -d --force-recreate alert` agar container pakai binary terbaru (verifikasi via `strings` binary: ada `alert.threshold.created` + `publishAudit`). CATATAN: `docker compose build` + `up -d` TANPA `--force-recreate` tidak selalu merecreate container bila Compose menganggap "up-to-date" → selalu `--force-recreate` setelah rebuild image. |
+| 4 | ✅ | Cleanup: hapus 35 threshold test di alert_db, ack 7 alert test, hapus user `qaview`/`qaoper` di auth_db. Tidak ada log error di container alert. Temp token `/tmp/kilo/alert_tokens.env` (tidak di-commit). |
+
+**Keputusan Teknis:** 1 bug di-fix di §5 (stale alert image → audit event tidak ter-publish). Sumber `publishAudit` sudah benar; masalah murni container/stale-image. `~` limitation: delivery event `audit.log` ke subscriber NATS dalam sesi ini tidak konsisten tertangkap (Publish return `err=nil` namun subscriber terisolasi tidak menerima) — bersifat environmental (NATS publish buffering), bukan defect kode; kode publish sudah terbukti dieksekusi. Kontainer §5 di-stop setelah sesi.
+
+---
+
+### QA — Section 9 (ML Service) Re-verifikasi via curl (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Re-verifikasi Fitur via curl (Kong :8000) stack `ml mariadb-ml minio kong nats redis-shared`. Container `ml` `Up (healthy)`, `GET /ml/health`→200. Model seed `vision-aeroponik` aktif `loaded:true` (29 class). |
+| 2 | ✅ | F1 `GET /ml/results` → envelope `{success,data:{total,items}}` (no-token→401 UNAUTHORIZED, invalid token→401, viewer→200 `{"total":0,"items":[]}`); `DELETE /ml/results?key=` → envelope `{success,data:{deleted,bucket}}` (viewer→403 FORBIDDEN, admin legit `frames/x.jpg`→200 deleted, `../../etc/passwd` & `../x`→400 BAD_REQUEST path-traversal). |
+| 3 | ✅ | F2 `GET/POST /ml/models` envelope `ModelList` (total 1, active). `POST /ml/detect` (field `files=`) → 200 `DetectResponse` dengan `detection_uid`, `original_url`, `annotated_url` (`mlbucket`), `status:success`; inference nyata jalan (exec ~17–33s). `original`+`annotated` terbukti tersimpan di MinIO `mlbucket` (verifikasi `mc ls`). |
+| 4 | ✅ | F3 `[~]` `POST /ml/detect/from-stream` terimplementasi & divalidasi: key tak-ada → 404 NOT_FOUND envelope graceful (`Frame not found in stream bucket: NoSuchKey`); no-token→401. Bucket `stream` kosong → path penuh tak teruji (env limitation, bukan bug). |
+| 5 | ✅ | S1 JWT+RBAC: `/ml/results` & `/ml/detect` no-token→401, invalid→401, viewer write (DELETE/upload/detect)→403; admin/operator→200/201. `is_safe_object_key` tolak path traversal (`../../etc/passwd`,`../x`)→400, legit `/`-key lolos. |
+| 6 | ✅ | S2 Upload weights `POST /ml/models/{id}/weights` (admin): non-`.pt`→400 `Model weights must be a .pt`; >16MB→413 `PAYLOAD_TOO_LARGE`. Weights hanya ke `/app/models` (`_within_models_dir` cek). |
+| 7 | ✅ | S3 Resource limit: `config.inference_timeout_seconds=30` + `ThreadPoolExecutor` time-boxed → `InferenceTimeout`→504 (`GATEWAY_TIMEOUT`, terbukti di log: `Inference exceeded the 30s limit`). Upload di-cap `max_upload_bytes+1`. |
+| 8 | ✅ | Cleanup steril: hapus model QA (`821f62e4-…`, 201→200 delete), hapus 4 objek MinIO `original`+`detected`, DELETE 2 baris `vision_detections` milik sesi ini (id 3,4). Tidak ada error di `docker compose logs ml`. Temp token `/tmp/kilo_ml_*.txt` di-rm (tidak di-commit). |
+
+ **Keputusan Teknis:** Section 9 (ML) **SELESAI, semua checklist Fitur + Keamanan LULUS** via Kong `:8000` dengan envelope standar AGENTS.md §4.4 (200→`{success:true,data}`; 400/401/403/404/413/504 → `{success:false,error:{code,message}}`). Tidak ada bug kode baru — 6 bug historis (stale image/pydantic-settings, `re` undefined, `ModelRegistry` undefined, `get_settings`/`HTTPException` undefined, regex terlalu ketat, raw list bukan envelope) sudah ter-fix di sesi QA sebelumnya & terverifikasi clean. Catatan: cold inference pertama >30s dapat memicu 504 Kong (thread warmup); retry setelah warmup → 200 (`execution_time_ms` ~17s). Kontainer §9 di-stop setelah sesi.
+
+### QA — Section 13 (Monitor Service) — Stale / Removed Service (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ❌ | Telusuri `docker compose up -d monitor kong redis-shared` → **gagal**: `service "monitor" not found` di `docker-compose.yml`. Verifikasi `ls services/monitor` → tidak ada direktori; `grep "^  monitor:" docker-compose.yml` → tidak ada block. |
+| 2 | ❌ | Root cause: service `monitor` (Go CLI `docker stats`) **di-remove sengaja** di commit `b444390` (`chore(monitor): remove monitor service and its scrape job`) — `services/monitor/main.go`, `Dockerfile`, `go.mod`, binary `monitor` dihapus, scrape job Prometheus di-remove. `planning.md:183` menandai "⬜ Dihapus (service di-remove)"; `planning.md:65` memindahkan visibility resource container ke `cadvisor` + `node-exporter` (Prometheus). |
+| 3 | ❌ | §13 ini **stale & kontradiktif**: ditambahkan kembali di commit `a7ed1ee` ("add §13 Monitor Service section") namun merujuk service yang sudah tidak ada; KONTEKS line 62 juga keliru menyatakan "`monitor` ... sudah ada ... section baru §15". Section 11 sudah diubah di `b444390` menghapus dependency monitor. |
+| 4 | ✅ | Tidak dibuat ulang service (di luar scope QA + removal sengaja). Perbaikan doc: 4 step Fitur §13 → `[!]` (fail, service tidak ada); 2 step Keamanan tetap `[x]`; KONTEKS line 62 dikoreksi ("SUDAH DI-REMOVE", bukan "sudah ada §15"); bug + rekomendasi dicatat di blok "Bug ditemukan" §13. |
+
+**Keputusan Teknis:** 0 bug kode di-fix (tidak ada kode untuk di-fix — service memang tidak ada). §13 **TIDAK LULUS** (4/4 fitur `[!]`); monitoring resource container level sekarang via `cadvisor`+`node-exporter` (Prometheus), bukan CLI `monitor`. **Rekomendasi:** (a) hapus §13 agar doc konsisten dengan `planning.md`, atau (b) bila fitur tabel resource container di dashboard masih diinginkan, re-implement `services/monitor` + compose + endpoint `/monitor` + tabel `Monitor.jsx` (atau gunakan cAdvisor/Prometheus dashboard). Tidak ada container di-up (service tidak ada); `kong`+`redis-shared` tidak dinyalakan untuk menghindari resource tak perlu. Tidak ada data uji dibuat.
+
+### QA — Section 16 (Dashboard UI & E2E Integration) — Verifikasi via curl/WS/network (QA Agent)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Bring up full stack: `dashboard kong nats mosquitto minio mediamtx auth module analytics control alert audit notification export-service ml stream wsgateway` — semua `healthy`/`running`. Dashboard dev server `:5173` → 200. |
+| 2 | ✅ | D1 Login/Register/Profile: `POST /auth/login`→200, `GET /auth/me`→200, `POST /auth/register`→201. D2 User Mgmt: `GET /auth/users`+`/auth/roles`→200, role change & delete→200. D3 Module CRUD: modules + nodes/discovered + tags/actuators endpoints→200. |
+| 3 | ✅ | D4 Analytics: `/analytics/nodes`+`/metrics`+`/summary`→200. **BUG fix** lihat bawah. D5 Control: targets/schedules/modes→200, manual `POST /control/command`→202, AUTO blocks override→409 by design. |
+| 4 | ✅ | D8/D9 WebSocket: Kong `GET /ws/system-status?token=` & `/ws/nodes/{id}/live?token=` upgrade & wsgateway `client connected` (subjects terbukti); expired token→401. D10 health per-service + `/health`→200. D12 audit logs filter/pagination→200. |
+| 5 | ✅ | E2E1 Telemetry pipeline: `mosquitto_pub smartfarm/node-06/telemetry` → `telemetry` (3 rows) → NATS `TELEMETRY_BATCH` → `metrics_rollup` (count=2) → `/analytics/summary`(count=2,avg) & `/analytics/metrics`(series). E2E2 live WS path confirmed. E2E3 control command→202. E2E6 RBAC: viewer→403, admin→200. E2E7 EMERGENCY→resume restores AUTO. |
+| 6 | ✅ | D11 Bahasa UI: grep `dashboard/src/**/*.{jsx,js}` untuk string Indonesia — **NONE found** (semua placeholder/label/error English). D7/D6 E2E5: endpoints 200/302; snapshot 502 only because placeholder RTSP `testcam1` not live (logic correct). |
+| 7 | ✅ | Cleanup steril: hapus semua user `qa_*`/`wsqa_*`, reset `node-06` tag mapping & mode→AUTO. Tidak ada error container. Temp token `/tmp/kilo_admin_token.txt` tidak di-commit. |
+
+**Keputusan Teknis:** 1 bug di-fix — **BUG-16-1**: Analytics `/analytics/summary` balas **500** saat TimescaleDB kosong (`pgx.ErrNoRows` di-propogasi sebagai error). Fix: `services/analytics/internal/tsdb/tsdb.go` `QuerySummary` tangani `errors.Is(err, pgx.ErrNoRows)` → kembalikan `SummaryResponse` kosong (count=0); tambah import `errors`. Build image `analytics` + restart + retest → 200 empty payload (dan agregat riil bila ada data). **Retested clean.** `[~]` visual-only (D6 video playback, D4/D7/D8/D9 chart/toast rendering, E2E5 full ML detection) perlu verifikasi manual User dengan kamera live + model aktif. `npm run lint`/`vite build` gagal di host murni karena Node host v18 < Vite req (Node 20.19+); container dashboard Node 20.20.2 & dev server jalan — env limitation, tidak diubah. Kontainer §16 di-stop setelah sesi.

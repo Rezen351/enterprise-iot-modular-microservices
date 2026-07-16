@@ -77,9 +77,21 @@ func errorCode(status int) string {
 	}
 }
 
+// writeError encodes an error response in the standard envelope (AGENTS.md §4.4):
+// { success: false, error: { code, message } } so clients can reliably detect
+// failures regardless of the HTTP status code.
+func writeError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": errorCode(status), "message": msg},
+	})
+}
+
 // badRequest is a convenience for 400 errors.
 func badRequest(w http.ResponseWriter, msg string) {
-	writeJSON(w, http.StatusBadRequest, map[string]string{"error": msg})
+	writeError(w, http.StatusBadRequest, msg)
 }
 
 // parseTime accepts RFC3339 or unix-seconds strings.
@@ -168,7 +180,7 @@ func (h *Handler) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	series, err := h.svc.QuerySeriesMulti(r.Context(), nodeIDs, metrics, from, to, interval, discreteSet)
 	if err != nil {
 		log.Printf("[handler] query series failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})
+		writeError(w, http.StatusInternalServerError, "query failed")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"interval": interval, "series": series})
@@ -225,7 +237,7 @@ func (h *Handler) SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.svc.QuerySummary(r.Context(), nodeID, metric, from, to)
 	if err != nil {
 		log.Printf("[handler] query summary failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})
+		writeError(w, http.StatusInternalServerError, "query failed")
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -236,7 +248,7 @@ func (h *Handler) NodesHandler(w http.ResponseWriter, r *http.Request) {
 	nodes, err := h.svc.ListNodes(r.Context())
 	if err != nil {
 		log.Printf("[handler] list nodes failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "query failed"})
+		writeError(w, http.StatusInternalServerError, "query failed")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"nodes": nodes})
@@ -297,7 +309,7 @@ func (h *Handler) ExportHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.svc.ExportSeries(r.Context(), nodeID, metric, from, to, resolution)
 	if err != nil {
 		log.Printf("[handler] export failed: %v", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "export failed"})
+		writeError(w, http.StatusInternalServerError, "export failed")
 		return
 	}
 

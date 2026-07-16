@@ -355,6 +355,13 @@ func (s *ModuleService) flushTouch() {
 
 // GetNodeTags returns the tag-mapping configuration for a node.
 func (s *ModuleService) GetNodeTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
+	exists, err := s.nodeExists(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrNodeNotFound
+	}
 	return s.repo.ListNodeTags(ctx, nodeID)
 }
 
@@ -410,16 +417,43 @@ func (s *ModuleService) DeleteNodeTag(ctx context.Context, nodeID, id string) er
 	return s.repo.DeleteNodeTag(ctx, nodeID, id)
 }
 
+// nodeExists is a guard used by tag/actuator endpoints so they return a proper
+// 404 (not an empty 200) when the referenced node does not exist.
+func (s *ModuleService) nodeExists(ctx context.Context, nodeID string) (bool, error) {
+	_, err := s.repo.GetNodeByNodeID(ctx, nodeID)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, repository.ErrNotFound) {
+		return false, nil
+	}
+	return false, err
+}
+
 // ─── Actuator tag mapping (control outputs, separate from sensor telemetry) ──
 
 // GetActuatorTags returns the actuator (kind="actuator") tags for a node.
 func (s *ModuleService) GetActuatorTags(ctx context.Context, nodeID string) ([]model.NodeTag, error) {
+	exists, err := s.nodeExists(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrNodeNotFound
+	}
 	return s.repo.ListActuatorTags(ctx, nodeID)
 }
 
 // CreateActuatorTag attaches a single controllable output to a friendly tag.
 // sourceKey is the firmware output name (e.g. "pump"); tagName is the DB tag.
 func (s *ModuleService) CreateActuatorTag(ctx context.Context, nodeID string, req model.NodeTagRequest) (*model.NodeTag, error) {
+	exists, err := s.nodeExists(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrNodeNotFound
+	}
 	if req.SourceKey == "" {
 		return nil, errors.New("source_key (firmware output name) is required")
 	}
@@ -449,6 +483,13 @@ func (s *ModuleService) CreateActuatorTag(ctx context.Context, nodeID string, re
 
 // DeleteActuatorTag removes a single actuator tag.
 func (s *ModuleService) DeleteActuatorTag(ctx context.Context, nodeID, id string) error {
+	exists, err := s.nodeExists(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrNodeNotFound
+	}
 	return s.repo.DeleteNodeTag(ctx, nodeID, id)
 }
 

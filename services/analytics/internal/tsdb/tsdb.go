@@ -2,6 +2,7 @@ package tsdb
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -241,6 +242,15 @@ func (s *Store) QuerySummary(ctx context.Context, nodeID, metric string, from, t
 		nodeID, metric, from, to,
 	).Scan(&countSum, &sumSum, &mn, &mx, &lastV, &firstTS, &lastTS)
 	if err != nil {
+		// No telemetry for this node/metric in the window is not an error:
+		// return an empty summary instead of a 500 so the dashboard chart
+		// renders cleanly (the chart series endpoint already returns []).
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &model.SummaryResponse{
+				NodeID: nodeID,
+				Metric: metric,
+			}, nil
+		}
 		return nil, err
 	}
 	avg := 0.0

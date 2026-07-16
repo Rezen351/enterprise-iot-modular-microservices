@@ -249,7 +249,7 @@ upstreams:
           interval: 5
           http_failures: 2
     targets:
-      - target: export:8080
+      - target: export-service:8080
         weight: 100
 
   # MediaMTX HLS upstream — Kong strips /hls and forwards to mediamtx:8888.
@@ -632,7 +632,6 @@ services:
       - name: export-routes
         paths:
           - /export
-          - /analytics/export
         methods:
           - GET
           - OPTIONS

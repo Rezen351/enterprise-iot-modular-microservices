@@ -213,6 +213,10 @@ func (h *Handler) GetNodeTags(w http.ResponseWriter, r *http.Request) {
 	nodeID := chi.URLParam(r, "node_id")
 	tags, err := h.svc.GetNodeTags(r.Context(), nodeID)
 	if err != nil {
+		if errors.Is(err, service.ErrNodeNotFound) {
+			respondError(w, http.StatusNotFound, "node not found")
+			return
+		}
 		respondError(w, http.StatusInternalServerError, "failed to load tags")
 		return
 	}
@@ -243,6 +247,10 @@ func (h *Handler) GetActuatorTags(w http.ResponseWriter, r *http.Request) {
 	nodeID := chi.URLParam(r, "node_id")
 	tags, err := h.svc.GetActuatorTags(r.Context(), nodeID)
 	if err != nil {
+		if errors.Is(err, service.ErrNodeNotFound) {
+			respondError(w, http.StatusNotFound, "node not found")
+			return
+		}
 		respondError(w, http.StatusInternalServerError, "failed to load actuator tags")
 		return
 	}
@@ -262,6 +270,10 @@ func (h *Handler) CreateActuatorTag(w http.ResponseWriter, r *http.Request) {
 	}
 	tag, err := h.svc.CreateActuatorTag(r.Context(), nodeID, req)
 	if err != nil {
+		if errors.Is(err, service.ErrNodeNotFound) {
+			respondError(w, http.StatusNotFound, "node not found")
+			return
+		}
 		respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -273,6 +285,10 @@ func (h *Handler) DeleteActuatorTag(w http.ResponseWriter, r *http.Request) {
 	nodeID := chi.URLParam(r, "node_id")
 	id := chi.URLParam(r, "id")
 	if err := h.svc.DeleteActuatorTag(r.Context(), nodeID, id); err != nil {
+		if errors.Is(err, service.ErrNodeNotFound) {
+			respondError(w, http.StatusNotFound, "node not found")
+			return
+		}
 		respondError(w, http.StatusInternalServerError, "failed to delete actuator tag")
 		return
 	}

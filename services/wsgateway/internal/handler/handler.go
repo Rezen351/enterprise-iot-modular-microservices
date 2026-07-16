@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,10 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/nats-io/nats.go"
 )
+
+// nodeIDRe restricts the WS path parameter to the same character set accepted
+// by the Module/Alert services so a malformed id cannot be forwarded to NATS.
+var nodeIDRe = regexp.MustCompile(`^[A-Za-z0-9_.:*-]{1,64}$`)
 
 // Handler bridges NATS topics to dashboard websocket clients.
 type Handler struct {
@@ -98,6 +103,10 @@ func (h *Handler) NodeLive(w http.ResponseWriter, r *http.Request) {
 	nodeID := chi.URLParam(r, "node_id")
 	if nodeID == "" {
 		http.Error(w, "node_id required", http.StatusBadRequest)
+		return
+	}
+	if !nodeIDRe.MatchString(nodeID) {
+		http.Error(w, "node_id contains invalid characters", http.StatusBadRequest)
 		return
 	}
 

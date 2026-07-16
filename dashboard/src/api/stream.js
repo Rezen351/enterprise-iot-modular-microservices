@@ -9,6 +9,15 @@
 
 import { request } from './client';
 
+// The Stream Service returns the standardized response wrapper
+// { success, data }. Unwrap `data` so callers keep using the inner
+// payload (e.g. { streams }, { snapshots }, a StreamView, ...).
+const unwrap = async (path, opts) => {
+  const res = await request(path, opts);
+  if (res && typeof res === 'object' && 'data' in res) return res.data;
+  return res;
+};
+
 function qs(params) {
   if (!params) return '';
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '');
@@ -19,38 +28,38 @@ function qs(params) {
 export const streamApi = {
   // ─── List all streams (with live status + playback URLs) ─────────────
   // params: { module_id } — scope streams to a single module.
-  list: (params) => request(`/streams${qs(params)}`, { auth: true }),
+  list: (params) => unwrap(`/streams${qs(params)}`, { auth: true }),
 
   // ─── Get a single stream detail ──────────────────────────────────────
-  get: (id) => request(`/streams/${encodeURIComponent(id)}`, { auth: true }),
+  get: (id) => unwrap(`/streams/${encodeURIComponent(id)}`, { auth: true }),
 
   // ─── Register a new CCTV stream ──────────────────────────────────────
   // body: { name, device_label?, location?, source_rtsp?, node_id?, module_id? }
-  create: (body) => request('/streams', { method: 'POST', auth: true, body }),
+  create: (body) => unwrap('/streams', { method: 'POST', auth: true, body }),
 
   // ─── Update label / location / enabled / name / source ───────────────
-  update: (id, body) => request(`/streams/${encodeURIComponent(id)}`, { method: 'PUT', auth: true, body }),
+  update: (id, body) => unwrap(`/streams/${encodeURIComponent(id)}`, { method: 'PUT', auth: true, body }),
 
   // ─── Unregister a stream (removes MediaMTX path + DB row) ────────────
-  remove: (id) => request(`/streams/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  remove: (id) => unwrap(`/streams/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 
   // ─── Capture a snapshot of the live feed → MinIO ─────────────────────
   // opts.detect = true also runs the captured frame through the AI vision model
   // and stores the detection result in the gallery's DETECTION tab.
   captureSnapshot: (id, opts = {}) =>
-    request(`/streams/${encodeURIComponent(id)}/snapshot${opts.detect ? '?detect=true' : ''}`, { method: 'POST', auth: true }),
+    unwrap(`/streams/${encodeURIComponent(id)}/snapshot${opts.detect ? '?detect=true' : ''}`, { method: 'POST', auth: true }),
 
   // ─── Recording control (MediaMTX record on/off) ─────────────────────
   startRecording: (id) =>
-    request(`/streams/${encodeURIComponent(id)}/record/start`, { method: 'POST', auth: true }),
+    unwrap(`/streams/${encodeURIComponent(id)}/record/start`, { method: 'POST', auth: true }),
   stopRecording: (id) =>
-    request(`/streams/${encodeURIComponent(id)}/record/stop`, { method: 'POST', auth: true }),
+    unwrap(`/streams/${encodeURIComponent(id)}/record/stop`, { method: 'POST', auth: true }),
 
   // ─── Snapshots & recordings (MinIO) ─────────────────────────────────
   // params: { kind?, module_id? } — scope gallery items to a single module.
-  listSnapshots: (params) => request(`/snapshots${qs(params)}`, { auth: true }),
-  getSnapshot: (id) => request(`/snapshots/${encodeURIComponent(id)}`, { auth: true }),
-  deleteSnapshot: (id) => request(`/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  listSnapshots: (params) => unwrap(`/snapshots${qs(params)}`, { auth: true }),
+  getSnapshot: (id) => unwrap(`/snapshots/${encodeURIComponent(id)}`, { auth: true }),
+  deleteSnapshot: (id) => unwrap(`/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 };
 
 export default streamApi;

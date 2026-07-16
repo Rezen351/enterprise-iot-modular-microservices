@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     default_input_size: int = 640
     max_upload_mb: int = 16
     allowed_image_extensions: list[str] = ["jpg", "jpeg", "png", "bmp", "webp"]
+    # Hard wall-clock cap on a single inference call so a malicious/heavy
+    # payload cannot hang the worker indefinitely (security checklist).
+    inference_timeout_seconds: int = 30
 
     # ─── MinIO (shared instance, bucket ml) ───────────────────────────────
     minio_endpoint: str = "minio:9000"

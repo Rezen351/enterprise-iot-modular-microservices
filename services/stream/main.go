@@ -109,7 +109,8 @@ func main() {
 		})
 	})
 
-	// Snapshots & recordings — served from MinIO (public-read via /storage proxy).
+	// Snapshots & recordings — served from MinIO (private bucket, proxied
+	// through this service using its scoped credentials; JWT required).
 	r.Route("/snapshots", func(r chi.Router) {
 		r.Use(middleware.JWTAuth(secret))
 
@@ -122,6 +123,15 @@ func main() {
 			r.Use(middleware.RequireRole(secret, "admin", "operator"))
 			r.Delete("/{id}", h.DeleteSnapshot)
 		})
+	})
+
+	// Object storage proxy — serves MinIO objects (snapshots/recordings/
+	// detection images) through this service using scoped credentials.
+	// The bucket is private (no public-read policy); every read is
+	// authenticated here and the object key is validated (no traversal).
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.JWTAuth(secret))
+		r.Get("/storage/*", h.GetObject)
 	})
 
 	// ─── HTTP Server ────────────────────────────────────────────────────

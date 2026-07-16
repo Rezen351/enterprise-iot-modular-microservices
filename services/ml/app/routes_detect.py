@@ -22,7 +22,7 @@ from app.schemas import (
     DetectionHistoryItem,
 )
 from app.security import require_read, require_write
-from app.vision_engine import run_inference
+from app.vision_engine import run_inference, InferenceTimeout
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -105,6 +105,10 @@ def detect_base64(payload: DetectBase64):
             raw, payload.model_id, source_type="base64",
             source_ref="base64", conf=payload.conf, iou=payload.iou, imgsz=payload.imgsz,
         )
+    except InferenceTimeout as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=str(exc)
+        ) from exc
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return DetectResponse(count=1, results=[result])
@@ -128,6 +132,10 @@ def detect_from_stream(payload: DetectFromStream):
             raw, payload.model_id, source_type="stream",
             source_ref=payload.object_key, conf=payload.conf, iou=payload.iou, imgsz=payload.imgsz,
         )
+    except InferenceTimeout as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=str(exc)
+        ) from exc
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return DetectResponse(count=1, results=[result])

@@ -1,15 +1,18 @@
 # 🗺️ Roadmap — IOT-Modular-Microservice
 
-> **Versi:** 2.7.0  
-> **Terakhir diperbarui:** 2026-07-13  
+> **Versi:** 2.16.0  
+> **Terakhir diperbarui:** 2026-07-16  
 > **Status legend:** 🔴 P1 (Kritikal) · 🟡 P2 (Penting) · 🟢 P3 (Normal) · ⬜ P4 (Opsional)  
 > **Progress:** `[ ]` Belum · `[/]` In Progress · `[x]` Selesai
+> **Dokumen Terkait:** [planning.md](./planning.md) · [logs.md](./logs.md) · [testing-plan-agent.md](./testing-plan-agent.md) · [AGENTS.md](../AGENTS.md)
+
+> **Penomoran Fase (diselaraskan dengan `planning.md`):** dokumen ini menggunakan skema fase **1–12** yang sama dengan `planning.md`. Roadmap versi lama menggunakan 1–14; penomoran lama dihapus untuk menghindari kebingungan.
 
 ---
 
 ## 📊 Status Keseluruhan
 
-**Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module Service) ✅ · Fase 3 (Analytics + WS-Gateway) ✅ · Fase 4 (Control Service) ✅ · Fase 5 (Stream Service) ✅ · Monitor Service ✅**
+**Fase 0 (Infrastruktur) ✅ · Fase 1 (Auth + Dashboard Auth) ✅ · Fase 2 (Module) ✅ · Fase 3 (Analytics + WS-Gateway) ✅ · Fase 4 (Control) ✅ · Fase 5 (Alert + Stream + ML/Vision) ✅ · Monitor Service ✅ · Fase 6 (Snapshot→AI + CCTV Recording) ✅ · Audit Service ✅ · Dashboard Lengkap ✅**
 
 ### Yang sudah berjalan end-to-end:
 | Alur | Status |
@@ -22,24 +25,30 @@
 | Monitor Service (snapshot resource container via `docker stats` untuk halaman Version/Security) | ✅ |
 | Dashboard React (Auth + Analytics + Module + Control + Live View + Snapshot via Kong) | ✅ |
 | Dashboard Control Panel (mode arbitration Manual/Otomatis/Emergency + Resume, manual override, editor jadwal + pagination) | ✅ |
-| Dashboard Live View + Snapshot (player MediaMTX iframe, manajemen stream, galeri snapshot/recording) | ✅ |
+| Dashboard Live View + Snapshot (player MediaMTX iframe, manajemen stream, galeri snapshot/recording + AI Detection) | ✅ |
 | Dashboard Telemetri Real-time (WebSocket ke WS-Gateway di Node Detail) | ✅ |
 | Control Service (manual + scheduler otomatis + emergency stop/resume via MQTT) | ✅ |
 | Seed akun admin default + Manajemen Akun (Admin only) | ✅ |
-| Observability (Prometheus + exporter: mysqld/postgres/redis/mosquitto/nats) | ✅ |
+| Alert Service (threshold eval + publish `alert.triggered`/`alert.resolved`/`system.status`) | ✅ |
 | Audit Service (consume `audit.log` → `mariadb-audit`, `GET /audit/logs`) | ✅ |
+| Observability (Prometheus + exporter: mysqld/postgres/redis/mosquitto/nats + node-exporter + cAdvisor) | ✅ |
 | CCTV Capture Cron (`services/cctv-capture`) | ✅ (job eksternal, bukan microservice) |
 
-### Yang belum dikerjakan (sisa):
-| Service | Fase | Prioritas |
-|---------|------|-----------|
-| Notification Service | Fase 8 | 🟡 P2 |
-| Export Service / Data API | Fase 11 | 🟢 P3 |
-| OTA Service | Fase 12 | ⬜ P4 |
-| Prometheus Metrics Service | Fase 13 | ⬜ P4 |
-| Cloudflare Tunnel | Fase 14 | ⬜ P4 |
+### Yang belum dikerjakan (sisa) — selaras dengan `planning.md`:
+| Service / Item | Fase (skema planning) | Prioritas | Kategori |
+|---------|------|-----------|-----------|
+| Notification Service | Fase 5 (Notification) | 🔴 P1 | Dikerjakan di TA (blocker fungsional) |
+| Export Service / Data API | Fase 9b | 🟢 P3 | Future (sebagian via Analytics) |
+| OTA Service | Fase 10 | ⬜ P4 | Future |
+| Prometheus Metrics Service | Fase 11 | ⬜ P4 | Future |
+| Cloudflare Tunnel | Fase 12 | ⬜ P4 | Future |
+| Webhook Service | (belum bernomor) | ⬜ P4 | Future |
+| **DLQ Saga (NATS Advisory)** | — | 🔴 P1 | **Dikerjakan di TA** |
+| **CI/CD (GitHub Actions)** | — | 🟡 P2 | **Dikerjakan di TA** |
+| **Unit Test 80%** | — | 🟡 P2 | **Dikerjakan di TA** |
+| **Transactional Outbox** | — | 🟡 P2 | Dikerjakan di TA (lihat planning) |
 
-> **Catatan (2026-07-14):** Dashboard Alert & History (Fase 10) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Lihat tabel Fase 10.
+> **Catatan:** Dashboard Alert & History (Fase 10 di skema lama) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Notification Service (pengiriman ke Telegram/Email/Push) masih `⬜` — ini yang membuat alert "mati di ujung" dan wajib dikerjakan di TA.
 
 ---
 
@@ -143,7 +152,7 @@
 | `[x]` | Skema `module_db` (MariaDB) | Tabel `modules` (konfigurasi) & `nodes` (perangkat) via GORM AutoMigrate |
 | `[x]` | MQTT subscriber `discovery` | Subscribe `smartfarm/discovery` → auto-register node (unpaired) |
 | `[x]` | MQTT subscriber `status/#` | Subscribe `smartfarm/status/+` (online/offline LWT) → update status + last_seen |
-| `[x]` | Redis status cache | `redis-module` menyimpan status realtime + TTL (last-seen) |
+| `[x]` | Redis status cache | `redis-shared` (DB0) menyimpan status realtime + TTL (last-seen) |
 | `[x]` | REST: Module CRUD | `POST/GET/PUT/DELETE /modules` via Kong |
 | `[x]` | REST: Node onboarding | `GET /nodes`, `GET /nodes/discsovered`, `pair`, `unpair`, `DELETE` via Kong |
 | `[x]` | NATS `audit.log` | Publish saat module/node created/paired/unpaired/deleted |
@@ -158,7 +167,7 @@
 | `[x]` | MQTT subscriber telemetry | Subscribe `smartfarm/{node}/telemetry` → `IngestTelemetry` |
 | `[x]` | Tag mapping (modular) | Tabel `node_tags` di MariaDB: source_key (dot-path) → tag_name DB (+ `label` untuk nama tampilan bersih di dashboard, `display_name`, `unit`, `data_type`, `enabled`), bisa diubah di UI tanpa kode |
 | `[x]` | Simpan ke TimescaleDB | Insert ke hypertable `telemetry` (node_id, module_id, metric, value, raw) |
-| `[x]` | Cache ke Redis | Nilai terbaru per node (`node:latest:{id}`, TTL) |
+| `[x]` | Cache ke Redis | Nilai terbaru per node (`node:latest:{id}`, TTL) di `redis-shared` (DB0) |
 | `[x]` | Publish NATS `telemetry.ingest` | Per reading (ke WS-Gateway/alert/analytics) |
 | `[x]` | Publish NATS `telemetry.batch` | Setiap 1 menit (agregat count/sum/min/max/avg/last) — **✅ via JetStream** (stream `TELEMETRY_BATCH`, replay otomatis) |
 
@@ -168,7 +177,7 @@
 |---|---|
 | `mariadb-module` | `modules` (konfigurasi module), `nodes` (perangkat ESP32), `node_tags` (mapping sensor key → tag name) |
 | `timescaledb-module` | Hypertable `telemetry` (time, node_id, module_id, metric, value, raw) — data mentah |
-| `redis-module` | Cache status node (`node:status:{id}`), cache nilai terbaru (`node:latest:{id}`) |
+| `redis-shared` (DB0) | Cache status node (`node:status:{id}`), cache nilai terbaru (`node:latest:{id}`) |
 
 ---
 
@@ -324,7 +333,7 @@ Control Service Scheduler (interval/schedule/threshold/duration/ramp)
 | `[x]` | Scaffold Go service | Struktur `internal/` (config, model, repository, cache, service, handler, middleware) | 1 hari |
 | `[x]` | Subscribe NATS `telemetry.ingest` | Queue group `alert-workers` (Core NATS) terima data sensor real-time | 0.5 hari |
 | `[x]` | Ambil threshold dari `mariadb-alert` | Konfigurasi threshold per node/metric (fallback wildcard `node_id="*"`) | 0.5 hari |
-| `[x]` | Cache threshold di `redis-alert` | Cache hasil resolve threshold (TTL 60s) + marker alert aktif untuk dedup | 0.5 hari |
+| `[x]` | Cache threshold di `redis-shared` (DB1) | Cache hasil resolve threshold (TTL 60s) + marker alert aktif untuk dedup | 0.5 hari |
 | `[x]` | Evaluasi threshold | Bandingkan nilai sensor dengan batas min/max; dedup sampai resolve | 1 hari |
 | `[x]` | Publish `alert.triggered` | Jika threshold terlampaui | 0.5 hari |
 | `[x]` | Publish `alert.resolved` | Jika nilai kembali normal | 0.5 hari |
@@ -338,13 +347,13 @@ Control Service Scheduler (interval/schedule/threshold/duration/ramp)
 
 > **Catatan integrasi notifikasi:** Alert Service mem-publish `alert.triggered`/`alert.resolved` **dan** `system.status` (envelope notifikasi). WS-Gateway (`/ws/system-status`) sudah subscribe ketiga subject → dashboard `NotificationContext` menerima alert real-time. Threshold dikelola via REST (wildcard `*` untuk semua node per metric).
 
-### Database: `mariadb-alert` + `redis-alert`
+### Database: `mariadb-alert` + `redis-shared` (DB1)
 
 | Tabel/Key | Fungsi |
 |---|---|
 | `thresholds` | Konfigurasi threshold (node_id, metric, min, max, enabled) |
 | `alerts` | History alert (id, node_id, metric, value, threshold, severity, status, acked_by, acked_at) |
-| `redis-alert` | Cache threshold aktif, cache alert terbaru |
+| `redis-shared` (DB1) | Cache threshold aktif, cache alert terbaru |
 
 ### Alur Alert
 
@@ -358,7 +367,9 @@ Module Service → NATS telemetry.ingest → Alert Service
 
 ---
 
-## 🟡 Fase 8 — Notification Service (P3)
+## 🔴 Fase 5 — Notification Service (P1 — Prioritas TA)
+
+> Mengirim notifikasi ke pengguna berdasarkan alert yang dipicu. **Ini blocker fungsional**: Alert Service sudah publish `alert.triggered`/`alert.resolved` tapi belum ada subscriber → alert "mati di ujung". Wajib dikerjakan di TA (selaras `planning.md` TA-Scale Roadmap).
 
 > Mengirim notifikasi ke pengguna berdasarkan alert yang dipicu.
 
@@ -370,19 +381,19 @@ Module Service → NATS telemetry.ingest → Alert Service
 | `[ ]` | Kirim Push Notification | Integrasi Firebase FCM | 1 hari |
 | `[ ]` | Kirim Email | Integrasi SMTP | 1 hari |
 | `[ ]` | Kirim Telegram | Bot API Telegram | 1 hari |
-| `[ ]` | Queue di `redis-notification` | Antrian notifikasi (retry mechanism) | 0.5 hari |
+| `[ ]` | Queue di `redis-shared` (DB2) | Antrian notifikasi (retry mechanism) | 0.5 hari |
 | `[ ]` | Simpan log notifikasi | Di `mariadb-notification` | 0.5 hari |
 | `[ ]` | `Dockerfile` + healthcheck | Multi-stage + `/health` | 0.5 hari |
 
 **Total estimasi: 3-5 hari**
 
-### Database: `mariadb-notification` + `redis-notification`
+### Database: `mariadb-notification` + `redis-shared` (DB2)
 
 | Tabel/Key | Fungsi |
 |---|---|
 | `notification_logs` | Log pengiriman notifikasi (id, alert_id, channel, status, sent_at) |
 | `user_notification_settings` | Preferensi notifikasi per user (email, telegram, push) |
-| `redis-notification` | Queue notifikasi (retry queue) |
+| `redis-shared` (DB2) | Queue notifikasi (retry queue) |
 
 ---
 
@@ -631,7 +642,7 @@ User (dashboard/API) ──Kong /ml/detect──▶ Vision API
 
 ---
 
-## 🟢 Fase 11 — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
+## 🟢 Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
 
 > Melayani akses data untuk mahasiswa/peneliti via REST API. Memungkinkan import langsung ke Python pandas, R, Excel, dan tools analisis data lainnya.
 
@@ -651,7 +662,7 @@ Export Service (Go/Python FastAPI)
   ├─ Query MariaDB (metadata node, module, alert, audit)
   ├─ Multi-format: CSV, JSON, Parquet, Excel (XLSX)
   ├─ Streaming response (tidak load semua ke memory)
-  ├─ Caching query results (redis-export)
+   ├─ Caching query results (redis-shared DB3)
   └─ Discover endpoint (self-documenting schema)
 ```
 
@@ -753,7 +764,7 @@ df = pd.read_parquet("data.parquet")
 | `[ ]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/audit` (admin only) | Audit log | 0.5 hari |
 | `[ ]` | Endpoint `/export/v1/discover` | Self-documenting schema | 0.5 hari |
-| `[ ]` | Redis caching (`redis-export`) | Cache query results, TTL configurable | 0.5 hari |
+| `[ ]` | Redis caching (`redis-shared` DB3) | Cache query results, TTL configurable | 0.5 hari |
 | `[ ]` | Kong route + rate limiting | `/export` route, 5 req/min limit | 0.5 hari |
 | `[ ]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
 | `[ ]` | Prometheus metrics | `export_http_requests_total` | 0.5 hari |
@@ -763,7 +774,7 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 12 — OTA Service (P4)
+## ⬜ Fase 10 — OTA Service (P4)
 
 > Update firmware ESP32 Over-The-Air.
 
@@ -776,7 +787,7 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 13 — Prometheus Metrics Service (P4)
+## ⬜ Fase 11 — Prometheus Metrics Service (P4)
 
 > Service aggregator metrik via NATS (menggantikan scrape langsung).
 
@@ -787,11 +798,11 @@ df = pd.read_parquet("data.parquet")
 | `[ ]` | Expose `/metrics` | Endpoint untuk Prometheus scraping |
 | `[ ]` | Metrik terkumpul | request count, error rate, response time, uptime, resource usage |
 
-> **📝 Catatan:** Saat ini metrik **tidak lewat NATS** — tiap service langsung expose HTTP `/metrics` dan Prometheus **scrape langsung**. Fase ini akan mengubah ke desain awal: service publish ke NATS subject `metrics.health` → "Prometheus Service" subscribe & aggregasi → expose `/metrics`.
+> **📝 Catatan:** Saat ini metrik **tidak lewat NATS** — tiap service langsung expose HTTP `/metrics` dan Prometheus **scrape langsung**. Fase 11 akan mengubah ke desain (selaras `planning.md`): service publish ke NATS subject `metrics.health` → "Prometheus Service" subscribe & aggregasi → expose `/metrics`.
 
 ---
 
-## ⬜ Fase 14 — Cloudflare Tunnel (P4)
+## ⬜ Fase 12 — Cloudflare Tunnel (P4)
 
 > Akses publik yang aman ke sistem.
 
@@ -805,27 +816,31 @@ df = pd.read_parquet("data.parquet")
 
 ## 📋 Ringkasan Semua Service
 
-| # | Service | Bahasa | Database | Status | Prioritas |
-|---|---------|--------|----------|--------|-----------|
-| 1 | Auth | Go | MariaDB | ✅ Selesai | P1 |
-| 2 | Module | Go | MariaDB + TimescaleDB + Redis | ✅ Selesai | P1 |
-| 3 | Analytics | Go | TimescaleDB | ✅ Selesai | P2 |
-| 4 | WS-Gateway | Go | - | ✅ Selesai | P2 |
-| 5 | Control | Go | MariaDB | ✅ Selesai | P1 |
-| 6 | Stream | Go | MariaDB + MinIO (bucket `stream`, shared) | ✅ Selesai | P3 |
-| 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 |
-| 8 | ML/Vision | Python | MariaDB + MinIO (bucket `ml-vision`, shared) | ✅ Selesai | P3 |
-| 9 | Alert | Go | MariaDB + Redis | ✅ Selesai | **P1** |
-| 10 | Notification | Go | MariaDB + Redis | ⬜ Belum | P2 |
-| 11 | Audit | Go | MariaDB | ✅ Selesai | **P1** |
-| 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis | ⬜ Belum | P3 |
-| 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 |
-| 14 | Webhook | Go | MariaDB | ⬜ Belum | P4 |
-| 15 | Prometheus Metrics | Go | - | ⬜ Belum | P4 |
+> **Catatan penomoran:** nomor 1–15 mengikuti `planning.md` (database-per-service). Item cross-cutting (DLQ/CI/Test/Outbox) tidak bernomor karena lintas service.
 
-> **Catatan:** `services/cctv-capture` (job cron snapshot CCTV, dijalankan via `docker-compose.yml`) **sudah ada & jalan** namun **tidak masuk ringkasan di atas** karena bukan microservice (bukan punya API/DB sendiri — hanya pull frame MediaMTX saat pompa OFF lalu simpan ke MinIO `stream`). Tidak ada service nomor 16.
->
-> **Sinkronisasi status (2026-07-14):** item `system-status notifications` (WS-Gateway) dikoreksi dari ⬜ → ✅ (route `/ws/system-status` sudah diimplementasikan di `services/wsgateway` — subscribe NATS `system.status`, stream ke dashboard `NotificationContext`; notifikasi mengalir begitu ada publisher ke subject tersebut). Replay payload terakhir (`mqtt.>` cache di wsgateway + tulis langsung saat client connect) memperbaiki UX "Loading terus" saat device jarang report. Permanent fix reconnect handler NATS di `services/module` + `services/wsgateway` juga sudah dikerjakan (log disconnect/reconnect/closed + health-check periodik). **FIX (2026-07-14):** `services/alert` tidak mem-publish `system.status`/`alert.*` karena `Service` dibuat dengan NATS conn `nil` (`service.New` dipanggil sebelum `nats.Connect`); ditambah `SetNATS()` dan dipanggil setelah koneksi → notifikasi alert sekarang mengalir end-to-end. Dashboard Alert & History (Fase 10) ✅ selesai (halaman `ALERTS`, notification bell, normalisasi payload).
+| # | Service | Bahasa | Database | Status | Prioritas | Fase |
+|---|---------|--------|----------|--------|-----------|------|
+| 1 | Auth | Go | MariaDB | ✅ Selesai | P1 | Fase 1 |
+| 2 | Module | Go | MariaDB + TimescaleDB + Redis (shared DB0) | ✅ Selesai | P1 | Fase 2 |
+| 3 | Analytics | Go | TimescaleDB | ✅ Selesai | P2 | Fase 3 |
+| 4 | WS-Gateway | Go | - | ✅ Selesai | P2 | Fase 3 |
+| 5 | Control | Go | MariaDB | ✅ Selesai | P1 | Fase 4 |
+| 6 | Stream | Go | MariaDB + MinIO (bucket `stream`, shared) | ✅ Selesai | P3 | Fase 5/6 |
+| 7 | Monitor | Go (CLI) | - (docker stats) | ✅ Selesai | P3 | — |
+| 8 | ML/Vision | Python | MariaDB + MinIO (bucket `ml-vision`, shared) | ✅ Selesai | P3 | Fase 6 |
+| 9 | Alert | Go | MariaDB + Redis (shared DB1) | ✅ Selesai | P1 | Fase 5 |
+| 10 | Notification | Go | MariaDB + Redis (shared DB2) | ⬜ Belum | **P1** | Fase 5 |
+| 11 | Audit | Go | MariaDB | ✅ Selesai | P1 | Fase 8 (Audit) |
+| 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis (shared DB3) | ⬜ Belum | P3 | Fase 9b |
+| 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 | Fase 10 |
+| 14 | Prometheus Metrics | Go | - | ⬜ Belum | P4 | Fase 11 |
+| 15 | Webhook | Go | MariaDB | ⬜ Belum | P4 | (belum bernomor) |
+| — | **DLQ Saga (NATS Advisory)** | Go | mariadb-audit | ⬜ Belum | **P1** | Cross-cutting (TA) |
+| — | **CI/CD (GitHub Actions)** | YAML | - | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
+| — | **Unit Test 80%** | Go | - | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
+| — | **Transactional Outbox** | Go | per-service `outbox` | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
+
+> **Catatan:** `services/cctv-capture` (job cron snapshot CCTV, dijalankan via `docker-compose.yml`) **sudah ada & jalan** namun **tidak masuk ringkasan di atas** karena bukan microservice (bukan punya API/DB sendiri — hanya pull frame MediaMTX saat pompa OFF lalu simpan ke MinIO `stream`).
 
 ---
 
@@ -840,6 +855,17 @@ df = pd.read_parquet("data.parquet")
 | **Minggu 5** | 🟢 P3 | Export / Data API | Akses data eksternal (pandas/Parquet) |
 | **Minggu 6+** | ⬜ P4 | OTA + Prometheus Metrics + Cloudflare | OTA update, pipeline metrik, deployment |
 
+### Rekomendasi Eksekusi TA-Scale (selaras `planning.md` TA-Scale Roadmap)
+
+| Urutan | Item | Kategori | Alasan |
+|---|---|---|---|
+| 1 | **DLQ Saga (NATS Advisory)** | 🔴 P1 | Bukti nyata resilience; subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → `mariadb-audit` |
+| 2 | **Lengkapi Audit Compliance** | 🔴 P1 | Pastikan semua service publish `audit.log` (Control/Stream/ML/Notification) |
+| 3 | **Notification Service** | 🔴 P1 | Menyelesaikan alert "mati di ujung" |
+| 4 | **CI/CD (GitHub Actions)** | 🟡 P2 | `go build` + `go vet` + `docker build` tiap push |
+| 5 | **Unit Test 80%** | 🟡 P2 | AGENTS.md wajibkan; fokus layer `service`/`repository` |
+| 6 | **Transactional Outbox** | 🟡 P2 | Atasi dual-write problem (DB + NATS publish) |
+
 ---
 
 ## ⚠️ Risiko & Mitigasi
@@ -849,9 +875,11 @@ df = pd.read_parquet("data.parquet")
 | Core NATS untuk `telemetry.batch` | Kehilangan data saat restart | Tinggi | ✅ Selesai (2026-07-13): upgrade ke JetStream — stream `TELEMETRY_BATCH` (file storage, retention 24h) + durable consumer `analytics-batch`, replay otomatis |
 | WS tanpa autentikasi | Data real-time bocor | Rendah | ✅ JWT handshake sudah diimplementasikan pada WS-Gateway |
 | 17 instance database | Biaya & kompleksitas operasional | Sedang | Evaluasi apakah semua instance diperlukan; ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
-| Tidak ada backup database | Data hilang permanen jika container crash | Sedang | Cron job dump SQL + backup ke MinIO/cloud storage |
-| Tidak ada CI/CD | Human error saat build/deploy | Sedang | Setup GitHub Actions untuk auto-build & test |
-| Tidak ada unit test | Regression bug tidak terdeteksi | Tinggi | Target minimal 80% code coverage untuk setiap service |
+| Tidak ada backup database | Data hilang permanen jika container crash | Sedang | ✅ Sudah ada DR Strategy di `planning.md` (cron dump SQL per asset, RPO/RTO) |
+| Tidak ada CI/CD | Human error saat build/deploy | Sedang | 🟡 Dikerjakan di TA: GitHub Actions (`go build` + `go vet` + `docker build`) |
+| Tidak ada unit test | Regression bug tidak terdeteksi | Tinggi | 🟡 Dikerjakan di TA: target 80% coverage layer `service`/`repository` |
+| NATS/Kong single-instance SPOF | Event bus / gateway mati → sistem lumpuh | Sedang | ✅ Sudah didokumentasikan HA strategy di `planning.md` (NATS 3-node cluster + JetStream R=2, Kong 2+ replica di prod) |
+| DLQ saga belum ada | Kegagalan terdistribusi tak terinvestigasi | Sedang | 🔴 Dikerjakan di TA: DLQ via NATS Advisory `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → `mariadb-audit` |
 
 ---
 
@@ -872,6 +900,7 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-14 | 2.12.0 | **Sinkronisasi dokumen ↔ kode.** (1) Koreksi status `system-status notifications` WS-Gateway: ✅ → ⬜ Belum (route `/ws/system-status` belum diimplementasikan di `services/wsgateway`; hanya sisi dashboard `NotificationContext` yang siap). (2) Tambah catatan `services/cctv-capture` (job cron snapshot CCTV, sudah jalan via compose) yang sebelumnya tidak ada di ringkasan service. (3) Konfirmasi 0 unit test di seluruh service → produksi blocker (gate G10). |
 | 2026-07-14 | 2.13.0 | **Fase 9 — Audit Service SELESAI.** Service Go baru `services/audit`: subscribe `audit.log` (Core NATS, queue group `audit-workers`) → insert append-only ke `mariadb-audit` (`audit_logs`), endpoint `GET /audit/logs` (filter `event`/`search` + paginasi). Wire: `mariadb-audit` + `audit` + `mysqld-exporter-audit` (compose), upstream+route `/audit` (Kong, JWT), scrape job `audit-service`+`mariadb-audit` (Prometheus). Lolos `go build` + `go vet` + `docker compose config`. Dashboard Audit/History (Fase 10) menyusul. |
 | 2026-07-14 | 2.14.0 | **Fase 10 — Dashboard Audit Log page SELESAI.** Halaman `AUDIT` (sidebar, ikon `ScrollText`) di `dashboard/src/components/Dashboard/Pages/Audit.jsx`: tabel audit trail immutable dari `GET /audit/logs` via Kong, filter `event` (prefix) + `search` (payload), paginasi (25/50/100) + quick-filter chip (Auth/Module/Node/Control), tombol Live (auto-refresh 10s). Penyempurnaan backend: filter `event` di Audit Service diubah jadi prefix `LIKE` agar dashboard bisa filter `auth`/`control`/dll. Lolos `npm run build` (vite) + ESLint (sesuai baseline repo). Sidebar & DashboardLayout di-wire. |
+| 2026-07-16 | 2.16.0 | **Sinkronisasi penuh dengan `planning.md` (v2.16.0).** (1) Versi & tanggal → 2.16.0 / 2026-07-16; (2) Tambah link *Dokumen Terkait* (planning/logs/testing/AGENTS); (3) **Seragamkan penomoran fase ke skema planning (1–12)**: Notification → Fase 5 (P1), Export → Fase 9b, OTA → Fase 10, Prometheus Metrics → Fase 11, Cloudflare → Fase 12; (4) Prioritas Notification → **P1** (blocker fungsional, alert "mati di ujung"); (5) Tambah item cross-cutting TA-Scale ke tabel "Yang belum dikerjakan" & Ringkasan Service: **DLQ Saga (P1), CI/CD (P2), Unit Test 80% (P2), Transactional Outbox (P2), Webhook (#15)**; (6) Tambah sub-bab "Rekomendasi Eksekusi TA-Scale" di Timeline; (7) Perbarui Risk table: backup→sudah ada DR strategy, CI/CD & unit test → 🟡 dikerjakan di TA, tambah risiko SPOF NATS/Kong & DLQ saga. |
 
 ---
 

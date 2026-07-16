@@ -81,13 +81,22 @@ bool ConfigManager::loadConfig() {
         Config::AUTH_TOKEN.trim();
     }
 
-    // Use fixed defaults if not set in config.json
-    if (Config::ADMIN_PASS == "") {
-        Config::ADMIN_PASS = "admin123";
-        Serial.println("INFO: Using default admin password. Change via Web Portal!");
-    }
+    // Use fixed defaults if not set in config.json.
+    // GAP/SEC: never ship a hardcoded weak password. When no admin password is
+    // configured we generate a random one at first boot and surface it on the
+    // serial console so the operator can read & change it via the Web Portal.
     if (Config::ADMIN_USER == "") {
         Config::ADMIN_USER = "admin";
+    }
+    if (Config::ADMIN_PASS == "") {
+        String generated = "";
+        for (int i = 0; i < 12; i++) {
+            generated += String(esp_random() % 16, HEX);
+        }
+        Config::ADMIN_PASS = generated;
+        Serial.printf("INFO: No admin password in config.json. Generated random password: %s\n",
+                      Config::ADMIN_PASS.c_str());
+        Serial.println("INFO: Change it via the Web Portal at your earliest convenience.");
     }
 
     // Protocols - WiFi

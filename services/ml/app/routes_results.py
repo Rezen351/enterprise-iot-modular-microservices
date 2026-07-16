@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, status, HTTPException
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -25,6 +25,11 @@ class ResultObject(BaseModel):
     kind: str
 
 
+class ResultList(BaseModel):
+    total: int
+    items: list[ResultObject]
+
+
 _PREFIX_KIND = {
     "frames": "frame",
     "annotated": "annotated",
@@ -32,7 +37,7 @@ _PREFIX_KIND = {
 }
 
 
-@router.get("/results", response_model=list[ResultObject], dependencies=[Depends(require_read)])
+@router.get("/results", response_model=ResultList, dependencies=[Depends(require_read)])
 def list_results(
     prefix: str = Query("frames", description="frames | annotated | results"),
     limit: int = Query(200, ge=1, le=1000),
@@ -65,12 +70,17 @@ def list_results(
         if len(items) >= limit:
             break
     items.sort(key=lambda i: i.key, reverse=True)
-    return items
+    return ResultList(total=len(items), items=items)
 
 
 @router.delete("/results", dependencies=[Depends(require_write)])
 def delete_result(key: str = Query(...)):
     """Delete a single object from the `ml-result` bucket (file management)."""
+    if not storage.is_safe_object_key(key):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid object key (path traversal or unsafe characters)",
+        )
     settings = get_settings()
     bucket = settings.minio_result_bucket
     client = storage.get_client()

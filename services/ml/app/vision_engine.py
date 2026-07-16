@@ -13,6 +13,7 @@ import os
 import threading
 import time
 import uuid
+import concurrent.futures
 from typing import Optional
 
 import cv2
@@ -33,6 +34,16 @@ from app import storage
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+# Dedicated pool for inference so a long-running predict can be time-boxed in a
+# separate thread without blocking the event loop / other requests.
+_INFER_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=2, thread_name_prefix="ml-infer"
+)
+
+
+class InferenceTimeout(Exception):
+    """Raised when model.predict exceeds the configured wall-clock limit."""
 
 
 class ModelRegistry:
@@ -348,6 +359,7 @@ class ModelRegistry:
         return len(self._loaded)
 
 
+# Instantiate the singleton registry after the class is defined.
 registry = ModelRegistry()
 
 
@@ -371,7 +383,20 @@ def run_inference(
     imgsz = imgsz if imgsz is not None else meta["input_size"]
 
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    results = model.predict(image, conf=conf, iou=iou, imgsz=imgsz, verbose=False)
+
+    def _predict():
+        return model.predict(image, conf=conf, iou=iou, imgsz=imgsz, verbose=False)
+
+    try:
+        future = _INFER_EXECUTOR.submit(_predict)
+        results = future.result(timeout=settings.inference_timeout_seconds)
+    except concurrent.futures.TimeoutError as exc:
+        logger.error("Inference timed out after %ss", settings.inference_timeout_seconds)
+        raise InferenceTimeout(
+            f"Inference exceeded the {settings.inference_timeout_seconds}s limit"
+        ) from exc
+    except InferenceTimeout:
+        raise
 
     detections: list[Detection] = []
     names = model.names

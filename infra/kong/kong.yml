@@ -550,6 +550,20 @@ services:
               hour: 8000
               policy: local
               fault_tolerant: true
+      - name: stream-storage-routes
+        paths:
+          - /storage
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
 
   # ML SERVICE — YOLO model registry + inference. JWT/RBAC (operator/admin
   # for writes, all roles for reads) validated by ML Service middleware.
@@ -612,11 +626,12 @@ services:
     port: 8080
     protocol: http
     connect_timeout: 5000
-    write_timeout: 10000
-    read_timeout: 10000
+    write_timeout: 30000
+    read_timeout: 30000
     routes:
       - name: export-routes
         paths:
+          - /export
           - /analytics/export
         methods:
           - GET

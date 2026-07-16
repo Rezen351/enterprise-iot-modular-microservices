@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -29,6 +31,7 @@ var (
 	ErrMediaMTX      = errors.New("mediamtx operation failed")
 	ErrMinIO         = errors.New("minio operation failed")
 	ErrDuplicateName = errors.New("stream name already exists")
+	ErrInvalidName   = errors.New("invalid stream name")
 )
 
 // StreamService coordinates DB metadata with MediaMTX path registration.
@@ -69,6 +72,11 @@ func (s *StreamService) CreateStream(ctx context.Context, req model.CreateStream
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
+	}
+	// Reject names that could be used for MediaMTX path traversal (e.g.
+	// containing "/" or "..") or that are not safe HLS segment names.
+	if !validStreamName(name) {
+		return nil, ErrInvalidName
 	}
 	source := req.SourceRTSP
 	if strings.TrimSpace(source) == "" {
@@ -143,6 +151,14 @@ func (s *StreamService) UpdateStream(ctx context.Context, id string, req model.U
 	}
 	oldName := current.Name
 
+	// Validate the new name BEFORE persisting so an invalid name (slash, "..",
+	// whitespace) can never be written to the DB — otherwise a rejected update
+	// would still leave a traversal-unsafe MediaMTX path / HLS segment name
+	// stored (returned as 400 but silently persisted).
+	if req.Name != nil && !validStreamName(*req.Name) {
+		return nil, ErrInvalidName
+	}
+
 	st, err := s.repo.UpdateStream(ctx, id, req)
 	if err != nil {
 		return nil, err
@@ -204,7 +220,7 @@ func (s *StreamService) toView(ctx context.Context, st *model.Stream) *model.Str
 		Name:        st.Name,
 		DeviceLabel: st.DeviceLabel,
 		Location:    st.Location,
-		SourceRTSP:  st.SourceRTSP,
+		SourceRTSP:  redactRTSPCreds(st.SourceRTSP),
 		NodeID:      st.NodeID,
 		ModuleID:    st.ModuleID,
 		Enabled:     st.Enabled,
@@ -290,6 +306,38 @@ func isDuplicateErr(err error) bool {
 	}
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "duplicate") || strings.Contains(msg, "1062") || strings.Contains(msg, "unique")
+}
+
+// validStreamName enforces a safe MediaMTX path / HLS segment name. It
+// rejects anything that could enable path traversal into MediaMTX (slashes,
+// "..", NUL, whitespace) so a crafted stream name can never escape the
+// intended /hls/<name>/index.m3u8 namespace.
+var streamNameRE = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
+
+func validStreamName(name string) bool {
+	return streamNameRE.MatchString(name)
+}
+
+// rtspCredRE matches the embedded credentials in an RTSP URL
+// (rtsp://user:pass@host/...). The source RTSP URL stores CCTV credentials
+// that must never be returned to API clients, so we strip the userinfo.
+var rtspCredRE = regexp.MustCompile(`^rtsp://[^/@]+@`)
+
+func redactRTSPCreds(u string) string {
+	return rtspCredRE.ReplaceAllString(u, "rtsp://")
+}
+
+// ServeObject streams a MinIO object to the client using the service's scoped
+// credentials. The bucket stays private; access is gated by JWT at the
+// handler and validated here (no path traversal, allowed buckets only).
+func (s *StreamService) ServeObject(w http.ResponseWriter, bucket, key string) error {
+	if s.minio == nil {
+		return fmt.Errorf("%w: not configured", ErrMinIO)
+	}
+	if !miniosvc.ValidObjectPath(bucket, key) {
+		return fmt.Errorf("%w: invalid object path", ErrMinIO)
+	}
+	return s.minio.ServeObject(w, bucket, key)
 }
 
 // ─── Snapshots & Recordings ───────────────────────────────────────────────────

@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import re
 from typing import Optional
 
 from minio import Minio
@@ -85,9 +86,25 @@ def safe_object_key(prefix: str, name: str) -> str:
     """Build a timestamped, collision-free object key."""
     import datetime
     import random
-    import re
 
     now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     salt = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=6))
     base = re.sub(r"[^a-zA-Z0-9._-]", "_", os.path.basename(name) or "image")
     return f"{prefix}/{now}_{salt}_{base}"
+
+
+# Reject keys that could traverse out of their intended prefix/bucket. S3
+# object keys legitimately use "/" as a path separator (e.g. "frames/foo.jpg"),
+# so we allow slashes but block traversal (".."), a leading slash, backslashes
+# or control characters, which could address unintended objects.
+_KEY_UNSAFE = re.compile(r"(\.\.|\\|[\x00-\x1f\x7f])")
+
+
+def is_safe_object_key(key: str) -> bool:
+    """Return True only for a key that stays within its bucket (no traversal)."""
+    if not key or not isinstance(key, str):
+        return False
+    if key.startswith("/") or _KEY_UNSAFE.search(key):
+        return False
+    return True
+

@@ -3,7 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/almuzky/iot/services/stream/internal/model"
 	"github.com/almuzky/iot/services/stream/internal/service"
@@ -52,6 +55,8 @@ func (h *Handler) CreateStream(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, service.ErrDuplicateName):
 			respondError(w, http.StatusConflict, "stream name already exists")
+		case errors.Is(err, service.ErrInvalidName):
+			respondError(w, http.StatusBadRequest, "invalid stream name (allowed: letters, digits, _ . -; max 64 chars)")
 		case errors.Is(err, service.ErrMediaMTX):
 			respondError(w, http.StatusBadGateway, "failed to register path with MediaMTX")
 		default:
@@ -91,6 +96,10 @@ func (h *Handler) UpdateStream(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusNotFound, "stream not found")
 			return
 		}
+		if errors.Is(err, service.ErrInvalidName) {
+			respondError(w, http.StatusBadRequest, "invalid stream name (allowed: letters, digits, _ . -; max 64 chars)")
+			return
+		}
 		respondError(w, http.StatusInternalServerError, "failed to update stream")
 		return
 	}
@@ -127,6 +136,24 @@ func (h *Handler) CaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond(w, http.StatusCreated, view)
+}
+
+// GetObject serves a MinIO object (snapshot/recording/image) through the
+// Stream Service using its scoped credentials. The route is JWT-protected and
+// the object path is validated (no bucket/key traversal), so the underlying
+// MinIO bucket can stay private.
+func (h *Handler) GetObject(w http.ResponseWriter, r *http.Request) {
+	raw := chi.URLParam(r, "*")
+	raw = strings.TrimPrefix(raw, "/")
+	parts := strings.SplitN(raw, "/", 2)
+	if len(parts) < 2 {
+		respondError(w, http.StatusBadRequest, "invalid storage path (expected /storage/{bucket}/{key})")
+		return
+	}
+	bucket, key := parts[0], parts[1]
+	if err := h.svc.ServeObject(w, bucket, key); err != nil {
+		respondError(w, http.StatusNotFound, "object not found")
+	}
 }
 
 // ListSnapshots returns all snapshots/recordings (newest first), optionally
@@ -195,9 +222,49 @@ func (h *Handler) StopRecording(w http.ResponseWriter, r *http.Request) {
 func respond(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(map[string]any{"success": true, "data": v})
 }
 
 func respondError(w http.ResponseWriter, status int, msg string) {
-	respond(w, status, map[string]string{"error": msg})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   map[string]string{"code": statusCode(status), "message": sanitizeMsg(msg)},
+	})
+}
+
+// statusCode maps an HTTP status to a stable uppercase error code.
+func statusCode(s int) string {
+	switch s {
+	case 400:
+		return "BAD_REQUEST"
+	case 401:
+		return "UNAUTHORIZED"
+	case 403:
+		return "FORBIDDEN"
+	case 404:
+		return "NOT_FOUND"
+	case 409:
+		return "CONFLICT"
+	case 429:
+		return "RATE_LIMITED"
+	case 502:
+		return "BAD_GATEWAY"
+	case 503:
+		return "SERVICE_UNAVAILABLE"
+	default:
+		return fmt.Sprintf("ERROR_%d", s)
+	}
+}
+
+// rtspCredRE matches credentials embedded in a URL of the form
+// scheme://user:pass@host so they are never leaked to API clients or
+// logs via error messages.
+var rtspCredRE = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*)://[^/@\s]+:[^/@\s]*@`)
+
+// sanitizeMsg scrubs any embedded credentials from a message before it is
+// returned to the client (e.g. an RTSP source URL with CCTV credentials).
+func sanitizeMsg(msg string) string {
+	return rtspCredRE.ReplaceAllString(msg, "$1://***:***@")
 }

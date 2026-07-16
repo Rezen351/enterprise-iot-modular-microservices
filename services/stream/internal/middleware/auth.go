@@ -93,11 +93,11 @@ func UserIDFromContext(ctx context.Context) string {
 func unauthorized(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
-	fmt.Fprintf(w, `{"error":%q}`, msg)
+	fmt.Fprintf(w, `{"success":false,"error":{"code":"UNAUTHORIZED","message":%q}}`, msg)
 }
 
 func forbidden(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusForbidden)
-	w.Write([]byte(`{"error":"forbidden: insufficient role"}`))
+	w.Write([]byte(`{"success":false,"error":{"code":"FORBIDDEN","message":"forbidden: insufficient role"}}`))
 }

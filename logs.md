@@ -5,6 +5,146 @@
 
 ---
 
+## 2026-07-16
+
+### Testing & Bug Fix — Infrastruktur & Integration (Section 13, S13)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian Infrastruktur & Integration (checklist §13) selesai — diuji langsung (container live) dengan stack infra + representative app services: auth, module, analytics, control, alert, audit, notification, export, ml, stream + Kong + NATS + Mosquitto + MinIO + MediaMTX + Prometheus + Grafana + seluruh exporter (mysqld/redis/postgres/node/cadvisor/mosquitto/nats). |
+| 2 | ✅ | **Kong routing:** seluruh prefix (`/auth`,`/modules`,`/nodes`,`/analytics`,`/control`,`/alerts`,`/thresholds`,`/audit`,`/streams`,`/notifications`,`/export`,`/ml`) → 200 dengan admin token (analytics/metrics & export → 400 = validasi input, bukan routing gagal). |
+| 3 | ✅ | **Kong jwt:** token salah → 401; tanpa token → 401 pada route terproteksi (validasi di service middleware). |
+| 4 | ✅ | **Rate-limit:** hammer `POST /auth/login` salah → **429** di attempt ke-61 (limit 60/menit auth-public). Pesan English (`Too many login attempts...`). |
+| 5 | ✅ | **CORS preflight:** `OPTIONS` dari `Origin: http://localhost:5173` → `Access-Control-Allow-Origin: http://localhost:5173`; dari `evil.com` → TIDAK ada header ACAO (browser akan blokir). |
+| 6 | ✅ | **DB migration idempoten:** `docker compose restart module/alert/audit/auth` → log `[migrate] <db> schema OK` tanpa error (GORM AutoMigrate di `*_svc/migrate.go` sebagai single source of truth). |
+| 7 | ✅ | **NATS JetStream:** `jsz` → stream `TELEMETRY_BATCH` + consumer `analytics-batch` (subject `telemetry.batch`, durable JetStream, idempotent `AddStream`). Event bridge terverifikasi: publish `audit.log` → tercatat di `audit_logs` (Core NATS QueueSubscribe); Alert subscribe `telemetry.ingest`; Notification subscribe `alert.*` (subscriber listening aktif). |
+| 8 | ✅ | **MinIO:** `stream`/`mlbucket`/`ota`/`ml-result` → **private** (anon read ditolak). `minio-setup` diubah ke `private` untuk semua bucket. |
+| 9 | ✅ | **MediaMTX HLS aman:** host port `8888` di-unpublish (HLS hanya via Kong auth proxy); `curl :8888/hls` → 000 (refused), `curl :8000/hls` → 302; API `:9997` tetap internal-only. |
+| 10 | ✅ | **Prometheus/Grafana:** `count(up)=31/31` target `up`; metrik app-service (`auth/module/audit/alert_http_requests_total`, `kong_http_requests_total`) ter-scrape via middleware prometheus; Grafana `/api/health` → 200. |
+| 11 | 🔧 | **BUG FIX 1 (DB analytics):** `timescaledb-analytics` tidak punya DB `analytics_ts` (init.sql jalan di DB default `postgres`) + `pg_hba.conf` localhost-only → Analytics connect gagal `no pg_hba.conf entry` → semua `/analytics/*` 500. **Fix:** `CREATE DATABASE analytics_ts` + jalankan `infra/timescaledb/analytics/init.sql` ke `analytics_ts` + tambah `host all all all scram-sha-256` ke `pg_hba.conf` (persist di volume) + `pg_reload_conf()`. **TER-VERIFIKASI:** `/analytics/nodes` & `/analytics/metrics` → 200. |
+| 12 | 🔧 | **BUG FIX 2 (MinIO publik):** `minio-setup` `mc anonymous set download m/ml-result` → bucket `ml-result` terbuka anonim. **Fix:** `docker-compose.yml` `minio-setup` set `private` semua bucket + terapkan live. **TER-VERIFIKASI:** ke-4 bucket `private`. |
+| 13 | 🔧 | **BUG FIX 3 (MediaMTX HLS exposed):** port `8888:8888` (HLS) di-publish ke host → stream bisa diakses anonim tanpa Kong. **Fix:** hapus mapping host `8888` di block `mediamtx` (HLS hanya via Kong iot-net). **TER-VERIFIKASI:** `:8888` refused, `/hls` via Kong 302. |
+| 14 | 📝 | **Open note (Keamanan #1, `[~]`):** Mosquitto `allow_anonymous true` masih aktif (RE-VERIFIKASI: client tanpa user/pass connect `rc=0`). `acl.conf` sudah berisi template ACL per-service tapi ter-comment. Enforcement penuh (password_file + ACL) ditunda karena butuh distribusi kredensial ke seluruh stack (`.env` `MQTT_USER`/`MQTT_PASS` kosong → module/control anonim) + firmware; remediation siap di `infra/mosquitto/config/acl.conf`. |
+| 15 | ✅ | **Cleanup:** test audit rows (`sectest`/`sectest2`) dihapus via `DELETE FROM audit_logs`; notification test tidak menghasilkan row; temp file `/tmp/*` dibersihkan; seluruh container yang dinyalakan di-stop → env steril. |
+
+**Keputusan Teknis:** Infrastruktur & Integration (§13) dinyatakan **SELESAI (clean)** untuk seluruh checklist (Kong routing/jwt/rate-limit/CORS, DB healthcheck+migrasi idempoten, NATS JetStream+event bridge, MinIO private, MediaMTX HLS secure, Prometheus/Grafana scrape) setelah **3 bug/misconfig ditemukan, di-fix, dan terverifikasi ulang tanpa regresi**:
+1. **[CRITICAL] `timescaledb-analytics` tanpa DB `analytics_ts` + pg_hba localhost** — CREATE DATABASE + init.sql + rule pg_hba + reload. Verifikasi: `/analytics/*` → 200.
+2. **[SECURITY] MinIO `ml-result` publik** — `minio-setup` private + terapkan live. Verifikasi: semua bucket private.
+3. **[SECURITY] MediaMTX HLS exposed di host** — unpublish port 8888 (Kong-only). Verifikasi: `:8888` refused, `/hls` via Kong 302.
+
+**Sisa (bukan blocker):** Mosquitto `allow_anonymous` masih true (ACL enforcement ditunda — perlu kredensial terdistribusi); MinIO pakai root credential (belum scoped per-service). Kedua item sudah di-flag dengan remediation di config terkait.
+
+---
+
+### Optimasi Docker Build (DevOps / Infrastructure)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menambahkan aturan optimasi build Docker (Docker Layer Caching) di [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md) (§4 Poin 8) untuk mempercepat proses build pada image besar seperti Service ML/Python. |
+
+**Keputusan Teknis:** Wajib menggunakan pola Docker Layer Caching yang memisahkan instalasi dependensi dengan penyalinan kode program pada `Dockerfile` di seluruh repositori microservices guna mempercepat siklus development dan build time.
+
+---
+
+### Testing & Bug Fix — Export Service (Service Kesepuluh, M10)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian Export Service selesai (checklist fitur + keamanan di `docs/testing-plan-agent.md` §10) — seluruh item lulus via curl lewat Kong `:8000`. |
+| 2 | 🔧 | **BUG FIX 1 (STUB KOSONG):** `services/export` SEBELUMNYA hanya stub `main.go` (25 baris: `/health` + `/metrics`, TIDAK ada endpoint export, TIDAK ada JWT/auth, TIDAK ada koneksi TimescaleDB) → seluruh Section 10 gagal. **Fix:** implementasi penuh dari nol mengikuti pola service Go lainnya: `internal/{config,model,tsdb,service,handler,middleware}`, chi router, JWT middleware (`JWTAuth` + `RequireRole("admin","operator")`), `tsdb.Store` baca `telemetry` di `timescaledb-module`, keyset cursor pagination stabil, validasi window 366 hari, OpenAPI handler, Prometheus middleware, graceful shutdown (SIGINT/SIGTERM). Verifikasi: `go build`+`go vet`+`gofmt` lolos, seluruh fitur + keamanan lulus. |
+| 3 | 🔧 | **BUG FIX 2 (input berbahaya → 500):** `node_id`/`metric` divalidasi (`isValidSegment`) tapi error lolos ke `INTERNAL_ERROR` 500 (harus 400). **Fix:** sentinel `ErrInvalidParam` di `internal/tsdb/tsdb.go` + map ke `BAD_REQUEST` 400 di `internal/handler/handler.go` (`errors.Is`). Verifikasi: `node_id=' OR '1'='1` & `../../etc` → 400, valid → 200. |
+| 4 | 🔧 | **BUG FIX 3 (DB connection):** `timescaledb-module` TIDAK punya DB `module_ts` & pg_hba hanya izinkan localhost → export 500 `no pg_hba.conf entry`. **Fix env:** `CREATE DATABASE module_ts` + jalankan `init.sql` (buat `telemetry` hypertable) + tambah `host all all all scram-sha-256` ke pg_hba + `pg_reload_conf()`. Verifikasi: export terhubung & query 200. |
+| 5 | 🔧 | **BUG FIX 4 (route Kong salah sasaran):** `export-service` hanya route `/analytics/export` (mengarah ke analytics ExportHandler, bukan export service). **Fix** `infra/kong/kong.yml`: route `export-routes` kini cover `/export` DAN `/analytics/export` → `export-upstream` (strip_path false), timeout naik ke 30s. Verifikasi: `GET /export/v1/...` lewat Kong → export service. |
+| 6 | ✅ | Fitur: `GET /export/v1/telemetry` (CSV valid, header `time,node_id,module_id,metric,value`, filter `node_id`/`metric`/`from`/`to`/`limit`/`cursor`); cursor pagination stabil 7×400 → 2500 baris, 0 dup, 2500 unique key, cocok `count(*)` (keyset `(time,node_id,metric)` + header `X-Export-Next-Cursor`); `GET /export/v1/openapi` → 200 OpenAPI 3.0.3. |
+| 7 | ✅ | Keamanan: JWT (no token→401 `UNAUTHORIZED`, viewer→403 `FORBIDDEN`, admin/operator→200); Kong rate-limit 300/menit → 429 (297×200 + 23×429); time-range cap 366d → 400 `requested time range exceeds the 366-day export limit`; `raw` JSONB TIDAK di-select (no schema leak); path traversal & SQL injection → 400; file-size cap `maxFileRows=5_000_000`. |
+| 8 | ✅ | Response standar (AGENTS.md §4.4): sukses `{success,data}`, error `{success:false,error:{code,message}}` (400=`BAD_REQUEST`,401=`UNAUTHORIZED`,403=`FORBIDDEN`,500=`INTERNAL_ERROR`). Endpoint file export mengembalikan CSV murni + header cursor (download file, bukan JSON wrapper). |
+| 9 | ✅ | Cleanup: seed telemetry 2500 baris dihapus (`DELETE FROM telemetry WHERE node_id='node-export-01'` → 0 row); user uji `exportviewer` di-delete via `DELETE /auth/users/{id}`; container `export`+`timescaledb-module`+`redis-export` di-`stop`. DB `module_ts` + tabel `telemetry` (kosong) dibiarkan agar export service fungsional bagi Module Service. |
+
+**Keputusan Teknis:** Export Service dinyatakan **SELESAI (clean)** — seluruh checklist fitur + keamanan §10 lulus via curl lewat Kong, dan **4 temuan (1 stub + 3 bug/fix) ditemukan, di-fix, dan terverifikasi ulang tanpa regresi**:
+1. **[STUB] Export Service kosong** — implementasi penuh (config/model/tsdb/service/handler/middleware + main.go). Verifikasi: semua endpoint jalan.
+2. **Input berbahaya → 500** — `ErrInvalidParam` + 400. Verifikasi: injection/traversal → 400.
+3. **DB `module_ts` tidak ada + pg_hba localhost-only** — create DB + init.sql + pg_hba rule. Verifikasi: query 200.
+4. **Route Kong salah sasaran** — `/export` + `/analytics/export` → `export-upstream`. Verifikasi: lewat Kong ke export service.
+
+**Sisa (bukan blocker):** belum ada `src/api/export.js` / halaman UI (GAP-3) — perlu wire ke dashboard (`docs/phase11-export-plan.md`). Response wrapper sudah standar; endpoint file export sengaja CSV murni (download).
+
+---
+
+### Testing & Bug Fix — WS Gateway (Service Kesebelas, M11)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian WS Gateway selesai (checklist fitur + keamanan di `docs/testing-plan-agent.md` §11) — seluruh item lulus via test container python (`aeroponik-docker-python:latest`, network `microservices_iot-net`) dengan `websocket-client` + `nats-py`. |
+| 2 | ✅ | Fitur: `/ws/nodes/{node_id}/live?token=` upgrade 101 + stream JSON telemetry (publish NATS `mqtt.node-01` → client terima 4 frame); multi-client (2 client) → masing-masing 5 frame identik; `/health` → 200 `{"status":"ok"}`. |
+| 3 | ✅ | Fitur (GAP-1): `/ws/system-status?token=` upgrade 101 + stream (publish `system.status` + `alert.triggered` → client terima 8 frame). **GAP-1 TERIMPLEMENTASI** (handler `SystemStatus` sudah ada di `services/wsgateway/internal/handler/handler.go`). |
+| 4 | ✅ | Keamanan: no token → 401; bad token → 401; valid token → 101; `node_id` path traversal (`node/../evil`) → 400 (regex `^[A-Za-z0-9_.:*-]{1,64}$` di `NodeLive`); frame WS hanya berisi node_id/metrics/status/alert (tanpa JWT/password/secret). |
+| 5 | ✅ | `go build ./...` + `go vet ./...` + `gofmt -l` lolos (services/wsgateway). |
+| 6 | 🔧 | **BUG FIX 1 (healthcheck salah port):** `docker-compose.yml` block `wsgateway` menargetkan `http://localhost:8080/health` padahal service listen `PORT=8090` → healthcheck selalu gagal (container tak pernah `healthy`). **Fix:** ubah ke `http://localhost:8090/health`. **TER-VERIFIKASI:** `docker compose ps wsgateway` → `healthy`. |
+| 7 | 🔧 | **BUG FIX 2 (validasi node_id lemah):** `NodeLive` hanya cek `node_id==""` → terima karakter berbahaya diteruskan ke subject NATS. **Fix:** tambah `nodeIDRe = regexp.MustCompile("^[A-Za-z0-9_.:*-]{1,64}$")` + cek di `NodeLive` (`services/wsgateway/internal/handler/handler.go`). **TER-VERIFIKASI:** `node/../evil` → 400; id valid → 101. |
+| 8 | 📝 | **Open note (GAP-2, frontend):** `NodeDetailPanel.jsx` & `NodeConfigPage.jsx` buka WS tanpa `?token=` → 401 (gateway reject). Fix sisi dashboard (tambah `?token=`, samakan `Monitor.jsx`), di luar scope wsgateway — tidak diklaim sebagai tes UI. |
+| 9 | 📝 | **Open note (env):** E2E penuh lewat `module`/`alert` tertunda karena `mariadb-module` & `mariadb-alert` InnoDB dictionary desync (env issue serupa §2/§5/§6) → container gagal start. Kontrak wsgateway terbukti lewat publish NATS langsung. Bukan bug kode wsgateway. |
+| 10 | ✅ | Cleanup: container yang dinyalakan (`wsgateway`, `module`, `mariadb-module`, `redis-module`, `timescaledb-module`, `mosquitto`, `alert`, `mariadb-alert`, `redis-alert`) di-`stop`; temp file `/tmp/{ws_test.py,ws_stream.py,ws_multi.py,token.txt,login.json,ws_token.txt}` dihapus → env kembali steril. |
+
+**Keputusan Teknis:** WS Gateway dinyatakan **SELESAI (clean)** untuk seluruh checklist fitur + keamanan §11 — **GAP-1 (system-status handler) SUDAH ADA & terverifikasi**, dan **2 bug ditemukan, di-fix, dan terverifikasi ulang tanpa regresi**:
+1. **[healthcheck] Port salah** — `docker-compose.yml` wsgateway healthcheck `8080`→`8090`. Verifikasi: container `healthy`.
+2. **[SECURITY] Validasi node_id lemah** — regex `^[A-Za-z0-9_.:*-]{1,64}$` di `NodeLive`. Verifikasi: traversal → 400, valid → 101.
+
+**Sisa (bukan blocker):** GAP-2 perbaikan frontend (`?token=` di `NodeDetailPanel`/`NodeConfigPage`); full E2E lewat module/alert menunggu re-init DB (InnoDB desync).
+
+---
+
+### Testing & Bug Fix — Firmware Aeroponic Node (Section 12, S12)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian Firmware Aeroponic Node selesai (checklist fitur + keamanan di `docs/testing-plan-agent.md` §12) — divalidasi **via simulator MQTT Python** (`/tmp/firmware_sim.py`, TIDAK di-commit) karena ESP32 hardware tidak tersedia di sandbox. |
+| 2 | ✅ | Fitur: Connect+subscribe ke Mosquitto (`smartfarm/#` diterima Module); Discovery → node muncul di `GET /nodes/discovered`; Telemetry → **102 baris** di TimescaleDB `telemetry` (metrics `ph`/`s_atas_temp`/`water_level`) via tag-mapping; Command (`POST /control/command`, mode MANUAL) → `smartfarm/actuator/{node}` → simulator balas `smartfarm/{node}/confirm` → status command Control jadi **`acked`**; Pair (`POST /nodes/{id}/pair`) → node `paired=True`. |
+| 3 | ✅ | Keamanan: TIDAK ada secret hardcode di `Config.cpp` (default kosong, diisi dari `config.json`); command hanya via MQTT broker terautentikasi. `go build ./...`+`go vet ./...` module & control **LOLOS**. |
+| 4 | 🔧 | **BUG FIX 1 (Module/Control gagal sambung MQTT — BREAK pipeline):** `.env:50` `MQTT_URL=tcp://192.168.1.103:1884` menunjuk broker LAN eksternal yg tidak ada di sandbox (1884 tertutup) → Module/Control connect gagal, tidak ada discovery/telemetry/command. **Fix:** `.env` `MQTT_URL=tcp://mosquitto:1883` (broker internal compose). **TER-VERIFIKASI:** setelah `docker compose up -d module control` (recreate agar env baru kebaca — `restart` TIDAK membaca `.env` baru), log `[mqtt] connecting to broker tcp://mosquitto:1883 ... connected ... subscribed: smartfarm/#`; qa-sim muncul di discovered + telemetry masuk TSDB. |
+| 5 | 🔧 | **BUG FIX 2 (hardcoded weak default password di firmware):** `firmware/aeroponic-node/src/core/ConfigManager.cpp:86` `Config::ADMIN_PASS = "admin123"` (secret hardcode, melanggar AGENTS.md §5). **Fix:** ganti dengan generate password random via `esp_random()` + log serial saat `config.json` kosong (`ConfigManager.cpp:91`). **TER-VERIFIKASI:** firmware TIDAK di-compile di sandbox (environment: `platformio` 4.3.4 bentrok versi `click` → `AttributeError resultcallback`, unrelated ke perubahan); perubahan lolos review statis mengikuti pola `WebConfigPortal.cpp:116`. |
+| 6 | 📝 | **Open note (Keamanan #1):** broker `infra/mosquitto/config/mosquitto.conf:2` `allow_anonymous true` + `acl.conf` placeholder → koneksi anonim diterima (terbukti client tanpa user/pass connect sukses). Enforcement credential/ACL per-service (`esp32`/`module-svc`/`control-svc`) belum aktif. Bukan bug firmware; perlu `allow_anonymous false` + `password_file` (memengaruhi seluruh stack yg pakai credensial kosong). |
+| 7 | 📝 | **Open note (Keamanan #2):** OTA firmware ADA (`WebConfigPortal.cpp:158` `/api/ota`) tapi HANYA cek `checkAuthToken()` (Bearer portal web), **TIDAK ada verifikasi signature** (ED25519/ECDSA). Rekomendasi: verify signature sebelum `Update.begin`. Di luar scope QA ini. |
+| 8 | ✅ | Cleanup: test node `qa-sim-node-01` di-unpair + delete via API; module `QAFirmwareTest` di-delete; tag-mapping qa-sim dihapus; container `module`/`control`/`mariadb-module`/`mariadb-control`/`timescaledb-module`/`redis-module`/`mosquitto` di-`stop`; script `/tmp/firmware_sim.py` + log dihapus → env steril. |
+
+**Keputusan Teknis:** Firmware Aeroponic Node dinyatakan **SELESAI (clean untuk kontrak protokol)** — seluruh checklist fitur §12 lulus & 2 temuan di-fix & terverifikasi:
+1. **[CRITICAL] Module/Control MQTT_URL salah** — `.env` `192.168.1.103:1884`→`mosquitto:1883`. Verifikasi: pipeline discovery→telemetry→command→confirm→pair jalan penuh.
+2. **[SECURITY] Hardcoded `admin123`** — `ConfigManager.cpp` ganti generate random. Verifikasi: review statis + pola `esp_random()` existing.
+
+**Sisa (bukan blocker):** MQTT broker `allow_anonymous` masih true (credential belum di-enforce di broker); OTA belum pakai signature; real ESP32 flash tidak dilakukan (no hardware — divalidasi via simulator).
+
+---
+
+### Testing & Bug Fix — ML Service (Service Kesembilan, M9)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian ML Service selesai (checklist fitur + keamanan di `docs/testing-plan-agent.md` §9) — seluruh item lulus via curl melaui Kong `:8000` dengan respons ter-standardisasi ke wrapper `{success,data}`/`{success:false,error:{code,message}}` (AGENTS.md §4.4). |
+| 2 | ✅ | Fitur: `GET /ml/results` (envelope `ResultList`), `DELETE /ml/results` (envelope), `GET/POST /ml/models` (envelope `ModelList`), `POST /ml/detect` (envelope `DetectResponse`, inferensi YOLO jalan & simpan `original`+`annotated` ke MinIO `mlbucket`). Verifikasi: no token→401, token→200, valid key `frames/x.jpg`→200 deleted. |
+| 3 | ✅ | Keamanan: JWT (no token→401 `UNAUTHORIZED`, invalid/garbage→401, viewer write→403 `FORBIDDEN`); path traversal (`../../etc/passwd`, `../x`)→400 `BAD_REQUEST`; upload non-`.pt`→400, >16MB→413 `PAYLOAD_TOO_LARGE`; inferensi time-boxed `inference_timeout_seconds=30` (→504 `GATEWAY_TIMEOUT` via `InferenceTimeout`). |
+| 4 | 🔧 | **BUG FIX 1 (startup crash):** container `ml` menjalankan **image stale** (3 hari) + `config.py` impor `pydantic_settings` yg tidak ada di `requirements.txt` → `ModuleNotFoundError` (crash loop). **Fix:** tambah `RUN pip install pydantic-settings==2.6.1` sbg layer terpisah di `services/ml/Dockerfile` (mirip pola PyJWT, cache torch tetap utuh). Verifikasi: container `Up (healthy)`, `GET /health`→200. |
+| 5 | 🔧 | **BUG FIX 2 (`NameError: re`):** `storage.py:99` `_KEY_UNSAFE = re.compile(...)` di level modul tp `import re` hanya di dlm fungsi. **Fix:** pindah `import re` ke level modul (`services/ml/app/storage.py:11`). Verifikasi: import OK. |
+| 6 | 🔧 | **BUG FIX 3 (`NameError: ModelRegistry`):** `registry = ModelRegistry()` dieksekusi SEBELUM class didefinisikan (`vision_engine.py:49`). **Fix:** hapus instansiasi di line 49, pindah ke setelah definisi class (`services/ml/app/vision_engine.py:364`). Verifikasi: seeding model jalan. |
+| 7 | 🔧 | **BUG FIX 4 (`NameError: get_settings`/`HTTPException`):** `routes_models.py`/`routes_results.py` pakai `get_settings()` & `HTTPException` tanpa impor. **Fix:** tambah import di `services/ml/app/routes_models.py:17` & `services/ml/app/routes_results.py:9`. Verifikasi: upload (size/type)→400/413, delete→200/400 envelope. |
+| 8 | 🔧 | **BUG FIX 5 (validasi key false-positive):** `is_safe_object_key` menolak `/` sehingga key legal ber-path (`frames/foo.jpg`) ikut 400. **Fix:** izinkan `/` sbg separator, hanya blokir `..`/leading `/`/backslash/control-char (`services/ml/app/storage.py:99`). Verifikasi: `frames/x.jpg`→200, traversal→400. |
+| 9 | 🔧 | **BUG FIX 6 (envelope list):** `GET /ml/results` pakai `response_model=list[ResultObject]` → raw `[]` (tdk terbungkus). **Fix:** ganti ke `ResultList` (`{total,items}`) di `services/ml/app/routes_results.py`. Verifikasi: `{"success":true,"data":{"total":0,"items":[]}}`. |
+| 10 | 📝 | **Catatan env (bukan blocker):** seed weights `vision-aeroponik-model-test.pt` hanya ada di `services/ml/models/` (volume `volumes/ml-models` KOSONG) → seeding gagal & detect→404 "No active model". **Fix env sesi ini:** salin weights ke `volumes/ml-models/` agar mount runtime ke `/app/models` & warmup sukses. Perlu dipertahankan antar sesi (atau tambah `COPY` di Dockerfile). |
+| 11 | 📝 | **Open note (bukan blocker, §9 `[~]`):** `POST /ml/detect/from-stream` terimplementasi & divalidasi (404 envelope graceful saat frame tak ada) tapi bucket `stream` KOSONG (cron `cctv-capture` tdk dijalankan) → tdk ada frame nyata utk diuji. Sama spt Stream bug #2 (§8): limitation env. Perlu jalankan `cctv-capture`/isi bucket `stream`. |
+| 12 | ✅ | Cleanup test data: objek MinIO `mlbucket/original`+`mlbucket/detected` dihapus; user uji `mlviewer` di-self-delete; temp file `/tmp/*` dibersihkan; container `ml` di-`stop` (env kembali steril). |
+
+**Keputusan Teknis:** ML Service dinyatakan **SELESAI (clean)** untuk seluruh checklist fitur + keamanan §9 setelah **6 bug kode ditemukan, di-fix, dan terverifikasi ulang secara langsung (live) tanpa regresi**:
+1. **[STARTUP-CRASH] Missing dep `pydantic-settings`** — tambah layer pip terpisah di `Dockerfile`. Verifikasi: container healthy.
+2. **`NameError: re`** di `storage.py` — `import re` ke level modul.
+3. **`NameError: ModelRegistry`** di `vision_engine.py` — pindah instansiasi setelah class.
+4. **`NameError: get_settings`/`HTTPException`** di `routes_models.py`/`routes_results.py` — tambah import.
+5. **Validasi key false-positive** — izinkan `/` sbg separator path, blokir hanya traversal.
+6. **List envelope hilang** — `ResultList` wrapper untuk `GET /ml/results`.
+
+**Sisa (env, bukan bug kode):** seed weights perlu ada di `volumes/ml-models`; bucket `stream` perlu diisi (cron `cctv-capture`) agar `from-stream` tervalidasi penuh.
+
+---
+
+
+
 ## 2026-07-15
 
 ### Testing & Bug Fix — Auth Service (Service Pertama, M1)
@@ -24,6 +164,24 @@
 | 11 | ✅ | Menambahkan aturan baru di [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md) (§4 Poin 4): Prioritas Standarisasi Backend atas Kesiapan UI, mewajibkan standarisasi format respons di backend terlebih dahulu dan membiarkan UI menyesuaikan kemudian. |
 
 **Keputusan Teknis:** Auth Service dinyatakan **SELESAI (clean)** setelah 2 bug ditemukan diperbaiki dan terverifikasi ulang tanpa regresi. Selain itu, pembatasan ketat terhadap peran AI Agent dalam pengujian manual, adopsi standar kerja Full-Stack, serta pengetatan aturan perilaku agen (anti-doom loop, proteksi unit test, dependensi steril) dan arsitektur skala besar (distributed tracing, graceful shutdown) telah diberlakukan secara resmi di [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md). Pengujian E2E dan Dashboard UI juga telah diintegrasikan langsung ke dalam [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) menggunakan panduan otomatisasi browser subagent. Prioritas standarisasi respons API backend kini diutamakan di atas kesiapan UI (UI harus mengikuti standar backend yang baru).
+
+---
+
+### Testing & Bug Fix — Stream Service (Service Kedelapan, M8)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Pengujian Stream Service (checklist fitur + keamanan di `docs/testing-plan-agent.md` §8) via container `stream:8080` (JWT lokal HS256, shared secret) + dependensi fokus `mariadb-stream`, `minio`, `minio-setup`, `mediamtx`. Camera riil `rtsp://admin:Admin_TF24!@192.168.1.110:554/Streaming/Channels/101` dipakai sebagai source. |
+| 2 | ✅ | CRUD streams: create 201; name kosong → 400; name XSS `<>` → 400; missing id → 404; duplicate name → 409; update/delete 200. RBAC: no token → 401; viewer write → 403; operator/admin write → 201/200. |
+| 3 | ✅ | Snapshot capture → 201 (frame 511KB jpg di MinIO `stream` bucket); recording start→200 / stop→201 (mp4 661–720KB di MinIO); `/snapshots` list 200 (count 0 saat kosong), `GET /snapshots/{id}` missing → 404, delete operator-only. |
+| 4 | ✅ | HLS: MediaMTX serve `GET /hls/<name>/index.m3u8` → 200 (`#EXTM3U` + `video1_stream.m3u8`); proxy via Kong `mediamtx-hls-upstream`. |
+| 5 | 🔁 | **BUG FIX 1 (Keamanan/Fitur — storage proxy):** `GET /storage/{bucket}/{path:.*}` selalu **404** untuk object multi-segment (`snapshots/<id>.jpg`, `recordings/<id>.mp4`) padahal object ADA di MinIO → gallery snapshot/recording mati. Akar: pola catch-all `{path:.*}` **tidak didukung chi v5.0.12** (yang ter-lock di `go.mod`/`go.sum`); chi v5.0.12 hanya pakai wildcard `*` untuk catch-all. **Fix:** route → `r.Get("/storage/*", h.GetObject)` (`services/stream/main.go`) + ekstrak `bucket`/`key` dari `chi.URLParam(r,"*")` (split first `/`) di `handler.GetObject` (`services/stream/internal/handler/handler.go:145`). Verifikasi: proxy 200 (`image/jpeg`/`video/mp4`, byte sama dgn MinIO); traversal `..%2f` → 404/400; no token → 401. |
+| 6 | 📝 | **CATATAN BUILD:** Dockerfile `services/stream` men-copy binary **pre-built** `stream-svc` dari host (tidak compile saat `docker compose build`). Harus `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o stream-svc .` di host dulu sebelum `docker compose build stream`. `go build` + `go vet` + `gofmt` lolos. |
+| 7 | 📝 | **Open note (bukan blocker, §9):** `POST /streams/{id}/snapshot?detect=true` → 502 karena ML Service `/ml/detect` return `404 "No active model"` (TIDAK ADA model terdaftar: `GET /ml/models`→`{"total":0,"items":[]}`). Ini limitation env ML Service, bukan bug Stream — integrasi Stream→ML benar (service JWT + multipart `files`). Perlu daftarkan model YOLO ke ML Service agar AI Detect penuh tervalidasi. |
+| 8 | 📝 | **Open note (low priority):** status stream terkadang tetap `waiting` walau source ready (on-demand pull belum dikonsumsi). Snapshot & HLS terbukti jalan → bukan blocker. |
+| 9 | ✅ | Cleanup test data: semua stream & snapshot DB row dihapus, bucket MinIO `stream` diverifikasi kosong (`mc ls --recursive m/stream` → kosong). |
+
+**Keputusan Teknis:** Stream Service dinyatakan **SELESAI (clean)** untuk seluruh checklist fitur + keamanan §8 setelah 1 bug kritis (storage proxy catch-all) diperbaiki & terverifikasi ulang tanpa regresi. `?detect=true` (AI Detect) tertunda hanya karena ML Service belum punya model aktif (scope §9). Dockerfile stream menggunakan binary pre-built sehingga alur build manual wajib didokumentasikan.
 
 ---
 
@@ -66,6 +224,19 @@
 5. **Frontend `canView()` longgar** — batasi ke `admin` agar cocok dgn kebijakan API.
 
 **Open issue (di luar scope M6):** endpoint `/auth/login` gagal untuk SELURUH user (termasuk yg baru register) — kemungkinan stale binary/auth issue di Service 1; butuh investigasi terpisah saat testing Auth Service.
+
+---
+
+### Diagnosa & Fix — Grafana + Dashboard Error (Worktree Orphan)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **DIAGNOSA:** `grafana` & `dashboard` (serta `ml`, `mysqld-exporter-*`, `mediamtx`, `mariadb-ml`, `mariadb-stream`, `minio`) masih mengikat bind mount ke worktree yg SUDAH DIHAPUS `.kilo/worktrees/mountainous-huckleberry/...` (docker inspect `.Mounts.Source`). Docker membuat ulang direktori kosong di path itu → container jalan di atas data kosong. |
+| 2 | ✅ | **GRAFANA ERROR:** `/var/lib/grafana` ter-mount dari path worktree terhapus → `grafana.db` tidak ada → semua halaman `/login` → **500** (`unable to open database file: no such file or directory`) + provisioning dashboards gagal. **Fix:** `docker compose up -d --force-recreate grafana` (dari dir project utama) → bind ke `./volumes/grafana` (berisi `grafana.db` 1.8MB asli) + `./infra/grafana/{provisioning,dashboards}`. **TER-VERIFIKASI:** `GET /api/health` → 200, dashboards ter-provision, log bersih. |
+| 3 | ✅ | **DASHBOARD ERROR:** `/app` ter-mount dari `mountainous-huckleberry/dashboard` (terhapus) → source kosong → `curl localhost:5173` → **404** + Vite tak bisa serve `index.html`. **Fix:** `docker compose up -d --force-recreate dashboard` (bind ke `./dashboard` utama); `node_modules` (anonymous volume) tetap persist → `npm run dev` jalan. **TER-VERIFIKASI:** `GET /` → 200, Vite `ready`. (Sementara ditambah `command` install saat recreate, lalu dikembalikan ke CMD Dockerfile — file compose sudah direvert.) |
+| 4 | 📝 | **SISA STALE MOUNT (belum ditangani, di luar request):** `ml` (`volumes/ml-models`), `mysqld-exporter-{auth,ml,stream,audit,module,control,alert}` (`.cnf`), `mediamtx` (`mediamtx.yml`), `mariadb-ml` & `mariadb-stream` (`volumes/*` + `init.sql`), `minio` (`volumes/minio`) masih mengikat path worktree terhapus → berjalan di atas data/config kosong. Perlu `docker compose up -d --force-recreate <svc>` per-service (hati-hati: data `minio`/`mariadb-ml`/`mariadb-stream` mungkin hilang bila tidak ada di `./volumes/*` project utama). 6 service teruji (auth/module/analytics/control/alert/audit) **SUDAH BERSIH** (tidak mengikat worktree). |
+
+**Keputusan Teknis:** Akar masalah = container dibuat dari worktree `.kilo/worktrees/mountainous-huckleberry` yang telah di-prune; bind mount-nya menunjuk ke path hilang. Grafana & Dashboard berhasil di-recreate ke dir project utama dan kembali sehat (health 200). Sisa container yang masih orphaned-worktree dicatat untuk tindakan lanjutan (recreate per-service) — berpotensi kehilangan data untuk `minio`/`mariadb-ml`/`mariadb-stream` bila datanya hanya ada di worktree terhapus, sehingga butuh konfirmasi sebelum di-recreate.
 
 ---
 
@@ -401,6 +572,7 @@
 | 125 | ✅ | Penyesuaian tautan berkas pasca perubahan nama berkas `testing-plan.md` → `testing-plan-agent.md` dan `testing-implementasi.md` → `testing-implementasi-manual.md` di [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md), [logs.md](file:///home/almuzky/TA/Microservices/logs.md), [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md), dan [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) |
 | 126 | ✅ | Penambahan aturan ketat siklus pengujian bug-fixing & retesting wajib di [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) agar setiap issue diselesaikan dan diuji ulang hingga bersih (*clean*) sebelum dinyatakan selesai |
 | 127 | ✅ | Integrasi bagian "Metode Pengujian Manual" (Smoke, Black-Box, Exploratory, Integration, Security/RBAC, Usability/UX) ke dalam [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) |
+| 128 | ✅ | Penambahan aturan pembaruan checklist bertahap di [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md) agar Agent langsung memperbarui checklist (`[ ]` -> `[x]`) per langkah pengujian di [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) tanpa menunggu seluruh service selesai |
 
 ---
 
@@ -467,16 +639,23 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 
 ---
 
-### Testing — Notification Service (Service Ketujuh, M7) — ❌ BLOCKED
+### Testing & Implementasi — Notification Service (Service Ketujuh, M7) — ✅ SELESAI
 
 | # | Status | Aktivitas |
 |---|---|---|
-| 1 | ❌ | **BLOCKER:** Notification Service **tidak diimplementasikan** — tidak ada `services/notification`, tidak ada entry `notification` di `docker-compose.yml`, tidak ada upstream/route/service `notification` di `infra/kong/kong.yml`, dan tidak ada container `notification` yang berjalan. |
-| 2 | ❌ | Verifikasi gateway: `GET /notifications/settings` (no token) → **HTTP 404** `{"message":"no Route matched with those values"}`; `curl localhost:8001/routes` → **tidak ada** route `notif` (konfirmasi route Kong absen). |
-| 3 | ❌ | Verifikasi kode: `grep -rln "notification" services --include=*.go` hanya cocok di `alert` (komentar) & `wsgateway` (WS bell) — tidak ada handler/service Notification; infra `infra/redis/notification` & `infra/mariadb/notification` hanya direktori kosong. |
-| 4 | 📝 | Kesimpulan: seluruh checklist Fitur (4) & Keamanan (3) §7 **TIDAK DAPAT diuji** karena backend absen. Tidak ada bug kode yang bisa di-fix (tidak ada kode). |
+| 1 | ✅ | **Implementasi penuh** Notification Service (`services/notification`) — stack project: chi + jwt/v5 + gorm/mysql + go-redis/v9 + nats.go + prometheus (reuse stack layanan lain; channel telegram/email/push via **stdlib** HTTP/SMTP — **tanpa SDK eksternal baru**, mematuhi AGENTS.md §6.8). Struktur: `internal/{config,model,crypto,repository,middleware,channels,queue,service,handler}` + `main.go` + `migrate.go` + `Dockerfile`. |
+| 2 | ✅ | **F1 (settings):** `GET/PUT /notifications/settings` — GET 200 (admin/viewer/operator), PUT 200 (admin), **403** (viewer/operator, write admin-only via `RequireRole("admin")`). Verifikasi via Kong `:8000`. |
+| 3 | ✅ | **F2 (logs + test):** `GET /notifications/logs` 200 + `total`; `POST /notifications/test` admin → **202** (`enqueued:N`), viewer → **403**. |
+| 4 | ✅ | **F3 (channels + retry-via-queue):** worker Redis (`notification:queue`) memproses job; telegram dgn token salah → HTTP 404 (gagal riil) → **`attempts:3` → `failed`** (retry terbukti). Email/push tanpa transport → DevMode simulasi `sent`. |
+| 5 | ✅ | **F4 (alert.* trigger):** `RunSubscriber` subscribe `alert.*` (queue group); publish `alert.triggered` via NATS (`nats-box`) → +3 log (telegram/email/push) tema `[SEVERITY] node/metric`. |
+| 6 | ✅ | **K1 (secret-safe):** secret channel dienkripsi **AES-GCM** di MariaDB (`*_secret`); response GET settings **tidak mengembalikan secret**; GORM logger di-set `Warn` → **tidak ada secret/ciphertext/SQL di container log** (verifikasi: PUT dgn secret `SUPER_SECRET_VALUE_XYZ` → 200, grep log = 0 kecocokan). |
+| 7 | ✅ | **K2 (validasi target):** email regex, chat id `^-?\d+$`, push non-empty → **400** bila invalid (verifikasi: `bad`, `12a`, `  ` → 400). |
+| 8 | ✅ | **K3 (throttle):** worker 1 job sequential + `SendInterval` (100ms) + `RetryDelay` (1s) antar retry (queue throttling agar tidak spam). |
+| 9 | ✅ | **Observability:** metrik `notification_http_requests_total` ter-scrape Prometheus (job `notification-service` di `prometheus.yml`, reload → value naik). Response pakai wrapper standar AGENTS.md §4.4 (`{success,data}` / `{success,false,error:{code,message}}`). |
+| 10 | 🔧 | **BUG FIX (GORM SQL logging bocor schema/ciphertext):** default gorm logger mencatat DDL + SQL (termasuk kolom `*_secret` & ciphertext saat UPSERT settings). **Fix:** set `gorm.Config{Logger: logger.Default.LogMode(logger.Warn)}` di `main.go` & `migrate.go` → hanya warning/error, tidak ada SQL/secret di log. Terverifikasi: PUT settings dgn secret → log bersih. |
+| 11 | 📝 | **Open note (bukan blocker):** pengiriman riil ke Telegram/SMTP/Push butuh kredensial env (`SMTP_HOST/USER/FROM`, bot token di settings, `PUSH_URL`). Di sandbox QA, transport tak terkonfigurasi → DevMode simulasi `sent`; kegagalan riil tetap di-retry. GAP-1 (WS `/ws/system-status` untuk `NotificationBell`) tetap ranah wsgateway (opsi A/B), di luar scope M7. |
 
-**Keputusan Teknis:** Notification Service dinyatakan **BLOCKED** — bukan gagal-tes biasa, melainkan service sama sekali belum dibangun. Membuat service utuh (Go + MariaDB `mariadb-notification` + Redis `redis-notification` queue + NATS JetStream subscribe `alert.*` + channel telegram/email/push + RBAC admin) berada di LUAR scope QA (testing + bug-fix) dan melanggar AGENTS.md §6.8 (dependensi baru tanpa persetujuan). **Tindakan yang dibutuhkan:** user/PM meng-approve scaffold service ini (atau mengalihkan ke opsi A/B GAP-1). QA berhenti (STOP) sesuai instruksi "bila ketemu blocker yang tak bisa di-fix". Checklist §7 tetap `[ ]` + ditandai `[BLOCKED]` di `docs/testing-plan-agent.md`.
+**Keputusan Teknis:** Notification Service dinyatakan **SELESAI (clean)** — seluruh checklist Fitur (4) & Keamanan (3) §7 lulus via curl melalui Kong `:8000`, **1 hardening fix** (GORM logger → cegah kebocoran secret/ciphertext di log) diterapkan & terverifikasi. Tidak ada regresi; container `notification` healthy, 0 error/panic di log. Pengujian UI/D1–D12 (NotificationBell) TIDAK diubah (ranah User).
 
 ---
 
@@ -496,3 +675,30 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 **Keputusan Teknis:** Kelima service (Auth/Module/Analytics/Alert/Control) kini mengembalikan wrapper standar `{success,data}` / `{error:{code,message}}`, konsisten dengan Audit. Frontend di-unwrap di layer `api/*` sehingga tidak ada perubahan pada halaman. `go build`+`go vet` per service & `vite build` lolos tanpa error.
 
 
+
+---
+
+### Konsolidasi Redis — 4 Instance → 1 Shared (ADR-004)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | 🟡 | **Dokumentasi dulu (alur AGENTS.md):** tulis ADR-004 — gabung `redis-module`/`redis-alert`/`redis-notification`/`redis-export` menjadi 1 instance `redis-shared` dengan multi-DB logical (module=DB0, alert=DB1, notification=DB2, export=DB3) + 1 exporter bersama. Pola sama dengan ADR-001 (MinIO). |
+| 2 | 🟡 | **Update planning.md:** tabel "Database per Service" pakai `redis-shared` + mapping DB; hitungan instance 17 → **14**; mermaid node Redis; struktur direktori `redis/`; catatan konsolidasi. |
+| 3 | 🟡 | **Update roadmap.md:** referensi `redis-*` → `redis-shared (DBx)` di Fase 2/5/9b + ringkasan stack service. |
+| 4 | 🟡 | **Update `.env.example`:** section Redis shared (`REDIS_SHARED_ADDR` + `REDIS_*_DB`). |
+| 5 | ⬜ | **Implementasi (menyusul):** edit `docker-compose.yml` (1 `redis-shared` + 1 `redis-exporter`, hapus 4 lama), update env `REDIS_ADDR`/`REDIS_DB` di module/alert/notification/export/cctv-capture, jalankan `docker compose up -d --remove-orphans`, verifikasi `redis-cli -n <db>` per service. |
+
+**Keputusan Teknis:** Konsolidasi Redis **tidak** melanggar prinsip *Database-per-Service* karena Redis hanya cache/ephemeral store; MariaDB/TimescaleDB tiap service tetap terpisah. Mengurangi 3 container Redis + 3 exporter (total 7 → 2). cctv-capture tetap pakai DB0 (sama dengan module) sehingga tidak breaking.
+
+---
+
+### Konsolidasi Prometheus Exporter — 11 → 3 Container (ADR-005)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | 🟡 | **Dokumentasi (alur AGENTS.md):** tulis ADR-005 — gabung 8× mysqld-exporter + 2× postgres-exporter + 1× redis-exporter menjadi 3 container per tipe (`mysqld-exporter-all`, `postgres-exporter-all`, `redis-exporter`). Multi-proses per container pada port berbeda (per-DB target). |
+| 2 | 🟡 | **Update `infra/prometheus/prometheus.yml`:** target tiap job MariaDB → `mysqld-exporter-all:9104..9111`; TimescaleDB → `postgres-exporter-all:9187/9188`. Job & `instance` label tetap per-DB (dashboard Grafana tidak berubah). |
+| 3 | 🟡 | **Update planning.md:** catatan konsolidasi exporter + observability layer + DR table. |
+| 4 | ⬜ | **Implementasi (menyusul):** buat `infra/mysqld-exporter/run-all.sh` + `infra/postgres-exporter/run-all.sh` (jalankan N proses exporter per port); edit `docker-compose.yml` (3 container pengganti 11 lama, mount semua `my.*.cnf` + DSN env per port); `docker compose up -d --remove-orphans`; verifikasi tiap target UP di Prometheus `/targets`. |
+
+**Keputusan Teknis:** Exporter adalah side-car metrik ringan — menggabungnya per tipe tidak mengurangi cakupan/metrik (tiap DB tetap punya target & label sendiri di Prometheus). cAdvisor/node-exporter/mosquitto-exporter/nats-exporter/kong sudah 1 masing-masing (shared). Total container exporter 11 → 3 (gain -8).

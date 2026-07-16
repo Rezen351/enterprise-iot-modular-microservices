@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -52,11 +55,11 @@ func New(endpoint, accessKey, secretKey string, useSSL bool, bucket string) (*Cl
 		return nil, fmt.Errorf("minio bucket prepare: %w", lastErr)
 	}
 
-	// Public-read for snapshots/recordings prefixes so the dashboard can
-	// display them through the /storage proxy without per-object signatures.
-	if err := cl.setPublicReadPolicy(); err != nil {
-		log.Printf("[minio] warn: could not set public-read policy: %v", err)
-	}
+	// NOTE: the bucket is intentionally NOT made public-read. Objects are
+	// served to authenticated clients only, via the Stream Service's
+	// /storage proxy (which uses these scoped service credentials). A
+	// public-read policy would violate the "scoped credential, not public
+	// bucket" requirement.
 
 	return cl, nil
 }
@@ -75,22 +78,52 @@ func (c *Client) prepareBucket(bucket string) error {
 	return nil
 }
 
-func (c *Client) setPublicReadPolicy() error {
-	policy := fmt.Sprintf(`{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {"AWS": ["*"]},
-      "Action": ["s3:GetObject"],
-      "Resource": [
-        "arn:aws:s3:::%s/snapshots/*",
-        "arn:aws:s3:::%s/recordings/*"
-      ]
-    }
-  ]
-}`, c.bucket, c.bucket)
-	return c.client.SetBucketPolicy(context.Background(), c.bucket, policy)
+// ServeObject streams an object from the bucket to the given ResponseWriter
+// using the service's scoped MinIO credentials. This is the only way the
+// dashboard obtains stored snapshots/recordings: the bucket stays private
+// (no public-read policy) and every read is authenticated at the Stream
+// Service layer (JWT) before MinIO is touched.
+func (c *Client) ServeObject(w io.Writer, bucket, key string) error {
+	if bucket == "" {
+		bucket = c.bucket
+	}
+	obj, err := c.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("minio get: %w", err)
+	}
+	defer obj.Close()
+	stat, err := obj.Stat()
+	if err != nil {
+		return fmt.Errorf("minio stat: %w", err)
+	}
+	if rw, ok := w.(interface {
+		Header() http.Header
+	}); ok {
+		rw.Header().Set("Content-Type", stat.ContentType)
+		rw.Header().Set("Content-Length", strconv.FormatInt(stat.Size, 10))
+		rw.Header().Set("Cache-Control", "private, max-age=300")
+	}
+	if _, err := io.Copy(w, obj); err != nil {
+		return fmt.Errorf("minio copy: %w", err)
+	}
+	return nil
+}
+
+// ValidObjectPath reports whether bucket+key are safe to serve — no path
+// traversal (`..`), no absolute paths, and the bucket must be one we are
+// allowed to proxy (prevents reaching arbitrary MinIO buckets/objects).
+func ValidObjectPath(bucket, key string) bool {
+	if key == "" {
+		return false
+	}
+	if strings.Contains(key, "..") || strings.HasPrefix(key, "/") || strings.Contains(key, "\\") {
+		return false
+	}
+	switch bucket {
+	case "stream", "ml-result", "mlbucket", "ml", "ota":
+		return true
+	}
+	return false
 }
 
 // UploadFile streams a local file into the bucket (used for recordings, which

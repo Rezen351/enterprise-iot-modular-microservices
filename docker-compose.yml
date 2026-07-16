@@ -929,7 +929,9 @@ services:
     volumes:
       - ./infra/mediamtx/mediamtx.yml:/etc/mediamtx/mediamtx.yml:ro
     ports:
-      - "8888:8888"   # HLS (also proxied via Kong /hls)
+      # HLS (8888) is NOT published to the host — it must be reached only
+      # through the Kong auth proxy (/hls), which enforces JWT. Publishing it
+      # to the host would expose streams without authentication.
       - "8889:8889"   # WebRTC (signaling + UDP media, host-direct)
       - "8554:8554"   # RTSP (debug)
       # API (9997) intentionally NOT published — internal iot-net only.
@@ -973,7 +975,8 @@ services:
     entrypoint: >
       sh -c "mc alias set m http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
              mc mb -p m/stream; mc mb -p m/mlbucket; mc mb -p m/ota; mc mb -p m/ml-result &&
-             mc anonymous set download m/ml-result"
+             mc anonymous set private m/stream; mc anonymous set private m/mlbucket;
+             mc anonymous set private m/ota; mc anonymous set private m/ml-result"
     networks:
       - iot-net
 

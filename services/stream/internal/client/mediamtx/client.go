@@ -290,8 +290,11 @@ func (c *Client) ffmpegFrame(ctx context.Context, src string) ([]byte, error) {
 		"-hide_banner", "-loglevel", "error",
 		"-rtsp_transport", "tcp",
 		"-i", src,
-		// Output-seek ~1s: decode and discard the initial GOP so we skip the
-		// gray/partial HEVC frames produced before the first clean keyframe.
+		// Output seek (AFTER -i) re-decodes from the start of the
+		// stream, so the HEVC VPS/SPS/PPS at the IDR are seen
+		// before we jump to ~1s. An input seek (-ss before -i)
+		// skips straight to the middle of the GOP and fails on
+		// "VPS 0 does not exist" for H265 sources.
 		"-ss", "1",
 		"-frames:v", "1",
 		"-q:v", "2",

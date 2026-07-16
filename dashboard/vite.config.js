@@ -16,14 +16,13 @@ export default defineConfig({
     proxy: {
       '/auth': { target: KONG_URL, changeOrigin: true },
       '/health': { target: KONG_URL, changeOrigin: true },
-      // MinIO object storage — serves snapshot/recording images (the stream
-      // bucket is public-read on the snapshots/recordings prefixes). Mirrors
-      // the Aeroponik-Docker nginx `/storage/` → minio:9000 proxy.
-      // /storage/{bucket}/{key}  ->  minio:9000/{bucket}/{key}
+      // MinIO object storage — serves snapshot/recording/images. The
+      // Stream Service proxies /storage through Kong using its scoped
+      // MinIO credentials, so the bucket stays private (no public-read).
+      // /storage/{bucket}/{key}  ->  Kong -> stream:8080 -> MinIO
       '/storage': {
-        target: 'http://minio:9000',
+        target: KONG_URL,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/storage/, ''),
       },
       // Mirrors the Aeroponik-Docker nginx `/live/` → mediamtx:8888 proxy.
       // /live/{name}/  ->  mediamtx:8888/{name}/

@@ -1,9 +1,10 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 2.7.0  
-> **Tanggal:** 2026-07-13  
-> **Status:** 🟢 Fase 1-5 + Monitor Service Selesai — Fase 4 (Control) & Fase 5 (Stream) Selesai + Audit Fix #1/#2 (Module hot-path cache & telemetry.batch JetStream)  
-> **Penulis:** Tim TA
+> **Versi Dokumen:** 2.16.0  
+> **Tanggal:** 2026-07-16  
+> **Status:** 🟢 Fase 1-5 + Monitor Selesai — + Hardening Arsitektur (2.12–2.16: resilience, outbox, testing, deployment, SLA, TA-Scale Roadmap, cosmetic cleanup) 
+> **Penulis:** Alif Muhammad Rizky
+> **Dokumen Terkait:** [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) · [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) · [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) · [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md) · [logs.md](file:///home/almuzky/TA/Microservices/logs.md) · [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) · [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md)
 
 ---
 
@@ -58,10 +59,10 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 - **Processing Layer:** Analytics Service, Stream Service (MediaMTX + MinIO *bucket `stream`*), dan (future) ML/Vision API (MinIO *bucket `ml-vision`* di instance MinIO bersama) memproses data secara real-time
 - **Control Layer:** Control Service mengirim perintah balik ke ESP32 melalui MQTT
 - **Streaming Layer:** Stream Service + MediaMTX (RTSP→HLS/WebRTC) + MinIO bersama (bucket `stream`: snapshot/recording) untuk kamera CCTV/ESP32-CAM
-- **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal
-- **Presentation Layer:** Dashboard (React) dan WebSocket Service untuk real-time updates
+- **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal, termasuk REST/HTTP dan WebSocket (route `/ws` diteruskan ke WS-Gateway)
+- **Presentation Layer:** Dashboard (React) dan **WS-Gateway** untuk real-time updates. Dashboard membuka WebSocket ke Kong (`/ws`), Kong meneruskan ke WS-Gateway, yang menjadi jembatan ke **NATS** (subscribe subject untuk push ke client)
 - **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
-- **Observability Layer:** Prometheus + exporter (mysqld/postgres/redis/mosquitto/nats) untuk aggregasi metrik; Monitor Service untuk resource container
+- **Observability Layer:** Prometheus + exporter terkonsolidasi (1× mysqld-exporter-all untuk 8 MariaDB, 1× postgres-exporter-all untuk 2 TimescaleDB, 1× redis-exporter untuk redis-shared, + mosquitto/nats/node/cadvisor) untuk aggregasi metrik; Monitor Service untuk resource container
 - **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel (scaffold) untuk akses aman dari internet
 
 ### Diagram Alur Data End-to-End (Saat Ini)
@@ -70,9 +71,9 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
                                             → TimescaleDB (time-series)
                                             → Redis (cache)
-                                            → NATS (telemetry.ingest + telemetry.batch)
-                                                 → Analytics Service → TimescaleDB (analytics)
-                                                 → WS-Gateway → WebSocket → Dashboard (realtime telemetry)
+                                             → NATS (telemetry.ingest + telemetry.batch)
+                                                  → Analytics Service → TimescaleDB (analytics)
+                                                   → WS-Gateway (subscribe mqtt.> / system.status) → WebSocket → Dashboard (realtime telemetry)
                                                   → Stream Service → MediaMTX (HLS/WebRTC) + MinIO bucket `stream` (snapshot/recording)
                                                  → (future) Alert Service
                                                  → (future) Audit Service
@@ -84,8 +85,56 @@ User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
                                       → Analytics Service (query agregasi)
                                       → Control Service (perintah actuator)
                                       → Stream Service (CRUD stream + snapshot/recording)
-                                      → WS-Gateway (WebSocket real-time)
+                                      → WS-Gateway (WebSocket real-time, route /ws)
 ```
+
+### Diagram Alur Data (Mermaid)
+
+```mermaid
+flowchart TB
+    ESP32["ESP32"] -->|MQTT| MOSQ["Mosquitto MQTT Broker"]
+    CCTV["CCTV or ESP32-CAM"] -->|RTSP| MTX["MediaMTX HLS WebRTC"]
+    MOSQ --> MOD["Module Service"]
+    MOD --> MDB[("MariaDB Module")]
+    MOD --> TSDB[("TimescaleDB Module")]
+    MOD --> RED[("Redis Shared DB0")]
+    MOD ==> NATS["NATS Event Bus"]
+
+    WSGW["WS-Gateway"] ==>|subscribe telemetry| NATS
+    WSGW -.->|WS via Kong| DASH["Dashboard React"]
+    NATS ==> ANA["Analytics Service"]
+    ANA --> TSDBA[("TimescaleDB Analytics")]
+    NATS ==> STR["Stream Service"]
+    STR --> MTX["MediaMTX HLS WebRTC"]
+    MTX --> DASH
+    STR --> MINIO[("MinIO multi-bucket")]
+    MINIO --> BSTR["bucket stream"]
+    MINIO --> BML["bucket ml-vision"]
+    MINIO --> BOTA["bucket ota"]
+    STR -.->|snapshot to AI detect| ML["ML Vision API"]
+    ML -->|read frame| BSTR
+    ML --> BML
+    ML --> MLDB[("MariaDB ML")]
+    ML ==>|detection result| NATS
+    NATS ==> ALERT["Alert Service"]
+    ALERT --> NADB[("MariaDB Alert")]
+    ALERT ==>|alert triggered| NATS
+
+    DASH -->|REST v1| KONG["Kong API Gateway"]
+    KONG --> AUTH["Auth Service"]
+    KONG --> MOD
+    KONG --> ANA
+    KONG --> CTL["Control Service"]
+    KONG --> STR
+    KONG --> ML
+    KONG --> WSGW
+
+    CTL -->|MQTT command| MOSQ
+    USER["User Browser"] --> KONG
+    USER -.->|WS via Kong| WSGW
+```
+
+> **Keterangan jalur:** garis tebal `==>` = NATS event bus antar-service · garis putus-putus `-.->` = WebSocket via Kong /ws · garis biasa `-->` = REST via Kong / MQTT / storage (lihat label pada edge).
 
 ### Prinsip Desain
 
@@ -99,33 +148,50 @@ User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
 | Saga Pattern | Transaksi terdistribusi menggunakan choreography-based saga via NATS |
 | Idempotency | Semua event handler dirancang idempotent untuk menjamin exactly-once processing |
 
+### Pola Komunikasi (3 Jalur Utama)
+
+Agar tidak ambigu, sistem menggunakan **tiga jalur komunikasi yang berbeda** secara eksplisit. Dashboard/Client selalu berhadapan dengan **Kong** sebagai satu-satunya pintu masuk eksternal.
+
+| Jalur | Arah & Protokol | Penjelasan |
+|---|---|---|
+| **1. REST API (Request-Response)** | `Dashboard/Client → Kong (HTTP/REST, prefix /v1) → <Service>` | Semua CRUD & query (Auth, Module, Analytics, Control, Stream) lewat Kong lalu ke service tujuan. Service validasi JWT sendiri (defense-in-depth). |
+| **2. Realtime (WebSocket)** | `Dashboard/Client → Kong (route /ws) → WS-Gateway ⇄ NATS subject ⇄ Dashboard` | WebSocket juga lewat Kong (route `/ws`), lalu diteruskan ke WS-Gateway. WS-Gateway dirancang menjadi jembatan NATS⇄Dashboard **dua arah**: (a) **inbound** — subscribe subject NATS lalu push ke client; (b) **outbound** — menerima pesan dari client lalu publish ke subject NATS (mis. perintah realtime/control) agar service lain mengonsumsinya. **Status implementasi:** inbound **sudah jalan** — `NodeLive` subscribe `mqtt.{node_id}` (via wildcard `mqtt.>` cache) dan `SystemStatus` subscribe `system.status`/`alert.triggered`/`alert.resolved`, keduanya push ke Dashboard; outbound **menyusul** (reader goroutine saat ini membuang pesan client, belum publish ke NATS). WS-Gateway **tidak** memanggil REST service untuk membalas. Rate-limit Kong hanya menghitung handshake koneksi, bukan setiap frame — sehingga throughput realtime tidak dibatasi limit API REST. |
+| **3. Inter-Service (Event Bus)** | `<Service A> → publish NATS subject → <Service B/C>` | Komunikasi antar-service **hanya** via NATS (JetStream/Core), bukan HTTP langsung antar container internal (kecuali circuit-breaker HTTP pada dependency sinkron seperti Stream→ML). DB tiap service tetap terisolasi. |
+
+> **Inti:** REST & WebSocket dari client **sama-sama lewat Kong**. Perbedaannya: REST diakhiri oleh service (request-response), sedangkan WebSocket diteruskan Kong ke **WS-Gateway** yang menjadi jembatan NATS⇄client secara **dua arah** (realtime). Data realtime **tidak** berasal dari REST service, melainkan dari event NATS yang di-fan-out oleh WS-Gateway (inbound, via subject `mqtt.>` / `mqtt.{node_id}` dan `system.status`) atau diteruskan client ke NATS (outbound, menyusul). Kong tidak membatasi volume telemetry karena rate-limit hanya berlaku pada handshake koneksi WS, bukan per-message.
+
 ---
 
 ## 🗄️ Database per Service
 
 Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-nya:
 
-| Service | MariaDB | TimescaleDB | Redis | MinIO (instance bersama `minio`) | Status |
+| Service | MariaDB | TimescaleDB | Redis (instance bersama `redis-shared`) | MinIO (instance bersama `minio`) | Status |
 |---|---|---|---|---|---|
 | Auth | `mariadb-auth` | — | — | — | ✅ Running |
-| Module | `mariadb-module` | `timescaledb-module` | `redis-module` | — | ✅ Running |
+| Module | `mariadb-module` | `timescaledb-module` | DB0 `module` | — | ✅ Running |
 | Control | `mariadb-control` | — | — | — | ✅ Running |
 | Stream | `mariadb-stream` | — | — | bucket `stream` | ✅ Running |
-| Alert | `mariadb-alert` | — | `redis-alert` | — | ✅ Running |
+| Alert | `mariadb-alert` | — | DB1 `alert` | — | ✅ Running |
 | ML / Vision | `mariadb-ml` | — | — | bucket `ml-vision` | ✅ Running |
 | OTA | `mariadb-ota` | — | — | bucket `ota` | ⬜ Belum |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
-| Export | — | `timescaledb-module` (read) | `redis-export` | — | ⬜ Belum |
-| Notification | `mariadb-notification` | — | `redis-notification` | — | ⬜ Belum |
+| Export | — | `timescaledb-module` (read) | DB3 `export` | — | ⬜ Belum |
+| Notification | `mariadb-notification` | — | DB2 `notification` | — | ⬜ Belum |
 | Audit | `mariadb-audit` | — | — | — | ✅ Running |
 | Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
 | Monitor | — (docker stats) | — | — | — | ✅ Running |
 
 > **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`, `minio-ota`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml-vision`, `ota`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml-vision`.
+>
+> **Keputusan Konsolidasi Redis (2026-07-16, ADR-004):** Tidak lagi membuat instance Redis terpisah per service (`redis-module`, `redis-alert`, `redis-notification`, `redis-export`). Cukup **1 instance Redis bersama** (`redis-shared`) dengan **multi-DB logical** (module=DB0, alert=DB1, notification=DB2, export=DB3) + **1 exporter bersama**. Redis hanya cache/ephemeral store (bukan sumber kebenaran domain), sehingga konsolidasi ini tidak melanggar prinsip *Database-per-Service* (MariaDB/TimescaleDB tetap per-service). cctv-capture tetap pakai DB0 milik module.
+
+> **Keputusan Konsolidasi Exporter (2026-07-16, ADR-005):** 11 container exporter terpisah (8× mysqld, 2× postgres, 1× redis) digabung menjadi **3 container per tipe** (`mysqld-exporter-all`, `postgres-exporter-all`, `redis-exporter`). Tiap container menjalankan beberapa proses exporter pada port berbeda (satu per DB target). Jumlah job & `instance` label di Prometheus **tetap sama** (per-DB) → dashboard Grafana tidak berubah. Tujuannya mengurangi beban orkestrasi container, bukan mengurangi cakupan metrik. cAdvisor, node-exporter, mosquitto-exporter, nats-exporter, kong tetap 1 masing-masing (sudah shared).
 
 **Object storage:** 1× instance MinIO bersama (`minio`, multi-bucket + scoped access key) untuk Stream / ML / OTA.
-**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 4× Redis · 1× MinIO = **17 instance**
-**Sudan berjalan:** 4× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **8 instance**
+**Cache:** 1× instance Redis bersama (`redis-shared`, multi-DB) untuk Module / Alert / Notification / Export.
+**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **14 instance** (turun dari 17 setelah konsolidasi Redis)
+**Sudah berjalan:** 4× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **8 instance**
 
 ---
 
@@ -138,7 +204,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
 - **`infra/`** — Konfigurasi infrastruktur pendukung:
   - `mariadb/` — Skema inisialisasi database per service (auth ✅, module ✅, control ⬜, alert ⬜, stream ⬜, ml ⬜, ota ⬜, notification ⬜, audit ⬜, webhook ⬜)
   - `timescaledb/` — Skema untuk time-series data (module ✅, analytics ✅)
-  - `redis/` — Konfigurasi Redis per instance
+  - `redis/` — Konfigurasi Redis bersama (`redis-shared`, multi-DB per service)
   - `minio/` — Script inisialisasi bucket
   - `nats/` — Konfigurasi NATS dengan JetStream dan ACL per-service ✅
   - `mosquitto/` — Konfigurasi MQTT broker dan ACL per-topik ✅
@@ -166,7 +232,154 @@ Proyek diorganisir dengan struktur sebagai berikut:
 
 ---
 
-## 🔌 NATS Subject Contract
+## 📜 API Response & Contract Standardization
+
+Seluruh microservice **wajib** mengikuti standar respons JSON seragam agar konsumsi data di sisi dashboard & eksternal konsisten (berlaku juga untuk error dari event yang di-surface ke REST):
+
+| Kategori | Kontrak |
+|---|---|
+| Sukses (2xx) | `{ "success": true, "data": <payload/array/object> }` |
+| Error (4xx/5xx) | `{ "success": false, "error": { "code": "<ERROR_CODE>", "message": "<english_message>" } }` |
+| Wrapper library | Go: helper `ResponseOK`/`ResponseError` di `internal/handler` (sudah di Auth/Module/Control). Rust/Python: bentuk dict serupa. |
+| Error code enum | `UNAUTHORIZED`, `FORBIDDEN`, `VALIDATION_ERROR`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `UPSTREAM_ERROR`, `INTERNAL_ERROR` |
+| Health endpoint | `GET /health` → `{ "success": true, "data": { "status": "healthy", "uptime_s": 123 } }` (publik, tanpa token) |
+
+> **Versioning:** Semua REST route di-prefix `/v1` (Kong strip prefix). Perubahan breaking → `/v2` (deprecation window minimal 1 rilis). NATS subject **tidak** di-version di topic level; backward-compat dijaga via payload `meta.schema_version`.
+
+### Contract Documentation & Eventual Consistency (UX)
+
+- **OpenAPI per service:** Setiap service wajib menyediakan spesifikasi **OpenAPI 3.x** (di `docs/openapi/<service>.yaml`) agar kontrak REST terdokumentasi mesin-baca, konsisten dengan NATS subject contract yang sudah ada.
+- **Eventual consistency adalah keputusan UX, bukan sekadar data:** CQRS read-model (dashboard) akan lag dari write-side. Dashboard **tidak** boleh pura-pura konsisten — tunjukkan state `processing` / `syncing` (mis. badge "reconnecting…", optimistic update) agar pengguna paham data bisa tertunda. Ini mengikuti panduan Ilir Ivezaj 2026.
+
+---
+
+## 🔁 Idempotency & Delivery Semantics
+
+NATS menyediakan jaminan **at-least-once**, bukan exactly-once. Oleh karena itu:
+
+| Mekanisme | Implementasi |
+|---|---|
+| Dedupe key | Setiap event memuat `meta.idempotency_key` (UUID). Subscriber menyimpan key di Redis (TTL > window retry) dan menolak duplikat. |
+| Idempotent write | Upsert berbasis natural key (mis. `metrics_rollup` by `(node_id, metric, bucket)`), bukan insert盲. |
+| Retry & backoff | Subscriber JetStream pakai `ack` eksplisit; pesan di-redeliver hingga `MaxDeliver` (default 3) lalu masuk `saga.*.dlq`. |
+| Exactly-once *effect* | Dicapai via idempotent consumer + dedupe, bukan via broker. Klaim "exactly-once processing" di prinsip desain dimaknai sebagai *exactly-once effect*, bukan *exactly-once delivery*. |
+
+---
+
+## 🛡️ High Availability & Resilience Infrastructure
+
+Arsitektur saat ini berpusat pada NATS & Kong — keduanya adalah **SPOF** jika berjalan single instance. Strategi mitigasi:
+
+| Komponen | Risiko | Strategi HA |
+|---|---|---|
+| NATS JetStream | Single instance → event bus mati | (Dev) single OK; (Prod) NATS **cluster 3-node** (`nats_cluster {}`) dengan JetStream replication factor ≥ 2 + `R=2` stream. Client pakai seed list `nats://n1,nats://n2,nats://n3`. |
+| Kong | Single gateway → traffic eksternal mati | (Prod) 2+ replica Kong di belakang LB; atau Konnect. Dev: single. |
+| MinIO | SPOF object storage | Sudah direncanakan **erasure-coding multi-drive** (≥4 drive) di host yang sama — lebih tangguh dari 2 container 1 disk. |
+| MariaDB/TimescaleDB | Data per-service hilang | Backup cron (lihat DR section). Untuk prod kritis: primary-replica. |
+| Service crash | Consumer mati | Restart policy `unless-stopped` + Docker healthcheck + JetStream replay (Analytics sudah demo). |
+
+> **Resilience by design** (prinsip baris 28) baru terpenuhi penuh bila `saga.*.dlq` + compensating transaction **benar-benar terimplementasi**, bukan hanya didokumentasikan. Status saat ini: saga choreography narasi ✅, DLQ consumer (Audit) ⬜, tracing ⬜.
+
+---
+
+## 🔌 Resilience Patterns (Production-Grade)
+
+Selain HA infrastruktur, setiap service harus mengadopsi pola *design for failure* agar kegagalan satu komponen tidak merambat (cascading failure). Referensi: JRebel 2026, Anji Reddy 2023, Reintech 2026.
+
+| Pola | Definisi | Implementasi dalam Sistem |
+|---|---|---|
+| **Circuit Breaker** | "Saklar" otomatis yang **memutus** panggilan ke dependency yang sedang gagal/lambat. Saat error rate melampaui ambang, state → `OPEN` (tolak langsung, cepat gagal). Setelah `reset_timeout`, state → `HALF_OPEN` (izinkan sebagian request uji). Jika sukses → `CLOSED`; jika gagal → kembali `OPEN`. Mencegah satu service lambat menarik turun seluruh rantai. | Dipakai pada panggilan **HTTP antar-service** (mis. Stream → ML `/ml/detect`, Module → Auth validasi). Threshold konservatif lalu disetel via metrik. Library: `sony/gobreaker` (Go) atau `gofiber/circuit` di handler outbound. |
+| **Bulkhead** | "Kompartemen kapal" — tiap dependency mendapat **pool resource terbatas** (goroutine / koneksi / semaphore) sendiri. Jika satu dependency melambat, pool-nya habis sendiri, tidak mengorbankan resource service lain. | Setiap outbound client (NATS, HTTP ke service lain, DB) diberi `maxConcurrent`/`pool size` terpisah. Worker pool NATS subscribe dibatasi per consumer. |
+| **Retry + Exponential Backoff** | Ulangi panggilan gagal dengan jeda meningkat + jitter agar tidak membanjiri dependency yang sedang recovery. | NATS JetStream sudah `ack`+redeliver; untuk HTTP outbound: retry 3× dengan backoff 100ms→1s + jitter. Hindari retry pada error 4xx (client error). |
+| **Timeout** | Batasi waktu tunggu tiap I/O. Tanpa timeout, goroutine menunggu selamanya → resource leak. | Set `context.WithTimeout` di semua DB/HTTP/NATS call. WS replay cache sudah jadi fallback saat live stream mati (degradasi graceful). |
+| **Graceful Degradation** | Saat komponen mati, sistem tetap kasih fungsi dasar, bukan lumpuh total. | NATS mati → WS-Gateway sajikan payload terakhir dari cache `mqtt.>` (sudah ada). Dashboard tunjukkan badge "reconnecting…" daripada spinner abadi. |
+
+> **Catatan:** Pola ini wajib untuk panggilan **sinkron** (HTTP). Komunikasi **async** via NATS JetStream sudah tahan kegagalan via persistence + replay, sehingga circuit breaker utamanya untuk HTTP, bukan pub/sub.
+
+---
+
+## 🗄️ Data Consistency: Transactional Outbox
+
+Sistem saat ini menulis DB **lalu** mem-publish event NATS dalam dua langkah terpisah. Ini adalah **dual-write problem** — akar dari sebagian besar bug data terdistribusi (Ilir Ivezaj 2026): jika DB commit sukses tapi publish NATS gagal (atau sebaliknya), state tidak konsisten dan subscriber (Alert/Analytics) kehilangan event.
+
+**Solusi — Transactional Outbox Pattern:**
+
+1. Dalam **transaksi DB yang sama**, service menulis data bisnis **dan** menulis event ke tabel `outbox` (mis. `module_outbox` di MariaDB module).
+2. Sebuah **relay** (background worker / CDC) membaca `outbox` yang belum terkirim lalu mem-publish ke NATSJetStream, lalu menandai `outbox.sent = true`.
+3. Karena write DB + write outbox atomic, tidak ada event hilang maupun duplikat asal (idempotensi consumer menangani redelivery).
+
+```
+Module Service
+  └─ BEGIN TX
+       INSERT telemetry (TimescaleDB)
+       INSERT outbox(event='telemetry.ingest', payload, msg_id)
+  └─ COMMIT
+Outbox Relay (worker)
+  └─ SELECT unsent FROM outbox
+  └─ js.Publish(subject, payload, Nats-Msg-Id=msg_id)   # dedupe publisher-side
+  └─ UPDATE outbox SET sent=true WHERE id=...
+```
+
+### Exactly-Once yang Benar (NATS Resmi)
+
+NATS JetStream mencapai exactly-once lewat dua mekanisme resmi (NATS docs):
+- **Publisher dedup:** header `Nats-Msg-Id` — server melacak ID dalam window waktu, mendeteksi publish ganda.
+- **Consumer double-ack:** acknowledgment dua arah mencegah redeliver salah setelah ack hilang.
+
+Ditambah **consumer-side idempotency** (cek `msg_id` sudah diproses di Redis/DB sebelum eksekusi). Kombinasi ini — bukan sekadar "idempotent handler" — yang menjamin *exactly-once effect*.
+
+### DLQ via NATS Advisory (Bukan Buatan Sendiri)
+
+DLQ yang benar mengikuti mekanisme advisori NATS resmi, bukan subject `saga.*.dlq` buatan:
+- Saat consumer melewati `MaxDeliver`, NATS publish advisory ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.{stream}.{consumer}`.
+- Worker menyubscribe advisory tersebut, mengambil pesan asli by `stream_seq`, lalu publish ke stream `DLQ` (retensi 30 hari, `Replicas: 2`) untuk investigasi Audit Service.
+
+---
+
+## 📡 Metrics & Observability Pipeline (Event-Driven)
+
+Saat ini Prometheus **scrape langsung** tiap service (`/metrics`). Target akhir (Fase 11) adalah push-based via NATS agar scrape tidak bergantung network ekspos service:
+
+### Subject `metrics.health` (JetStream, stream `METRICS`)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `service` | string | Nama service (mis. `module-service`) |
+| `status` | enum | `healthy` / `degraded` / `down` |
+| `uptime_s` | int | Waktu hidup sejak start |
+| `cpu_pct` | float | Usage CPU proses |
+| `mem_mb` | float | RSS memory |
+| `msg_in_s` | float | NATS message in per detik |
+| `ts` | RFC3339 | Timestamp publish |
+
+- **Publisher:** setiap service publish periodik (15s) ke `metrics.health`.
+- **Subscriber:** (Fase 11) Prometheus Metrics Service subscribe → expose `/metrics` terpusat. Fallback: scrape langsung tetap ada hingga Fase 11 selesai.
+- **Tracing:** `trace_id` (OpenTelemetry/W3C) disebar via header `X-Trace-Id` & NATS header `Trace-Id` untuk end-to-end span (Jaeger opsional). Correlation ID (`X-Correlation-Id`) sudah wajib di AGENTS.md.
+
+### Service Mesh — Out of Scope (Keputusan Sadar)
+
+Literatur 2026 (Ilir Ivezaj) menyebut service mesh (Envoy/Istio) untuk mTLS & traffic control. Untuk TA ini **sengaja di luar scope** dan diganti dengan:
+- **mTLS antar-service:** ditangani via NATS ACL per-user + Mosquitto ACL (sudah ada), bukan sidecar mesh.
+- **Traffic control & retry:** di-handle di level aplikasi via pola Resilience (Circuit Breaker/Bulkhead, lihat seksi terkait).
+- **Alasan:** mengurangi kompleksitas operasional & resource (sidecar per pod berat untuk 13+ service di 1 host). Kong + NATS ACL sudah cukup untuk kebutuhan TA.
+
+### SLA & Latency Budget
+
+Target kinerja end-to-end yang terukur (TA scale, ~30 node):
+
+| Jalur | Budget Latency | Catatan |
+|---|---|---|
+| ESP32 → MQTT → Module → WS → Dashboard (live) | < 2 detik (p95) | Core NATS fan-out, tidak persisten |
+| Telemetry → TimescaleDB → Analytics rollup | < 60 detik | Batch 1-menit + JetStream replay |
+| Control command → ESP32 ACK | < 5 detik (timeout) | Firmware ACK via MQTT `/confirm` |
+| REST via Kong (cache miss) | < 300 ms (p95) | Query DB + auth JWT lokal |
+| Snapshot → ML detect → Gallery | < 120 detik | Stream ffmpeg capture + YOLOv8 inference |
+
+> Budget di atas adalah *target* untuk pengujian beban (load test) di Fase akhir, bukan garansi saat ini.
+
+---
+
+## 📨 NATS Subject Contract
 
 NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah kontrak subject yang digunakan:
 
@@ -204,56 +417,9 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `telemetry.ingest` | Core NATS | Pesan tidak di-buffer; subscriber offline akan kehilangan pesan (cukup untuk live WS fan-out) |
 | `telemetry.batch` | **JetStream** (stream `TELEMETRY_BATCH`, durable consumer `analytics-batch`) | ✅ Persisten + replay otomatis — Analytics restart tidak lagi menghilangkan window agregat 1-menit |
 | `audit.log` | Core NATS | Pesan audit hilang jika Audit Service belum berjalan |
-| `saga.*` | JetStream (SAGA stream) | Dijamin persistence dengan retry & DLQ |
+| `saga.*` | JetStream (SAGA stream) | Dijamin persistence dengan retry; pesan gagal (>MaxDeliver) masuk DLQ via advisory `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` (lihat seksi Data Consistency) |
 
-### ⚠️ Troubleshooting — Live MQTT Monitor "Loading terus" (Kasus 2026-07-13)
-
-**Gejala:** Di halaman Configure Node, panel *Live MQTT Monitor* diam terus menampilkan
-**"Listening for live MQTT payload..."** padahal ESP sudah mengirim telemetry.
-
-**Alur data yang harus utuh:**
-```
-ESP → broker MQTT remote (MQTT_URL, default tcp://192.168.1.103:1884)
-    → Module Service (subscribe smartfarm/#)
-    → PublishLive() publish ke NATS subject "mqtt.{node_id}"
-    → WS-Gateway (subscribe mqtt.{node_id}) → WebSocket → Dashboard
-```
-Teks itu hanya muncul saat WebSocket **sudah `open`** tapi `messages` kosong
-(`dashboard/.../NodeConfigPage.jsx:385`), artinya koneksi berhasil tapi tidak ada
-payload yang sampai ke subject NATS.
-
-**Akar masalah yang ditemukan:** Service `module` **kehilangan koneksi Core NATS**
-(connection putus & tidak auto-recover dengan baik). `PublishLive`
-(`services/module/internal/service/service.go:571`) memanggil `s.nats.Publish(...)`
-tapi `s.nats` sudah terputus → pesan **dibuang diam-diam (tidak ada error log)**.
-Akibatnya subject `mqtt.{node_id}` di NATS kosong → WS-Gateway tidak punya apa-apa
-untuk di-stream.
-
-> Penting: `telemetry.batch` TETAP jalan karena lewat koneksi **JetStream** yang
-> terpisah, bukan Core NATS — ini yang membuat module terlihat "masih terhubung"
-> padahal live stream-nya mati. Jangan gunakan `telemetry.batch` sebagai indikator
-> bahwa live monitor berfungsi.
-
-**Cara diagnosa cepat (end-to-end):**
-1. Pastikan node benar-benar online & publish: `mosquitto_sub -h <MQTT_URL_HOST> -p <PORT> -t 'smartfarm/#'` (broker ada di ENV `MQTT_URL`, BUKAN container `mosquitto` lokal yang hanya untuk dev).
-2. Cek `module` terhubung ke NATS — buka monitoring NATS `http://<nats>:8222/connz`
-   dan pastikan ada client **`module-svc`**. Jika tidak ada → inilah penyebabnya.
-3. Subscribe subject live: `nats sub "mqtt.<NODE_ID>" -s nats://<nats>:4222`.
-   Jika tidak ada pesan padahal ESP kirim → `PublishLive` gagal (koneksi Core NATS mati).
-4. Pastikan WS-Gateway subscribe subject yang benar: `subject = "mqtt." + nodeID`
-   (`services/wsgateway/internal/handler/handler.go:81`).
-
-**Solusi:**
-- **Quick fix:** `docker restart microservices-module-1` → koneksi Core NATS
-   dibangun ulang saat startup, live monitor langsung jalan.
-- **Permanent fix (SELESAI 2026-07-14):** ditambahkan `nats.DisconnectErrHandler` /
-   `nats.ReconnectHandler` / `nats.ClosedHandler` / `nats.ErrorHandler` + log di
-   `services/module/main.go` dan `services/wsgateway/main.go`, serta health-check
-   periodik (30s) yang men-log WARN bila `!natsConn.IsConnected()`. Selain itu
-   `publishTelemetry` (`services/module/internal/service/service.go:575`) kini
-   men-log error `telemetry.ingest` (tidak lagi `_ =` diam-diam). WS-Gateway
-   (`NodeLive`) juga mereplay payload telemetry terakhir dari cache `mqtt.>`
-   saat client connect, sehingga tidak "loading" bila device report-nya jarang.
+> **Troubleshooting operasional** (termasuk kasus "Live MQTT Monitor Loading terus") dipindahkan ke [`runbook.md`](./runbook.md).
 
 ---
 
@@ -267,16 +433,19 @@ Sistem menggunakan **Choreography-based Saga** untuk menangani transaksi terdist
 - Sesuai dengan prinsip Database-per-Service dan Zero-Trust Internal
 - Skalabilitas lebih baik karena tidak ada single point of failure
 
-### Prinsip Implementasi Saga
+### Implementasi Aktual vs Aspirasional
 
-| Prinsip | Detail |
+> **Status kejujuran arsitektur:** Prinsip *Resilience by Design* (baris 28) menyebut saga + DLQ + compensating transaction. Saat ini yang **sudah jalan** hanya narasi choreography & publish `saga.*` (Module/Control). Yang **belum** terimplementasi: DLQ consumer (Audit Service consume `saga.*.dlq`), compensating transaction nyata, dan `trace_id` end-to-end. Item ini wajib diselesaikan sebelum klaim "resilient" dapat dipertahankan di defense.
+
+| Komponen Saga | Status |
 |---|---|
-| **Idempotency** | Setiap step harus idempotent — pesan yang sama diproses dua kali tidak boleh menyebabkan duplikasi data |
-| **Saga ID** | Setiap event menyertakan `saga_id` (UUID v4) dan `step` untuk traceability end-to-end |
-| **JetStream Persistence** | Semua subject `saga.*` menggunakan JetStream stream `SAGA` untuk menjamin pesan tidak hilang |
-| **Dead Letter Queue** | Pesan yang gagal setelah 3 kali retry otomatis masuk ke `saga.*.dlq` dan dikonsumsi oleh Audit Service |
-| **Compensating Transaction** | Setiap langkah maju (forward step) memiliki pasangan kompensasi untuk mekanisme rollback |
-| **Timeout** | Control: 500 ms · OTA: 30 menit · Telemetry: 5 detik |
+| Publish `saga.*` events | ✅ Module / Control |
+| Durable JetStream `SAGA` stream | ⬜ (perlu dibuat) |
+| Compensating transaction handler | ⬜ |
+| DLQ consumer (Audit) — via `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` | ⬜ (lihat seksi Data Consistency) |
+| Saga tracing (`trace_id`) | ⬜ |
+
+
 
 ### Saga 1 — Telemetry Ingest & Alert
 
@@ -308,6 +477,22 @@ Alur pembaruan firmware ke ESP32 secara aman:
 4. **OTA Service** konfirmasi instalasi selesai, status menjadi `installed`
 5. **Kompensasi:** Jika timeout 30 menit tanpa konfirmasi, OTA Service publikasikan `saga.ota.compensate`, status menjadi `failed`, notifikasi dikirim ke admin
 
+### Subscriber Nyata vs Diterbitkan (Gap Analysis)
+
+Beberapa subject sudah dipublish tapi **belum ada consumer nyata** — ini adalah celah fungsional, bukan sekadar delay:
+
+| Subject | Publisher | Subscriber Nyata | Status |
+|---|---|---|---|
+| `telemetry.ingest` | Module | Alert, WS-Gateway | ✅ |
+| `telemetry.batch` | Module | Analytics | ✅ |
+| `alert.triggered` / `alert.resolved` | Alert | **(tidak ada)** Webhook/Notification | 🔴 **GAP** — alert berhenti di ujung, tidak sampai ke pengguna |
+| `detection.result` | Vision API | (tidak ada konsumer wajib) | ⬜ opsional |
+| `audit.log` | Banyak | Audit Service | ✅ |
+| `system.status` | Alert/Monitor | WS-Gateway | ✅ |
+| `metrics.health` | Semua | (tidak ada, scrape langsung) | ⬜ Fase 11 |
+
+> **Prioritas kritis:** `alert.triggered`/`alert.resolved` harus segera punya subscriber (Notification Service minimal Telegram/Email) supaya seluruh pipeline alert bernilai end-to-end. Tanpa itu, Alert Service hanya mencatat di DB tanpa notifikasi pengguna.
+
 ### Saga 4 — ML Detection → Alert
 
 Alur ketika Vision API mendeteksi anomali visual (misalnya hama pada tanaman):
@@ -337,328 +522,30 @@ Setiap event saga memiliki struktur payload yang konsisten:
 
 ---
 
-## 🧱 Fase Implementasi
+## 🧱 Fase Implementasi (Ringkasan)
 
-### ✅ Fase 0 — Infrastruktur Dasar (Selesai)
-- Struktur direktori dan docker-compose.yml untuk fase awal
-- Konfigurasi NATS (JetStream + per-service authentication)
-- Konfigurasi Kong (routing, JWT, rate-limiting, CORS)
-- Skema database Auth Service (RBAC + seed data)
-- Konfigurasi Mosquitto (MQTT broker + ACL per-topik)
-- Konfigurasi Prometheus (scrape targets)
+Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roadmap.md)**. Berikut ringkasan status agar `planning.md` tetap ringkas:
 
-### ✅ Fase 1 — Auth Service [P1 — SELESAI]
-- Scaffold Go service dengan struktur internal (model, repository, service, handler, middleware)
-- Endpoint autentikasi: register, login (email **atau** username via field `identifier`), refresh token, logout, profile/me
-- Middleware RBAC dengan tiga level akses: Admin, Operator, Viewer
-- Publisher NATS untuk audit log pada setiap event autentikasi
-- Cron job untuk pembersihan refresh token expired dan user inaktif
-- Dockerfile multi-stage dan healthcheck endpoint
-- Seed akun admin default (env `ADMIN_*`) saat migrasi pertama — idempoten
-- Endpoint manajemen akun (admin only): list users, list roles, ubah status aktif/role, hapus akun, dengan guard self-deactivate/demote & last-admin
-- Prometheus `/metrics` (client_golang) + plugin Kong `prometheus` — semua target UP
+| Fase | Service / Fitur | Status | Prioritas |
+|------|-----------------|--------|-----------|
+| 0 | Infrastruktur Dasar (NATS, Kong, Mosquitto, Prometheus) | ✅ Selesai | — |
+| 1 | Auth Service + Dashboard Auth | ✅ Selesai | P1 |
+| 2 | Module Service (onboarding + telemetry ingest) | ✅ Selesai | P2 |
+| 3 | Analytics + WS-Gateway | ✅ Selesai | P2 |
+| 4 | Control Service (manual + scheduler + emergency/resume) | ✅ Selesai | P1 |
+| 5 | Alert Service | ✅ Selesai | P1 |
+| 5 | Notification Service | ⬜ Dikerjakan di TA (blocker fungsional) | P1 |
+| 5/6 | Stream Service (MediaMTX + MinIO) | ✅ Selesai | P3 |
+| 6 | ML / Vision API (YOLOv8 Model Registry) | ✅ Selesai | P3 |
+| 6b/6c | Snapshot→AI Detection + CCTV Recording | ✅ Selesai | P3 |
+| 8 | Audit Service | ✅ Selesai | P1 |
+| 9 | Dashboard Lengkap | ✅ Selesai | P3 |
+| 9b | Export Service / Data API | ⬜ Future (sebagian via Analytics) | P3 |
+| 10 | OTA Service | ⬜ Future | P4 |
+| 11 | Prometheus Metrics Service | ⬜ Future | P4 |
+| 12 | Cloudflare Tunnel | ⬜ Future | P4 |
 
-### ✅ Fase 1 — Dashboard (Auth-only) [P1 — SELESAI]
-- Dashboard React terhubung ke Kong (`VITE_API_URL`, default `http://localhost:8000`)
-- Fokus fitur Auth: login (identifier + show/hide password), register, profile, ubah password, sesi, deactivate
-- Halaman non-auth (telemetri/control/video) di-hide, kode tetap di disk
-- Menu **Manajemen Akun** hanya muncul untuk user ber-role `admin`
-
-### ✅ Fase 2 — Module Service [P2 — SELESAI]
-
-#### 2a — Onboarding Perangkat
-- Scaffold Module Service (Go) dengan struktur internal mirror pola Auth
-- Skema `module_db` (MariaDB): tabel `modules` & `nodes` via GORM AutoMigrate
-- MQTT subscriber `discovery` → auto-register node (unpaired)
-- MQTT subscriber `status/#` → update status + last_seen
-- Redis status cache dengan TTL
-- REST: Module CRUD (`POST/GET/PUT/DELETE /modules`)
-- REST: Node onboarding (`GET /nodes`, `GET /nodes/discovered`, `pair`, `unpair`, `DELETE`)
-- NATS `audit.log` publish saat module/node created/paired/unpaired/deleted
-- TimescaleDB provisioning + hypertable `telemetry`
-- Dockerfile multi-stage + healthcheck
-- Kong route + Prometheus scrape
-
-#### 2b — Telemetry Ingest
-- MQTT subscriber telemetry `smartfarm/{node}/telemetry` → `IngestTelemetry`
-- Tag mapping (modular): tabel `node_tags` — source_key → tag_name DB (+ `label` untuk nama tampilan bersih di dashboard, `display_name`, `unit`, `data_type`, `enabled`), bisa diubah di UI
-- Simpan ke TimescaleDB hypertable `telemetry` (node_id, module_id, metric, value, raw)
-- Cache ke Redis nilai terbaru per node (`node:latest:{id}`, TTL)
-- Publish NATS `telemetry.ingest` per reading
-- Publish NATS `telemetry.batch` setiap 1 menit (agregat count/sum/min/max/avg/last)
-
-### ✅ Fase 3 — Analytics Service [P2 — SELESAI]
-- Subscribe `telemetry.batch` dari NATS **JetStream** (durable consumer `analytics-batch`, replay otomatis saat restart)
-- Upsert agregat ke `metrics_rollup` di `timescaledb-analytics` (Database-per-Service)
-- Continuous aggregate: `metrics_hourly`, `metrics_daily` dengan auto-refresh
-- Data Retention Policy (berjenjang): raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, `metrics_daily` **3650 hari (10 tahun)**
-- Compression policy 7 hari pada `metrics_hourly` & `metrics_daily` (storage murah untuk history panjang)
-- REST API via Kong: `/analytics/metrics` (batch: `node_id` & `metric` boleh comma-list, respons `series[node_id][metric]` — 1 request untuk banyak metrik sehingga tidak memicu rate-limit Kong), `/analytics/summary`, `/analytics/nodes`, `/analytics/export` (CSV bulk download riset — `?node_id&metric&resolution=day|hour|raw&from&to`)
-- Dashboard halaman Analytics dengan Line chart (Chart.js), selector node + metric, range 1h/6h/24h/7d/30d
-- Prometheus target UP
-
-### ✅ Fase 3 — WS-Gateway [P2 — SELESAI]
-- Service `wsgateway` (NATS → WebSocket bridge), route `/ws` via Kong
-- Subscribe `mqtt.{node_id}` → push realtime payload ke dashboard (`/ws/nodes/{node_id}/live`)
-- ✅ **Autentikasi koneksi WS via JWT** — validasi access token (Bearer header / `?token=`) pakai `JWT_SECRET` yang sama dengan Auth Service
-- ⬜ **`system-status` / notifikasi multi-subject (NotificationContext)** — ditunda (belum diperlukan)
-- ✅ **`system-status` route (`/ws/system-status`)** — SELESAI 2026-07-14: route di `services/wsgateway` subscribe NATS `system.status` dan stream ke dashboard `NotificationContext`; notifikasi mengalir begitu ada publisher (Alert/Monitor) ke subject tersebut.
-
-### ✅ Fase 4 — Control Service [P2 — SELESAI]
-
-> Dua mode: **Manual** (publish langsung) dan **Otomatis** (scheduler **server-side** — interval/jadwal/threshold nyala-mati). Firmware = *dumb actuator*; semua penjadwalan di Control Service.
-
-#### Yang sudah dikerjakan (status 2026-07-12)
-- **Backend (Go):** arbitrasi mode node-level via sentinel `output_name='*'` di tabel `control_modes`. `HandleManualCommand` menolak override manual di mode `AUTO`/`EMERGENCY` (kecuali `emergency_stop`); `EnabledSchedules` menjeda scheduler node saat mode `MANUAL`/`EMERGENCY`.
-- **Persistensi mode pra-emergency:** kolom `prev_mode` ditambahkan ke `gormControlMode` (AutoMigrate). `EnterEmergency` menyimpan mode aktif sebelum emergency; `ResumeNode` mengembalikan mode tersebut (default `AUTO` bila `prev_mode` kosong), sehingga **Resume merestorasi mode sebelum emergency**, bukan selalu AUTO.
-- **Endpoint:** `PUT /control/modes/{node_id}`, `GET`, `POST .../resume` (Kong sudah route `/control/modes`).
-- **Dashboard (React):** Halaman **Control Panel** dengan kartu *Control Mode* (badge MANUAL / OTOMATIS · BERJALAN NORMAL / EMERGENCY STOP, toggle Manual⇄Otomatis, tombol Emergency Stop, tombol Resume yang hanya muncul saat EMERGENCY). Perbaikan bug: `TargetTile` kini menerima `nodeMode` sehingga tombol manual ON/OFF/Toggle/level aktif hanya di mode MANUAL.
-- **Jadwal:** CRUD jadwal + **edit** (prefill form, `PUT /control/schedules/{id}`) + toggle enable/disable + **pagination** (PAGE_SIZE=4) agar rapi saat jadwal banyak.
-
-#### Kontrak nyata firmware (hasil audit `firmware/aeroponic-node`)
-Skema ini **menggantikan** asumsi lama (`cmd/{device_id}` + NATS Request-Reply):
-- **Topik command:** `smartfarm/actuator/{node_id}` (bukan `cmd/{device_id}`) — `ConfigManager.cpp:142`
-- **Action:** hanya `set_output` (eksekusi seketika, tanpa scheduler lokal)
-- **Payload:** `{"action":"set_output","target":"<output_name>","value":<int>,"req_id":"<opsional>"}`
-  - `value`: DIGITAL → `0`/`1` · PWM → `0–255`; `target` = `HardwareOutputs[].name`
-- **ACK:** via MQTT `smartfarm/{node_id}/confirm` (**bukan** NATS Request-Reply) → korelasi `req_id`; fallback verifikasi via `telemetry.outputs.{name}`
-- **Fitur lokal firmware:** local control threshold+histeresis & emergency shutdown (interrupt → semua OFF)
-
-#### Type control — Manual (publish seketika)
-- `set_state` (ON/OFF DIGITAL) · `set_level` (PWM 0–100%→0–255) · `toggle` · `pulse` (ON X detik lalu OFF, timer server) · `emergency_stop` (semua output=0)
-
-#### Type control — Otomatis (scheduler server-side)
-- `interval` ⭐ (ON x detik / OFF y detik berulang — pola pompa aeroponik)
-- `schedule` (cron jam nyala/mati) · `threshold` (sensor + histeresis) · `duration` (nyala total durasi) · `ramp` (PWM bertahap)
-
-#### Implementasi
-- `POST /control/command` — mode manual, publish `set_output` seketika (JWT Operator/Admin)
-- Publish MQTT ke `smartfarm/actuator/{node_id}` + ACL Mosquitto (izin publish `smartfarm/actuator/#`)
-- Korelasi ACK dari `/confirm` (via NATS fan-out Module Service), timeout → `failed`
-- CRUD `schedules` + scheduler engine (goroutine/cron) untuk mode otomatis
-- Simpan ke MariaDB (`mariadb-control`) + publish `audit.log`
-- Dockerfile + healthcheck + Kong route + Prometheus
-
-#### Database `mariadb-control`
-- `control_targets` (katalog output per node), `control_modes` (MANUAL/AUTO per output), `schedules` (definisi otomatis + params JSON), `commands` (log: req_id, status pending→sent→acked / timeout / failed)
-
-### ✅ Fase 5 — Alert Service [P1 — SELESAI]
-- Subscribe NATS `telemetry.ingest` (queue group `alert-workers`, Core NATS)
-- Ambil threshold dari `mariadb-alert` (fallback wildcard `node_id="*"`), cache di `redis-alert` (TTL 60s) + marker alert aktif untuk dedup
-- Evaluasi threshold — bandingkan nilai sensor dengan batas min/max; publish `alert.triggered` / `alert.resolved`
-- Publish juga ke `system.status` agar WS-Gateway → dashboard `NotificationContext` menerima notifikasi real-time
-- REST endpoint: `GET /alerts`, `PUT /alerts/:id/ack` (operator/admin), plus `GET/POST/PUT/DELETE /thresholds`
-- Dockerfile + healthcheck + Kong route (`/alerts`, `/thresholds`) + scrape Prometheus `alert-service`
-
-### ⬜ Fase 5 — Notification Service [P3]
-- Subscribe NATS `alert.triggered`, `alert.resolved`
-- Multi-channel: Push notification, Email (SMTP), Telegram (Bot API)
-- Queue di `redis-notification` sebagai antrian notifikasi (retry)
-- Simpan log notifikasi di `mariadb-notification`
-- Dockerfile + healthcheck
-
-### ⬜ Fase 6 — Stream Service [P3]
-- Integrasi MediaMTX untuk streaming HLS/WebRTC
-- Metadata stream di `mariadb-stream`
-- Upload snapshot ke MinIO bersama (bucket `stream`)
-
-### ✅ Fase 6 — ML / Vision API [P3 — SELESAI]
-
-> Service Python/FastAPI yang berdiri sendiri dari Go microservices. Inti: **Model Registry** — model YOLO (mis. `best.pt`) didaftarkan dan memperoleh `model_id` stabil; user memilih `model_id` saat inferensi (atau default bila kosong). Swap model tanpa restart.
-
-- **Model Registry:** `POST/GET/PUT/DELETE /ml/models`, `POST /ml/models/{id}/activate` (jadikan default), `POST /ml/models/{id}/weights` (upload `.pt`). Weights dari volume `models/` (`file_path`, default `best.pt`) atau di-upload via API. Load YOLO **lazy + cache per `model_id`**; reload otomatis saat config/weights berubah.
-- **Inference YOLOv8:** `POST /ml/detect` (upload 1..N gambar → deteksi class/confidence/bbox + gambar teranotasi), `POST /ml/detect/base64`, `POST /ml/detect/from-stream` (frame dari bucket `stream`). Threshold/iou/imgsz dapat di-override per request.
-- **Storage:** original + detected JPEG → MinIO bucket `ml-vision` (instance bersama); baca frame dari bucket `stream` (read-only).
-- **Persistensi:** `mariadb-ml` → `vision_models` (registry) + `vision_detections` (history), dikelola SQLAlchemy AutoCreate.
-- **Events:** publish `detection.result` ke NATS (best-effort) untuk Alert/Analytics/Export.
-- **Keamanan:** JWT/RBAC middleware (HS256, secret sama dengan Auth Service); write = admin/operator, read = semua role.
-- **Observability:** Prometheus `/metrics` (`vision_inferences_total`, `vision_detections_total`, `vision_inference_seconds`, `vision_models_loaded`) + `mariadb-ml` + `mysqld-exporter-ml`.
- - **Infra:** `Dockerfile` (python:3.11-slim, healthcheck), volume `ml-models` (di-seed `best.pt`), route Kong `/ml`, scrape `ml-service` + `mariadb-ml`.
- - **Auto-seed model `vision-aeroponik`:** saat startup, ML Service mendaftarkan otomatis `vision-aeroponik-model-test.pt` (id/slug `vision-aeroponik`) sebagai model default bila belum ada di registry — sehingga snapshot detection langsung siap pakai tanpa registrasi manual.
-
-### ✅ Fase 6b — Snapshot → AI Vision Detection (Gallery Tab) [P3 — SELESAI]
-
-> Integrasi end-to-end: capture frame dari Live Stream → dikirim ke ML Vision → hasil deteksi (bounding box, class, confidence) disimpan & ditampilkan di Gallery pada tab **DETECTION** yang terpisah dari tab SNAPSHOT / RECORDING.
-
-- **Stream Service (`?detect=true`):** `POST /streams/{id}/snapshot?detect=true` men-capture frame (simpan sebagai `kind=snapshot`), lalu memanggil `POST /ml/detect` dengan model `vision-aeroponik`. Hasil deteksi disimpan sebagai snapshot `kind=detection` (URL = frame asli; metadata `model_id`, `model_name`, `num_detections`, `classes`, `detections` (JSON bbox), `confidence_avg`). Stream Service menandatangani JWT service sendiri (shared `JWT_SECRET`, role admin/operator) untuk memanggil ML tanpa round-trip ke Auth.
-- **Auth tereduksi:** ML Client di Stream Service membuat service JWT (HS256) — tidak perlu login ke Auth tiap request.
-- **Storage:** deteksi tetap di bucket `stream` (frame asli); kotak digambar di dashboard dari `detections` JSON (tidak bergantung public URL bucket `ml-vision`), sehingga view konsisten lewat proxy `/storage`.
-- **Dashboard Gallery (`/snapshot`):** satu halaman dengan toolbar **AI Capture** (pilih stream + *Capture & Detect*) untuk admin/operator, dan tab **ALL / SNAPSHOT / RECORDING / DETECTION**. Tab DETECTION merender overlay bounding box + ringkasan class & confidence (grid & lightbox).
-  - **Hardening timeout:** `WriteTimeout` Stream Service 30s → 120s; route Kong `stream-service` `write_timeout`/`read_timeout` 10s → 120s (fix 504 *upstream timeout* saat capture + inferensi).
-
-### ✅ Fase 6c — CCTV Recording (Video) + Gallery Playback [P3 — SELESAI]
-
-> Rekam **video asli** (bukan sekadar cover JPEG) yang bisa di-*play* dan di-*download* langsung di Gallery, beserta perbaikan framing module & bug koneksi saat stop rekam.
-
-- **Recording via ffmpeg (bukan MediaMTX disk recorder):** `POST /streams/{id}/record/start` menjalankan `ffmpeg` di container Stream Service yang men-pull `rtsp://mediamtx:8554/{name}` dan menulis `.mp4` temp (`-c copy`). `POST /streams/{id}/record/stop` mengirim `SIGINT` agar ffmpeg memfinalisasi MP4 (moov atom), lalu meng-upload ke MinIO bucket `stream` (`recordings/<stream>/<uuid>.mp4`, `content_type: video/mp4`) dan menyimpan baris `kind=recording` (terikat `module_id`).
-- **Gallery RECORDING:** tile & lightbox merender `<video controls>` (play inline) + tombol **Download** (proxy `/storage` → MinIO, public-read pada prefix `recordings/*`). Tidak lagi berupa gambar cover statis.
-- **Durasi rekaman:** diukur dari file video via `ffprobe` (`format=duration`) → disimpan di kolom `duration` tabel `snapshots` (float, detik). Frontend menampilkan durasi pada notifikasi stop (`Recording stopped — 00:42 saved in Gallery`), tile Gallery (`· 00:42`), dan lightbox (`Duration 00:42`).
-- **Timer live saat merekam:** kartu Live View menampilkan badge merah berkedip `● REC mm:ss` yang mengetik tiap detik sejak tombol Record ditekan (indikator kasar; tidak harus sama persis dengan durasi hasil).
-- **Binding module (bukan node):** pendaftaran CCTV diikat ke **module yang sedang dipilih di dropdown** (`module_id`), bukan node. Field *Node* dihapus dari modal Add/Edit Stream; `CreateStream` mengirim `module_id = selectedModule.id`.
-- **Fix bug "unable read server" saat stop rekam:** sebelumnya `exec.Cmd.Wait()` dipanggil **dua kali** (goroutine reaper + `StopRecording`) → race/`waitid: no child processes` yang memutus koneksi (dashboard dapat `fetch` gagal). Sekarang `Wait()` **hanya** dipanggil oleh reaper; `StopRecording` menunggu channel `job.done` yang ditutup setelah process selesai di-reap.
-
-Lihat detail lengkap (endpoint + contoh) di `roadmap.md` → **Fase 5 — Stream Service**.
-- Subscribe `audit.log` dari NATS
-- Append-only insert ke `mariadb-audit` untuk immutability log
-- Endpoint `GET /audit/logs` (admin only)
-- ⚠️ **Catatan:** Semua service (Auth, Module) sudah publish `audit.log` tapi belum ada yang consume. Data audit menumpuk sia-sia.
-
-### ⬜ Fase 9 — Dashboard (Lengkap) [P3]
-- React app (reuse dari Aeroponik-Docker)
-- Tampilan telemetri real-time via WebSocket
-- Tampilan alert & history
-  - Panel kontrol device (Control Panel: mode arbitration + manual override + schedule editor/pagination) ✅
-  - Halaman Device Management (file sudah ada, tinggal integrasi penuh)
-- Koneksi ke WS-Gateway dengan JWT auth
-
-### ⬜ Fase 9b — Export Service / Data API [P3 — AKSES DATA EKSTERNAL]
-> Melayani akses data untuk mahasiswa/peneliti via REST API. Memungkinkan import langsung ke Python pandas, R, Excel, dan tools analisis data lainnya.
-
-#### Latar Belakang
-Mahasiswa dan peneliti perlu mengakses data sensor, telemetri, alert, dan metadata untuk keperluan analisis, tugas akhir, dan penelitian. Data tersimpan di berbagai database (TimescaleDB, MariaDB) dan tidak bisa diakses langsung. Export Service menjembatani dengan menyediakan REST API yang menghasilkan output CSV/JSON/Parquet yang siap di-import ke pandas.
-
-#### Arsitektur
-```
-Mahasiswa (Python/Notebook)
-  │ pd.read_csv("https://api.smartfarm.local/export/v1/telemetry?...")
-  ▼
-Kong API Gateway (JWT Auth + Rate Limiting: 5 req/min)
-  │
-  ▼
-Export Service (Go/Python FastAPI)
-  ├─ Query TimescaleDB (telemetry raw + aggregate)
-  ├─ Query MariaDB (metadata node, module, alert, audit)
-  ├─ Multi-format: CSV, JSON, Parquet, Excel (XLSX)
-  ├─ Streaming response (tidak load semua ke memory)
-  ├─ Caching query results (redis-export)
-  └─ Discover endpoint (self-documenting schema)
-```
-
-#### Endpoint
-
-| Method | Endpoint | Deskripsi | Format Output |
-|--------|----------|-----------|---------------|
-| `GET` | `/export/v1/telemetry` | Data telemetri mentah | CSV, JSON, Parquet |
-| `GET` | `/export/v1/telemetry/aggregate` | Data agregat (hourly/daily) | CSV, JSON |
-| `GET` | `/export/v1/nodes` | Metadata node & module | CSV, JSON |
-| `GET` | `/export/v1/alerts` | History alert | CSV, JSON |
-| `GET` | `/export/v1/commands` | Log perintah kontrol | CSV, JSON |
-| `GET` | `/export/v1/audit` | Audit log (admin only) | CSV, JSON |
-| `GET` | `/export/v1/discover` | List semua tabel & kolom yang tersedia | JSON |
-
-> **Keputusan (Opsi A — 2026-07-13):** Ekspor agregat telemetri untuk riset mahasiswa **tidak** dibuat sebagai service `export/` terpisah, melainkan diimplementasikan langsung di Analytics Service sebagai `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`). Daily aggregate (retensi 10 tahun + kompresi) sudah cukup untuk penelitian jangka panjang (termasuk range 5+ tahun); service `export/` terpisah (alerts/commands/audit/Parquet) tetap tertunda.
-
-#### Parameter Query
-
-| Parameter | Tipe | Default | Deskripsi |
-|-----------|------|---------|-----------|
-| `format` | string | `csv` | `csv`, `json`, `parquet`, `xlsx` |
-| `from` | ISO8601 | -7 hari | Awal time range |
-| `to` | ISO8601 | sekarang | Akhir time range |
-| `node_id` | string | semua | Filter per node |
-| `metric` | string | semua | Filter per metric |
-| `module_id` | string | semua | Filter per module |
-| `limit` | int | 10000 | Max baris per response |
-| `offset` | int | 0 | Pagination |
-| `sort` | string | `time` | Kolom sorting |
-| `order` | string | `desc` | `asc` / `desc` |
-| `compress` | bool | `false` | GZip response |
-
-#### Contoh Penggunaan dari Python
-
-```python
-import pandas as pd
-
-# Setup autentikasi
-headers = {"Authorization": "Bearer student-api-key-xxx"}
-
-# Satu baris: export telemetri langsung ke DataFrame
-df = pd.read_csv(
-    "https://api.smartfarm.local/export/v1/telemetry",
-    params={"from": "2026-07-01", "to": "2026-07-11"},
-    headers=headers
-)
-
-# Filter spesifik
-df_node = pd.read_csv(
-    "https://api.smartfarm.local/export/v1/telemetry",
-    params={"node_id": "ECE334219870", "metric": "cwt1_temperature"},
-    headers=headers
-)
-
-# Data agregat (lebih ringan)
-df_agg = pd.read_csv(
-    "https://api.smartfarm.local/export/v1/telemetry/aggregate",
-    params={"bucket": "hourly", "from": "2026-06-01", "to": "2026-07-11"},
-    headers=headers
-)
-
-# Multi-tabel untuk analisis lengkap
-nodes = pd.read_csv("https://api.smartfarm.local/export/v1/nodes", headers=headers)
-telemetry = pd.read_csv("https://api.smartfarm.local/export/v1/telemetry", params={...}, headers=headers)
-alerts = pd.read_csv("https://api.smartfarm.local/export/v1/alerts", params={...}, headers=headers)
-df = telemetry.merge(nodes, on="node_id").merge(alerts, on="node_id", how="left")
-
-# Export Parquet untuk big data
-import requests
-resp = requests.get("https://api.smartfarm.local/export/v1/telemetry",
-                    params={"format": "parquet", "limit": 1000000},
-                    headers=headers)
-with open("data.parquet", "wb") as f:
-    f.write(resp.content)
-df = pd.read_parquet("data.parquet")
-```
-
-#### Keamanan & Access Control
-
-| Aspek | Implementasi |
-|-------|-------------|
-| Autentikasi | JWT via Kong (sama seperti service lain) |
-| Role-based Access | Viewer: data non-sensitif. Admin: semua termasuk audit log |
-| Rate Limiting | 5 req/min untuk non-admin, 30 req/min untuk admin |
-| Data Limit | Maks 100.000 baris per request (admin: 1.000.000) |
-| Time Range Limit | Maks 90 hari per request untuk non-admin |
-| API Key Tiers | Student Basic (50 req/hari, 10rb baris, 7 hari), Student Research (200 req/hari, 100rb baris, 90 hari), Admin (unlimited) |
-
-#### Checklist Implementasi
-
-| Status | Item | Deskripsi | Estimasi |
-|---|---|---|---|
-| `[ ]` | Scaffold service (Go/Python) | Struktur internal, go.mod/requirements.txt | 1 hari |
-| `[ ]` | Koneksi ke TimescaleDB (module + analytics) | Read-only query pool | 0.5 hari |
-| `[ ]` | Koneksi ke MariaDB (module + auth) | Read-only query untuk metadata | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/telemetry` | Query + streaming CSV/JSON/Parquet | 1 hari |
-| `[x]` | Endpoint `/export/v1/telemetry/aggregate` | **Delivered via Analytics Service `GET /analytics/export`** (CSV, resolusi day/hour/raw) — lihat catatan Opsi A | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/nodes` | Metadata node & module | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/alerts` | History alert | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/commands` | Log perintah kontrol | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/audit` (admin only) | Audit log | 0.5 hari |
-| `[ ]` | Endpoint `/export/v1/discover` | Self-documenting schema | 0.5 hari |
-| `[ ]` | Redis caching (`redis-export`) | Cache query results, TTL configurable | 0.5 hari |
-| `[ ]` | Kong route + rate limiting | `/export` route, 5 req/min limit | 0.5 hari |
-| `[ ]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
-| `[ ]` | Prometheus metrics | `export_http_requests_total` | 0.5 hari |
-| `[ ]` | Dokumentasi API untuk mahasiswa | Contoh pandas, R, Excel | 1 hari |
-
-**Total estimasi: 5-7 hari**
-
-### ⬜ Fase 10 — OTA Service [P4]
-- Upload firmware binary ke MinIO bersama (bucket `ota`)
-- Trigger update ke ESP32 via MQTT
-- Tracking status update per device
-- Verifikasi checksum firmware
-
-### ⬜ Fase 11 — Prometheus Metrics Service [P4]
-- Subscriber NATS untuk subject `metrics.health` dari seluruh service
-- Aggregasi metrik health dan performa sistem
-- Expose endpoint `/metrics` untuk Prometheus scraping
-- Metrik: request count, error rate, response time, uptime, resource usage
-- **Catatan:** Saat ini metrik scrape langsung (bukan via NATS). Fase ini akan mengubah ke arsitektur event-driven.
-
-### ⬜ Fase 12 — Cloudflare Tunnel [P4]
-- `cloudflared tunnel run` → Kong:8000
-- TLS end-to-end untuk koneksi aman dari internet
-- Custom domain mapping
+> **Catatan:** Detail kontrak firmware (Control), endpoint ML, dan implementasi Stream (ffmpeg/ffprobe) berada di `roadmap.md`. Keputusan arsitektur (MinIO, Export Opsi A, Shared JWT) berada di [`adr.md`](./adr.md`).
 
 ---
 
@@ -735,7 +622,7 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | ✅ P1 | Fase 4 | Control Service | 3-5 hari | ESP32 sudah bisa dikontrol (manual + otomatis + emergency/resume) |
 | ✅ P1 | Fase 5 | Alert Service | 3-5 hari | Threshold evaluation + notifikasi real-time via `system.status` (WS) |
 | 🔴 P1 | Fase 8 | Audit Service | 1-2 hari | Quick win: data audit sudah dipublish tapi tidak di-consume |
-| 🟡 P2 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna |
+| 🔴 P1 | Fase 5 | Notification Service | 3-5 hari | Alert tidak berguna tanpa notifikasi ke pengguna (blocker fungsional) |
 | 🟡 P2 | Fase 3 | WS-Gateway JWT Auth | ✅ Selesai | Celah keamanan WS sudah ditutup |
 | 🟡 P2 | Fase 9 | Dashboard Device Management | 2-3 hari | File sudah ada, tinggal integrasi |
 | 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | ✅ Selesai |
@@ -743,6 +630,70 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | ⬜ P4 | Fase 10 | OTA Service | 5-7 hari | Fitur opsional |
 | ⬜ P4 | Fase 11 | Prometheus Metrics Service | 3-5 hari | Refactoring pipeline metrik |
 | ⬜ P4 | Fase 12 | Cloudflare Tunnel | 1-2 hari | Deployment ke production |
+
+---
+
+## 🧪 Testing & Quality Strategy
+
+Sesuai AGENTS.md (wajib unit test pada layer `service`/`repository`), berikut strategi pengujian terstandarisasi lintas service:
+
+| Jenis Test | Cakupan | Alat | Target |
+|---|---|---|---|
+| **Unit Test** | Business logic `service`/`repository` | Go `testing` + mock (manual stub / mockgen) | Minimal 80% coverage per service kritis |
+| **Integration Test** | DB (MariaDB/TimescaleDB) + JetStream | Test container / docker-compose test profile | Migrasi & query rollup benar |
+| **Contract Test** | NATS subject schema + OpenAPI | Validasi payload vs `docs/openapi/*.yaml` & JSON schema event | Breaking change terdeteksi CI |
+| **Load Test** | Throughput telemetry & latency budget | `k6` / `nats bench` | Memenuhi SLA di seksi Metrics |
+| **Manual UI** | Layout/UX dashboard | User (lihat `testing-implementasi-manual.md`) | Agent dilarang ubah status checklist UI |
+
+> **Test Protection Rule:** assertion test tidak boleh dilemahkan agar "lolos". Jika test gagal, perbaiki implementasi, bukan tesnya.
+
+### Deployment & Environments
+
+| Aspek | Dev | Staging | Prod |
+|---|---|---|---|
+| NATS | Single instance | Single + JetStream | **Cluster 3-node** (R≥2) |
+| Kong | Single | Single | 2+ replica + LB |
+| DB | 17 instance lokal | Sama | Primary-replica (kritis) + backup |
+| MinIO | Erasure-coding lokal | Sama | Multi-drive + `mc mirror` |
+| Observability | Prometheus + node-exporter | Sama + tracing | Sama + alerting |
+| Secrets | `.env` lokal | Vault / env ter-enkripsi | Same + rotation |
+| Cloudflare Tunnel | ⬜ | ⬜ | ✅ (Fase 12) |
+
+> Matriks ini menjawab kapan HA (cluster NATS/Kong) aktif — hanya di **prod**, sesuai seksi HA. Dev tetap single untuk kesederhanaan.
+
+---
+
+## 🎓 TA-Scale Implementation Roadmap
+
+Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butuh keahlian infrastruktur enterprise) dari **future enterprise work** (didokumentasikan sebagai evolusi, bukan dikerjakan di TA). Tujuannya: klaim arsitektur tetap defensible tanpa berlebihan di depan penguji.
+
+### ✅ Dikerjakan di TA (Reliable, No Heavy Infra)
+
+| # | Item | Mengapa TA-relevant | Hint / Cara Kerja |
+|---|---|---|---|
+| 1 | **DLQ Saga (NATS Advisory)** | Bukti nyata resilience, bukan narasi | Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → simpan pesan gagal ke tabel `audit` (`mariadb-audit`). Cukup Go + 1 tabel. Tidak butuh K8s/Vault. |
+| 2 | **Lengkapi Audit Compliance** | Infrastruktur sudah ada (Audit Service + `audit.log`) | Pastikan **semua** service (Control, Stream, ML, Notification) publish `audit.log` ke NATS. Audit Service sudah consume — tinggal lengkapi publisher. |
+| 3 | **CI/CD Sederhana (GitHub Actions)** | AGENTS.md sudah wajibkan; gampang | Workflow YAML: `go build` + `go vet` + `docker build` tiap push ke `main`. Tanpa K8s — cukup Docker Compose. |
+| 4 | **Pertahankan `.env` (jangan Vault)** | `.env` + `.env.example` sudah best-practice dev | Pastikan `.env` **tidak di-commit** (cek `.gitignore`). Itu sudah cukup "compliance" untuk TA. Jangan pindah ke Vault (terlalu berat). |
+| 5 | **Unit Test kritis (80%)** | AGENTS.md wajibkan | Fokus layer `service`/`repository` dengan mock sederhana. Tidak perlu integration test berat di awal. |
+
+> **Catatan Tambahan (penulis — Teknik Fisika):** Saya bukan lulusan informatika, sehingga item di atas dipilih karena (a) tidak butuh orchestration/K8s, (b) tidak butuh secrets manager eksternal, (c) langsung terlihat hasilnya di defense. Pola seperti circuit breaker sudah didokumentasikan di planning sebagai *design*, implementasinya bisa minimal (cukup timeout + retry di HTTP client).
+
+### 🔮 Future Enterprise Work (Didokumentasikan, BUKAN di TA)
+
+| Item | Alasan Diluar TA | Status |
+|---|---|---|
+| Kubernetes Orchestration + HPA | Butuh cluster terpisah, bukan Compose | Future |
+| HashiCorp Vault / Secrets Rotation | Butuh server PKI terpisah | Future |
+| Chaos Engineering (GameDays) | Butuh tool + eksperimen terkontrol | Future |
+| Multi-region DR (geo-replication) | Butuh 2 host beda lokasi fisik | Future |
+| Service Mesh (Istio/Envoy) | Sidecar berat untuk 13+ service | Out-of-scope (sudah di seksi HA) |
+| Live Jaeger/OTel Tracing | Collector berat; `trace_id` di log cukup untuk TA | Future |
+| SLO / Error Budget / Alerting otomatis | Butuh proses operasional mature | Future |
+
+> **Prinsip:** TA fokus pada **bukti arsitektur yang benar & berjalan di scale kecil**. Enterprise evolution di atas adalah *roadmap pengembangan lanjutan*, bukan kegagalan TA. Memisahkan keduanya justru menunjukkan pemahaman batas ruang lingkup (scope discipline).
+
+> **Konsistensi status `⬜`:** Setiap marka `⬜` (belum dikerjakan) di dokumen ini — baik di tabel service, fase, maupun saga — merupakan item yang termasuk kategori **Future Enterprise Work** di atas, kecuali secara eksplisit masuk daftar "Dikerjakan di TA". Dengan aturan ini, tidak ada `⬜` yang implicitly diklaim sebagai kegagalan TA.
 
 ---
 
@@ -776,6 +727,28 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 - **Frontend:** React + Vite + Chart.js + Tailwind CSS
 - **ORM:** GORM (Go) untuk MariaDB, pgx (Go) untuk TimescaleDB
 
+### Disaster Recovery & Backup Strategy
+
+| Asset | RPO | RTO | Mekanisme |
+|---|---|---|---|
+| MariaDB (per service) | 24 jam | 4 jam | Cron job `mysqldump` → volume `backups/` (zip harian, rotasi 7 hari); exporter prometheus `mysqld_up` (via `mysqld-exporter-all`) |
+| TimescaleDB (module/analytics) | 24 jam | 4 jam | `pg_dump` scheduled; continuous aggregate mempercepat rebuild |
+| Redis | — | — | Cache saja (rebuild dari DB), tidak di-backup |
+| MinIO | 24 jam | 8 jam | `mc mirror` ke disk kedua / rsync; erasure-coding cegah 1-drive loss |
+| NATS JetStream | 24 jam | 1 jam | Stream file storage di volume persist; replication factor 2 (prod) |
+
+> Backup volume **tidak** ikut git (sudah di `.gitignore` `volumes/`). Restore diuji minimal sekali per fase besar.
+
+### Capacity & Sizing (Estimasi Throughput)
+
+| Metrik | Estimasi (TA scale) | Dampak |
+|---|---|---|
+| Node aktif | ~10–30 ESP32 | Telemetry per node 5s → 6 msg/node/menit |
+| `telemetry.ingest` rate | ~180 msg/menit (30 node) | Core NATS fan-out WS — ringan |
+| `telemetry.batch` rate | 1 msg/node/menit | JetStream `TELEMETRY_BATCH` — ringan |
+| Retensi Timescale | raw 30h → hourly 365d → daily 10y | Compression 7d jaga biaya disk |
+| NATS mem JetStream | < 512 MB (retention 24h) | Aman di host 4GB+ |
+
 ### Risiko Teknis yang Perlu Dimitigasi
 
 | Risiko | Dampak | Mitigasi |
@@ -783,68 +756,27 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | Core NATS untuk `telemetry.batch` | Kehilangan data saat Analytics restart | ✅ Selesai (2026-07-13): upgrade ke JetStream — stream `TELEMETRY_BATCH` (file storage, retention 24h) + durable consumer `analytics-batch` di Analytics, replay otomatis saat restart |
 | WS tanpa autentikasi | Data real-time bisa diakses siapa saja | ✅ Sudah: JWT handshake di WS-Gateway |
 | 17 instance database | Biaya operasional tinggi, backup kompleks | Evaluasi apakah semua instance diperlukan di fase awal — ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
-| Tidak ada backup strategy | Data hilang jika container crash | Tambah volume backup atau cron job dump SQL |
+| Tidak ada backup strategy | Data hilang jika container crash | ✅ Ditambah tabel DR & Backup Strategy (RPO/RTO per asset + cron dump) di Catatan Teknis |
+| NATS/Kong single-instance SPOF | Event bus / gateway mati → sistem lumpuh | ✅ Ditambah seksi HA & Resilience (NATS 3-node cluster + JetStream R=2, Kong 2+ replica di prod) |
+| Saga DLQ/tracing hanya narasi | Kegagalan terdistribusi tak terinvestigasi | ⬜ Perlu implementasi `saga.*.dlq` consumer (Audit) + `trace_id` (lihat seksi Saga) |
 | Tidak ada CI/CD | Manual build & deploy rawan human error | Setup GitHub Actions atau GitLab CI sederhana |
+| Shared `JWT_SECRET` lintas service | Melanggar Zero-Trust Internal | Diterima untuk TA (sama secret, validasi di service masing-masing); produksi disarankan per-service key + mTLS |
 
 ---
 
-## 📝 Catatan Perubahan
 
-| Tanggal | Versi | Perubahan |
-|---------|-------|-----------|
-| 2026-07-11 | 2.0.0 | Sinkronisasi dengan roadmap.md; update status Fase 2 & 3 selesai; tambah ringkasan, timeline, risiko |
-| 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). `mariadb-control` & `services/control` ditandai Running/✅ |
-| 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service (`minio-stream`/`minio-ml`/`minio-ota`) → **1 instance MinIO bersama** (`minio`) dengan multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream` (tidak bergantung ML). Total instance turun 19 → 17. Update tabel Database-per-Service, topologi, diagram alur, dan risiko instance. |
-| 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI mandiri: Model Registry (CRUD + upload weights + activate → `model_id` untuk swap model), inference YOLOv8 (`/ml/detect` upload/base64/from-stream) dengan lazy-load + cache per `model_id`, persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware, Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
-| 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck.** (1) Module Service: hilangkan N+1 query di hot-path telemetry — tag mapping & module id di-cache in-memory (TTL 2m, invalidasi saat pair/unpair/edit tag) dan `TouchNode` di-batch (1× UPDATE per node per 30 detik via `StartTouchFlusher`) sehingga tiap reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB. (2) `telemetry.batch` di-upgrade dari Core NATS ke **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` di Analytics → window agregat 1-menit tidak lagi hilang saat Analytics restart (replay otomatis, ack eksplisit). Kedua service lolos `go build` + `go vet`. |
-| 2026-07-13 | 2.9.0 | **Troubleshooting Live MQTT Monitor.** Tambah sub-bab "⚠️ Troubleshooting — Live MQTT Monitor 'Loading terus'" (di bawah *Core NATS vs JetStream*): dokumentasikan gejala dashboard diam di "Listening for live MQTT payload..." padahal ESP kirim, alur data end-to-end, akar masalah (service `module` kehilangan koneksi **Core NATS** sehingga `PublishLive` membuang pesan diam-diam; `telemetry.batch` tetap jalan karena lewat JetStream terpisah), langkah diagnosa (cek client `module-svc` di NATS connz, `nats sub mqtt.<node_id>`), dan solusi (quick fix `docker restart microservices-module-1`; perbaikan permanen reconnect handler + replay last payload di WS-Gateway). Kasus terverifikasi 2026-07-13: restart module mengembalikan live stream (payload telemetry asli mengalir ke `mqtt.ECE334219870`). |
-| 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw `metrics_rollup` 30 hari, `metrics_hourly` 365 hari, `metrics_daily` **3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Perbaikan idempotensi bootstrap: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, dan ekspor CSV range 4 tahun). |
-| 2026-07-14 | 2.10.0 | **Analytics: batch endpoint + label tampilan + scoping modul.** Perbaikan akar masalah dashboard Analytics kosong di timeframe 1 jam: (1) `GET /analytics/metrics` di-upgrade jadi **batch** — `node_id` & `metric` menerima comma-list, respons `series[node_id][metric]`, sehingga 19 metrik diambil dalam 1 request (menghilangkan burst N×M yang memicu 429 rate-limit Kong); (2) scoping modul diperketat (modul tanpa telemetry tetap kosong, tidak meminjam data modul lain); (3) hanya metrik dengan tag `enabled=true` yang ditampilkan (metrik tak terkonfigurasi/disabled disembunyikan dari chart & legend). Node tag mendapat kolom `label` (AutoMigrate GORM, `COALESCE(label,'')` di SELECT) — Analytics menampilkan `label` sebagai judul/legend tiap metrik, fallback `tag_name` lalu source_key bila kosong. Editor tag (NodeDetailPanel & NodeConfigPage) dapat input `Label`. Lolos `go build` + `go vet` + e2e (batch 1 request → 200, label persist, module B kosong). |
-| 2026-07-14 | 2.11.0 | **Analytics: resolusi per-menit data diskrit (≤24h) + envelope min–max analog.** (1) `tsdb.go` `discreteStep`: data diskrit/digital kini di-bucket **1 menit** untuk seluruh window `≤24h` (sebelumnya 5 menit di 24h) → transisi ON/OFF tetap tiap menit; range multi-hari tetap coarsen bertahap (15 m / 1 j / 3 j) agar payload aman. (2) `model.SeriesPoint` diperluas `min`/`max`/`avg` (`*float64`, omitempty); `queryRange` analog kini memilih `last` + `avg=sum/NULLIF(count,0)` + `min` + `max` dari `metrics_rollup`/`metrics_hourly`/`metrics_daily` (CAGG tak simpan avg → dihitung ulang); tambah `scanSeriesRange`. (3) Dashboard `Analytics.jsx`: tren analog menggambar **envelope min–max** (band terisi antara nilai rendah/tinggi tiap bucket) + garis `avg`, dataset band disembunyikan dari legend & tooltip; kartu ringkasan menghitung **true** min/max/avg via `statsOf` (rentang tak lagi hilang di range lebar). Analog tetap per-jam (≤24h) & per-hari (>24h) sesuai keputusan. Lolos `go build` + `go vet` + ESLint (tanpa error baru). |
+## 📚 Dokumen Pendukung
 
----
+Bagian berikut dipisahkan dari dokumen utama agar `planning.md` tetap fokus pada **arsitektur murni**:
 
-## 📝 Catatan Keputusan Arsitektur — Konsolidasi MinIO (2026-07-12)
-
-**Konteks:** Semula direncanakan instance MinIO terpisah per service (`minio-stream` untuk snapshot/recording, `minio-ml` untuk hasil anotasi YOLOv8, `minio-ota` untuk firmware). Muncul usulan alternatif: MinIO hanya milik ML, dan Stream cukup menangani API MediaMTX lalu menaruh snapshot/recording ke MinIO-nya ML.
-
-**Keputusan:** Ambil **Opsi C — 1 instance MinIO bersama, multi-bucket, scoped access key.** Bukan Opsi A (Stream bergantung MinIO ML) dan bukan Opsi B (2+ instance MinIO di host yang sama).
-
-**Alasan:**
-1. **Urutan deploy & bounded context.** Stream Service sudah `✅` dan live; ML/Vision belum dibuat. Jika Stream menulis ke MinIO ML, Stream tidak bisa jalan sebelum ML di-deploy (regresi prinsip *Independen Deployable*). Stream memproduksi snapshot/recording → harus tetap punya storage sendiri (bucket `stream`).
-2. **Performa.** Bottleneck MinIO adalah disk I/O + bandwidth network, bukan proses MinIO. Membelah jadi 2 instance di host/disk sama justru menambah kontensi (2 proses berebut resource), bukan isolasi. Satu instance dengan disk SSD/NVMe lebih dari cukup untuk beban TA ini (beberapa kamera, object level GB–ratusan GB). MinIO dirancang untuk throughput puluhan GB/s.
-3. **Resilience.** Kelemahan satu instance = SPOF object storage. Mitigasinya **bukan** membelah container di 1 host, tapi menjalankan 1 MinIO dalam **mode distributed / erasure-coding multi-drive** (mis. 4 drive) di host yang sama. Itu lebih tangguh daripada 2 container di 1 disk.
-4. **Isolasi tetap terjaga.** Buckets terpisah + access key ter-scoping (`stream-svc-key` → rw `stream`; `ml-svc-key` → rw `ml-vision` + ro `stream`; `ota-svc-key` → rw `ota`) memenuhi prinsip *Zero-Trust Internal*, setara dengan isolasi per-instance.
-5. **Efisiensi operasional.** Mengurangi jumlah container & beban backup, menjawab risiko "terlalu banyak instance" yang sudah tercatat di dokumen.
-
-**Skema akhir:**
-```
-minio (1 instance, erasure-coding multi-drive bila memungkinkan)
- ├─ bucket: stream      owner: Stream Service   (rw: stream-svc-key)
- ├─ bucket: ml-vision   owner: ML / Vision API  (rw: ml-svc-key, ro: stream)
- └─ bucket: ota         owner: OTA Service      (rw: ota-svc-key)  [Fase 12]
-```
-ML membaca frame sumber dari `stream` (key read-only) untuk inferensi, tanpa Stream harus mengirim file ke ML. Retensi per bucket bisa berbeda (snapshot/recording pendek, model/annotated panjang).
+| Dokumen | Isi |
+|---------|-----|
+| [`roadmap.md`](./roadmap.md) | Status & detail implementasi per fase (Fase 0–12) |
+| [`adr.md`](./adr.md) | Architecture Decision Records (MinIO, Export Opsi A, Shared JWT) |
+| [`runbook.md`](./runbook.md) | Panduan operasional & troubleshooting (Live MQTT Monitor, dll) |
+| [`security-audit.md`](./security-audit.md) | Laporan penetration test & hardening (Audit Fix #3) |
+| [`logs.md`](../logs.md) | Development logs harian (aktivitas, bug fix, keputusan teknis) |
 
 ---
 
-## 🛡️ Audit Fix #3 — Hardening Gateway & Service Auth (2026-07-14)
-
-Berdasarkan hasil *stress test & penetration test* (toolkit di `stress-test/`),
-ditemukan beberapa kelemahan yang telah diperbaiki:
-
-### Temuan & Perbaikan
-| # | Temuan (pentest/stress) | Perbaikan | File |
-|---|--------------------------|-----------|------|
-| 1 | `/modules` & `/nodes` dapat diakses **tanpa token** (200) | Module Service sekarang menegakkan JWT (HS256, secret sama dengan Auth) + RBAC: read butuh user valid, write butuh `admin`/`operator`. Health `/health` tetap publik. | `services/module/internal/middleware/auth.go` (baru, stdlib-only), `services/module/main.go`, `services/module/internal/config/config.go` |
-| 2 | Rate limit Kong terlalu ketat → bottleneck (auth 20/menit, global 100/menit) | Dinaikkan: global `100→300`/menit, auth-public `20→60`/menit, route terlindungi `120→300`/menit (jam disesuaikan). Login tetap dilindungi dari brute-force. | `infra/kong/kong.yml` |
-| 3 | Header keamanan tidak ada + `Server`/`X-Powered-By` bocor | Plugin global `response-transformer` menyuntikkan CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS; menghapus `Server` & `X-Powered-By`. Plus `KONG_NGINX_HTTP_SERVER_TOKENS: off`. | `infra/kong/kong.yml`, `docker-compose.yml` |
-| 4 | XSS reflection pada `POST /modules` | Validasi input menolak `<` `>` & control char pada `name`/`description`; encoder JSON sudah HTML-escape sebagai lapisan kedua. | `services/module/internal/handler/handler.go` |
-| 5 | Tidak ada metrik host (CPU/RAM/disk) di Prometheus → bottleneck sulit dilacak | Tambah `node-exporter` (host) & `cAdvisor` (per-container) + job scrape di Prometheus. | `docker-compose.yml`, `infra/prometheus/prometheus.yml` |
-
-### Catatan
-- Middleware JWT Module Service dibuat **tanpa dependensi baru** (verifikasi HMAC-SHA256
-  pakai stdlib) agar `go.mod` tidak berubah & build tetap ringan.
-- Validasi RBAC di service bersifat *defense-in-depth*; Kong tetap berperan sebagai
-  rate-limiter/entry point (plugin `jwt` Kong sengaja tidak diaktifkan — validasi claim
-  tetap di service masing-masing, konsisten dengan pola Control Service).
+*Dokumen ini (`planning.md`) berisi arsitektur sistem. Untuk implementasi, keputusan, operasional, dan riwayat, lihat dokumen pendukung di atas.*

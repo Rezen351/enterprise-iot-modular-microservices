@@ -4,6 +4,26 @@ Dokumen ini berisi aturan yang **wajib** diikuti saat mengembangkan, mengubah, a
 
 ---
 
+## 📚 0. Peta Dokumentasi Proyek (Documentation Map)
+
+Dokumen di folder `docs/` adalah **single source of truth** untuk arsitektur, keputusan, pengujian, dan operasional. Agent wajib membaca dokumen yang relevan sebelum mengerjakan tugas pada domain terkait. Jangan mengubah keputusan arsitektur di luar `adr.md` tanpa mencatatnya sebagai ADR baru.
+
+| Dokumen | Peran / Tanggung Jawab | Kapan dibaca/diperbarui |
+|---------|------------------------|--------------------------|
+| [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) | Arsitektur murni, *bounded context*, risiko teknis, dan desain sistem inti. | Sebelum perubahan arsitektur/schema; perbarui saat arah berubah. |
+| [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) | Rencana fase & fitur (checklist `[ ]`/`[x]`). | Tandai `[x]` saat fase selesai. |
+| [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) | **Architecture Decision Records** — keputusan arsitektur penting + alasan (MinIO, ekspor analitik, shared JWT). | Baca sebelum menyimpang dari keputusan; tulis ADR baru untuk keputusan besar. |
+| [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) | **Operational Runbook** — panduan diagnosa & troubleshooting saat sistem bermasalah (studi kasus nyata). | Rujuk saat debugging isu produksi/container; tambah kasus baru yang ditemukan. |
+| [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md) | Laporan *penetration test* & *hardening* (Kong, JWT/RBAC, XSS, eksporter). | Rujuk saat menyentuh gateway/keamanan; catat temuan baru di sini. |
+| [grafana-service-health.md](file:///home/almuzky/TA/Microservices/docs/grafana-service-health.md) | Panduan membaca dashboard Grafana "Service Health" (Prometheus metrics). | Rujuk saat menginvestigasi metrik/health; bukan diubah kecuali dashboard berubah. |
+| [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) | Checklist pengujian **backend/API** (diperbolehkan & dijalankan Agent). | Perbarui `[ ]`→`[x]` per step saat verifikasi API. |
+| [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) | Checklist pengujian **UI/visual** (wajib manual oleh User). | Hanya User yang mengubah status; Agent boleh menulis draf skenario. |
+| [logs.md](file:///home/almuzky/TA/Microservices/logs.md) | Log harian aktivitas & keputusan teknis (wajib diupdate tiap tugas). | Update setelah setiap tugas selesai. |
+
+> **Catatan integrasi:** Keputusan arsitektur (ADR), runbook operasional, hasil audit keamanan, dan panduan monitoring Grafana di bawah ini merujuk ke dokumen di atas agar tidak terjadi duplikasi aturan.
+
+---
+
 ## 🌐 1. Aturan Bahasa (Language Rule)
 
 **Semua teks antarmuka (UI) pada dashboard dan seluruh respons dari API harus menggunakan Bahasa Inggris (English).**
@@ -37,15 +57,17 @@ Sebelum melakukan modifikasi kode yang bersifat kompleks (misalnya: membuat serv
 
 ### 2.2 Fase Pelacakan Tugas (Task Tracking)
 1. Gunakan format to-do list (`task.md` atau pesan status) untuk melacak progress pekerjaan:
-   - `[ ]` Tugas belum dimulai
-   - `[/]` Tugas sedang dalam pengerjaan (In Progress)
-   - `[x]` Tugas selesai dilakukan (Completed)
+    - `[ ]` Tugas belum dimulai
+    - `[/]` Tugas sedang dalam pengerjaan (In Progress)
+    - `[x]` Tugas selesai dilakukan (Completed)
 2. Pecah tugas besar menjadi sub-tugas yang lebih kecil dan terukur.
+3. **Troubleshooting Operasional**: Jika menemui anomali sistem (container mati, live stream putus, gateway error), rujuk [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) untuk pola diagnosa end-to-end yang sudah tercatat. Tambahkan kasus baru ke runbook setelah berhasil diatasi agar tim lain bisa belajar dari solusi tersebut.
 
 ### 2.3 Fase Verifikasi & Pengujian (Verification Phase)
 1. **Verifikasi Fungsional**: Selalu uji kode secara lokal (misalnya menjalankan unit test atau memvalidasi endpoint API via container Docker).
 2. **Pemeriksaan Kompilasi**: Pastikan semua service yang dimodifikasi dapat di-build dengan sukses tanpa error (misalnya `go build` atau compiler React).
 3. **Dokumentasi Pengujian**: Dokumentasikan hasil pengujian atau perintah pengujian yang digunakan dalam [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) atau logs.
+4. **Investigasi Metrik & Health**: Saat menelusuri anomali performa/latensi/error rate, rujuk [grafana-service-health.md](file:///home/almuzky/TA/Microservices/docs/grafana-service-health.md) untuk memahami arti tiap panel dashboard (Prometheus metrics). Gunakan dashboard untuk mengonfirmasi status UP/DOWN, error rate, dan resource usage layanan yang sedang diubah.
 
 ---
 
@@ -99,10 +121,32 @@ Untuk menjaga kualitas codebase, kontributor wajib mengikuti pola arsitektur yan
    - Mengingat skala microservice yang besar (~30 services), setiap request HTTP wajib menyertakan ID korelasi (`X-Correlation-ID` or `X-Request-ID`) di dalam header.
    - ID korelasi ini harus dipropagasikan ke setiap downstream service tujuan, termasuk payload event yang dikirim melalui Event Bus (NATS).
    - Cantumkan ID korelasi ini di setiap baris log terkait agar memudahkan pelacakan log terdistribusi secara end-to-end.
+9. **Keputusan Arsitektur (ADR)** — Setiap keputusan arsitektur penting (pemilihan infrastruktur, pola integrasi, trade-off) **wajib** dicatat sebagai ADR di [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) sebelum/selama implementasi. Jangan mengubah arah keputusan yang sudah ada (mis. konsolidasi MinIO, shared JWT) tanpa menambahkan ADR baru yang merujuk ke alasan perubahannya. ADR bersifat *immutable* — keputusan yang dibatalkan cukup ditandai, tidak dihapus.
+
 7. **Single Source of Truth & Larangan Kontainer Yatim (Orphaned Containers)**
    - Semua infrastruktur, database, cache, broker, dan microservices yang berjalan **wajib dideklarasikan secara resmi** di dalam `docker-compose.yml`.
    - **DILARANG KERAS** membiarkan kontainer/sumber daya berjalan secara mandiri (*orphaned* atau sisa dari branch/worktree lain) tanpa terdaftar di `docker-compose.yml` utama.
    - Jika suatu layanan tidak digunakan atau dinonaktifkan di branch/sesi saat ini, definisinya beserta target monitoring-nya (seperti Prometheus scrape job dan exporters) harus dihapus secara bersih, dan kontainer fisiknya dimatikan menggunakan perintah `docker compose up -d --remove-orphans`.
+8. **Optimasi Docker Build & Caching Dependensi (Docker Layer Caching)**
+   - Saat membuat atau memodifikasi `Dockerfile` (terutama untuk service dengan dependensi besar seperti Service ML/Python, Node, atau Go), **wajib menggunakan metode Docker Layer Caching yang optimal** agar tidak perlu menginstal ulang seluruh dependensi dari awal setiap kali ada perubahan kecil pada program.
+   - **Metode/Aturan Penulisan Dockerfile yang Benar:**
+     1. **Salin Berkas Manifes Dependensi Terlebih Dahulu**: Salin berkas manifes dependensi (misal: `requirements.txt`, `package.json`, `go.mod` dan `go.sum`, atau `Gemfile`) secara terpisah sebelum menyalin kode sumber program.
+     2. **Jalankan Instalasi Dependensi Terlebih Dahulu**: Jalankan perintah instalasi dependensi (misal: `pip install`, `npm install`, atau `go mod download`). Layer ini akan di-cache oleh Docker dan tidak akan dibangun ulang selama berkas manifes dependensi tidak berubah.
+     3. **Salin Kode Sumber Program**: Salin sisa kode program (source code) setelah tahap instalasi dependensi selesai. Perubahan kode program kecil hanya akan membatalkan cache dari langkah penyalinan kode sumber ini ke bawah, sehingga proses build tetap sangat cepat.
+     4. **Gunakan Multi-Stage Build**: Selalu gunakan multi-stage build untuk memisahkan lingkungan build (SDK penuh) dengan lingkungan runtime minimal agar ukuran akhir image seminimal mungkin.
+     5. **Gunakan Cache Mounts**: Jika didukung oleh Docker builder/runner, gunakan cache mount (misal: `type=cache` untuk pip cache, npm cache, atau go build cache) untuk mempercepat instalasi dependensi.
+   - **Contoh Struktur Dockerfile (Python/ML Service):**
+     ```dockerfile
+     FROM python:3.10-slim AS builder
+     WORKDIR /app
+     # 1. Salin manifes dependensi terpisah
+     COPY requirements.txt .
+     # 2. Install dependensi (layer ini akan dicache)
+     RUN --mount=type=cache,target=/root/.cache/pip \
+         pip install -r requirements.txt
+     # 3. Salin sisa kode program
+     COPY . .
+     ```
 
 ---
 
@@ -111,6 +155,7 @@ Untuk menjaga kualitas codebase, kontributor wajib mengikuti pola arsitektur yan
 1. **Rahasia & Kredensial**: Dilarang melakukan commit terhadap file `.env`, key file, atau file berisi kredensial sensitif ke repositori Git.
 2. **Input Validation**: Lakukan validasi dan sanitasi input pada semua endpoint API untuk mencegah SQL Injection, XSS, dan serangan injeksi lainnya.
 3. **Autentikasi & Otorisasi**: Gunakan middleware JWT yang sudah terstandarisasi untuk melindungi endpoint sensitif dan patuhi RBAC (Role-Based Access Control) yang sudah ditentukan di Auth Service.
+4. **Rujuk Hasil Audit Keamanan**: Sebelum menyentuh gateway (Kong), validasi input, header keamanan, atau penanganan kredensial, bacalah [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md). Dokumen tersebut berisi temuan *penetration test* (akses tanpa token, rate limit, XSS, header bocor) beserta perbaikannya — jangan mengulang pola yang sudah di-*harden*. Catat temuan baru di sana.
 
 ---
 

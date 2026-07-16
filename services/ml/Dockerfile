@@ -25,6 +25,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # (large) torch/ultralytics cache layer above is not invalidated on edits.
 RUN pip install --no-cache-dir "PyJWT==2.10.1"
 
+# pydantic-settings is required by app/config.py (BaseSettings) and kept as a
+# separate layer so the (large) torch/ultralytics cache layer is preserved.
+RUN pip install --no-cache-dir "pydantic-settings==2.6.1"
+
 # Copy application
 COPY app ./app
 

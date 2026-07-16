@@ -14,6 +14,7 @@ from app.database import SessionLocal, VisionModel
 from app.schemas import Message, ModelCreate, ModelList, ModelOut, ModelUpdate
 from app.security import require_read, require_write
 from app.vision_engine import registry
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ml/models", tags=["Model Registry"])
@@ -70,14 +71,26 @@ def activate_model(model_id: str):
 
 
 @router.post("/{model_id}/weights", response_model=ModelOut,
-             dependencies=[Depends(require_write)])
+              dependencies=[Depends(require_write)])
 def upload_weights(model_id: str, file: UploadFile = File(...)):
     """Upload YOLO weights (.pt) and bind them to the model."""
-    data = file.file.read()
+    max_bytes = get_settings().max_upload_bytes
+    data = file.file.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds max upload size of {get_settings().max_upload_mb} MB",
+        )
     if not data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+    filename = file.filename or ""
+    if not filename.lower().endswith(".pt"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Model weights must be a .pt (PyTorch) file",
+        )
     try:
-        meta = registry.upload_weights(model_id, file.filename or "weights.pt", data)
+        meta = registry.upload_weights(model_id, filename, data)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return _out(meta)

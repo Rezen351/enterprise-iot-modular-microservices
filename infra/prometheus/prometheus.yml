@@ -159,155 +159,136 @@ scrape_configs:
 
   # ─── Infra exporters ───────────────────────────────────────────────────
 
-  # MariaDB Auth — via mysqld-exporter
+  # MariaDB Auth — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-auth"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-auth:9104"]
+      - targets: ["mysqld-exporter-all:9104"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-auth"
 
-  # MariaDB Control — via mysqld-exporter
+  # MariaDB Control — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-control"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-control:9104"]
+      - targets: ["mysqld-exporter-all:9105"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-control"
 
-  # MariaDB Module — via mysqld-exporter
+  # MariaDB Module — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-module"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-module:9104"]
+      - targets: ["mysqld-exporter-all:9106"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-module"
 
-  # MariaDB Stream — via mysqld-exporter
+  # MariaDB Stream — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-stream"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-stream:9104"]
+      - targets: ["mysqld-exporter-all:9107"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-stream"
 
-  # MariaDB Audit — via mysqld-exporter
+  # MariaDB Audit — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-audit"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-audit:9104"]
+      - targets: ["mysqld-exporter-all:9108"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-audit"
 
-  # MariaDB Alert — via mysqld-exporter
+  # MariaDB Alert — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-alert"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-alert:9104"]
+      - targets: ["mysqld-exporter-all:9109"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-alert"
 
-  # MariaDB Notification — via mysqld-exporter
+  # MariaDB Notification — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-notification"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-notification:9104"]
+      - targets: ["mysqld-exporter-all:9110"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-notification"
 
-  # MariaDB ML / Vision — via mysqld-exporter
+  # MariaDB ML / Vision — via mysqld-exporter-all (ADR-005)
   - job_name: "mariadb-ml"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["mysqld-exporter-ml:9104"]
+      - targets: ["mysqld-exporter-all:9111"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "mariadb-ml"
 
-  # Redis (Module cache) — via redis-exporter
-  - job_name: "redis-module"
+  # Redis (Shared instance, multi-DB) — via single redis-exporter (ADR-004)
+  # 1 instance redis-shared menggantikan redis-module/alert/notification/export.
+  # Instance label membedakan DB per service (module=DB0, alert=DB1,
+  # notification=DB2, export=DB3) agar metrik tetap terpisah di Grafana.
+  - job_name: "redis-shared"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
       - targets: ["redis-exporter:9121"]
+        labels:
+          db: "module"
+      - targets: ["redis-exporter:9121"]
+        labels:
+          db: "alert"
+      - targets: ["redis-exporter:9121"]
+        labels:
+          db: "notification"
+      - targets: ["redis-exporter:9121"]
+        labels:
+          db: "export"
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: "redis-module"
+        replacement: "redis-shared"
 
-  # Redis (Alert cache) — via redis-exporter-alert
-  - job_name: "redis-alert"
-    metrics_path: /metrics
-    scrape_interval: 15s
-    static_configs:
-      - targets: ["redis-exporter-alert:9121"]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: "redis-alert"
-
-  # Redis (Export cache) — via redis-exporter-export
-  - job_name: "redis-export"
-    metrics_path: /metrics
-    scrape_interval: 15s
-    static_configs:
-      - targets: ["redis-exporter-export:9121"]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: "redis-export"
-
-  # Redis (Notification cache) — via redis-exporter-notification
-  - job_name: "redis-notification"
-    metrics_path: /metrics
-    scrape_interval: 15s
-    static_configs:
-      - targets: ["redis-exporter-notification:9121"]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: "redis-notification"
-
-  # TimescaleDB Module — via postgres-exporter
+  # TimescaleDB Module — via postgres-exporter-all (ADR-005)
   - job_name: "timescaledb-module"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["postgres-exporter-module:9187"]
+      - targets: ["postgres-exporter-all:9187"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: "timescaledb-module"
 
-  # TimescaleDB Analytics — via postgres-exporter
+  # TimescaleDB Analytics — via postgres-exporter-all (ADR-005)
   - job_name: "timescaledb-analytics"
     metrics_path: /metrics
     scrape_interval: 15s
     static_configs:
-      - targets: ["postgres-exporter-analytics:9187"]
+      - targets: ["postgres-exporter-all:9188"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance

@@ -14,6 +14,7 @@ from app.routes_detect import router as detect_router
 from app.routes_models import router as models_router
 from app.routes_system import router as system_router
 from app.routes_results import router as results_router
+from app.responses import EnvelopeJSONResponse, install_response_wrapper
 from app.vision_engine import registry
 
 settings = get_settings()
@@ -34,7 +35,10 @@ def create_app() -> FastAPI:
             "published to NATS."
         ),
         version="1.0.0",
+        default_response_class=EnvelopeJSONResponse,
     )
+
+    install_response_wrapper(app)
 
     app.add_middleware(
         CORSMiddleware,

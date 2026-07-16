@@ -40,7 +40,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Port:          getEnv("PORT", "8080"),
 		DBDSN:         getEnv("DB_DSN", "notification_user:notification_pass@tcp(mariadb-notification:3306)/notification_db?parseTime=true&charset=utf8mb4"),
-		RedisAddr:     getEnv("REDIS_ADDR", "redis-notification:6379"),
+		RedisAddr:     getEnv("REDIS_ADDR", "redis-shared:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       atoiDefault(getEnv("REDIS_DB", "0"), 0),
 		NATSUrl:       getEnv("NATS_URL", "nats://nats:4222"),

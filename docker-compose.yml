@@ -74,7 +74,7 @@ services:
       nats:
         condition: service_started
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8090/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,13 +94,13 @@ services:
       DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/${MYSQL_DATABASE_ALERT}?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
-      REDIS_ADDR: "redis-alert:6379"
+      REDIS_ADDR: "redis-shared:6379"
       REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
-      REDIS_DB: "0"
+      REDIS_DB: "1"
     depends_on:
       mariadb-alert:
         condition: service_healthy
-      redis-alert:
+      redis-shared:
         condition: service_healthy
       nats:
         condition: service_started
@@ -242,61 +242,15 @@ services:
       - iot-net
 
   # ──────────────────────────────
-  # Redis Module — cache for module service
+  # Redis Shared — single consolidated Redis for module/alert/notification/export
+  # (ADR-004). Logical DB isolation: module=0, alert=1, notification=2, export=3.
   # ──────────────────────────────
-  redis-module:
+  redis-shared:
     image: redis:7-alpine
     restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
-      - ./volumes/redis-module:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - iot-net
-
-  # ──────────────────────────────
-  # Redis Alert — threshold/recent-alert cache for Alert Service (Fase 7)
-  # ──────────────────────────────
-  redis-alert:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - ./volumes/redis-alert:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - iot-net
-
-  # ──────────────────────────────
-  # Redis Notification — notification queue/throttle cache
-  # ──────────────────────────────
-  redis-notification:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - ./volumes/redis-notification:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - iot-net
-
-  # ──────────────────────────────
-  # Redis Export — query cache for export service
-  # ──────────────────────────────
-  redis-export:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - ./volumes/redis-export:/data
+      - ./volumes/redis-shared:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -385,7 +339,7 @@ services:
       PORT: "8080"
       DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-module:3306)/${MYSQL_DATABASE_MODULE}?parseTime=true&charset=utf8mb4"
       TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
-      REDIS_ADDR: "redis-module:6379"
+      REDIS_ADDR: "redis-shared:6379"
       NATS_URL: "nats://nats:4222"
       MQTT_URL: "${MQTT_URL}"
       MQTT_USER: "${MQTT_USER}"
@@ -395,7 +349,7 @@ services:
     depends_on:
       mariadb-module:
         condition: service_healthy
-      redis-module:
+      redis-shared:
         condition: service_started
       timescaledb-module:
         condition: service_healthy
@@ -614,167 +568,77 @@ services:
       - iot-net
 
   # ────────────────────────────────────
-  # MONITOR — Docker Compose Resource Monitor
-  # CLI tool to check CPU, RAM, Network, and Disk usage
-  # ────────────────────────────────────
-  monitor:
-    build:
-      context: ./services/monitor
-      dockerfile: Dockerfile
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./docker-compose.yml:/workspace/docker-compose.yml:ro
-    working_dir: /workspace
-    command: ["stats"]
-    networks:
-      - iot-net
-
-  # ────────────────────────────────────
   # EXPORTERS — metrik infra ke Prometheus
   # Setiap exporter mengekspos /metrics agar Prometheus bisa scrape
   # service database/broker yang tidak punya endpoint Prometheus native.
   # ────────────────────────────────────
 
-  # MariaDB Auth
-  mysqld-exporter-auth:
-    image: prom/mysqld-exporter:v0.15.1
+  # MariaDB consolidated exporter (ADR-005, OPTION 1) — one container running
+  # one mysqld_exporter process per target DB on a dedicated port.
+  # Port mapping: 9104 auth, 9105 control, 9106 module, 9107 stream,
+  # 9108 audit, 9109 alert, 9110 notification, 9111 ml.
+  mysqld-exporter-all:
+    build:
+      context: ./infra/mysqld-exporter-all
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-auth:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.auth.cnf:/.my.cnf:ro
+      MYSQL_DSN_1: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/"
+      MYSQL_DSN_2: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-control:3306)/"
+      MYSQL_DSN_3: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-module:3306)/"
+      MYSQL_DSN_4: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-stream:3306)/"
+      MYSQL_DSN_5: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/"
+      MYSQL_DSN_6: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/"
+      MYSQL_DSN_7: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-notification:3306)/"
+      MYSQL_DSN_8: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-ml:3306)/"
     depends_on:
       mariadb-auth:
         condition: service_healthy
-    networks:
-      - iot-net
-
-  # MariaDB Control
-  mysqld-exporter-control:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-control:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.control.cnf:/.my.cnf:ro
-    depends_on:
       mariadb-control:
         condition: service_healthy
-    networks:
-      - iot-net
-
-  # MariaDB Audit
-  mysqld-exporter-audit:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-audit:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.audit.cnf:/.my.cnf:ro
-    depends_on:
-      mariadb-audit:
-        condition: service_healthy
-    networks:
-      - iot-net
-
-  # MariaDB Alert
-  mysqld-exporter-alert:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-alert:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.alert.cnf:/.my.cnf:ro
-    depends_on:
-      mariadb-alert:
-        condition: service_healthy
-    networks:
-      - iot-net
-
-  # MariaDB Module
-  mysqld-exporter-module:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-module:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.module.cnf:/.my.cnf:ro
-    depends_on:
       mariadb-module:
         condition: service_healthy
-    networks:
-      - iot-net
-
-  # MariaDB Stream
-  mysqld-exporter-stream:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-stream:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.stream.cnf:/.my.cnf:ro
-    depends_on:
       mariadb-stream:
         condition: service_healthy
-    networks:
-      - iot-net
-
-  mysqld-exporter-ml:
-    image: prom/mysqld-exporter:v0.15.1
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "${DB_USER}:${DB_PASSWORD}@(mariadb-ml:3306)/"
-    volumes:
-      - ./infra/mysqld-exporter/my.ml.cnf:/.my.cnf:ro
-    depends_on:
+      mariadb-audit:
+        condition: service_healthy
+      mariadb-alert:
+        condition: service_healthy
+      mariadb-notification:
+        condition: service_healthy
       mariadb-ml:
         condition: service_healthy
     networks:
       - iot-net
 
-  # MariaDB Notification
+  # Redis Shared — single exporter for the consolidated Redis instance (ADR-004).
+  # Prometheus scrapes it 4× with db labels (module/alert/notification/export)
+  # so per-service metrics stay separate in Grafana.
   redis-exporter:
     image: oliver006/redis_exporter:v1.55.0
     restart: unless-stopped
     environment:
-      REDIS_ADDR: "redis-module:6379"
+      REDIS_ADDR: "redis-shared:6379"
     depends_on:
-      redis-module:
-        condition: service_started
-    networks:
-      - iot-net
-
-  # Redis (Alert cache) — threshold/recent-alert cache for Alert Service
-  redis-exporter-alert:
-    image: oliver006/redis_exporter:v1.55.0
-    restart: unless-stopped
-    environment:
-      REDIS_ADDR: "redis-alert:6379"
-    depends_on:
-      redis-alert:
-        condition: service_started
-    networks:
-      - iot-net
-
-  # Redis (Export cache) — device export cache for Export Service
-  postgres-exporter-module:
-    image: wrouesnel/postgres_exporter:latest
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
-    depends_on:
-      timescaledb-module:
+      redis-shared:
         condition: service_healthy
     networks:
       - iot-net
 
-  # TimescaleDB Analytics
-  postgres-exporter-analytics:
-    image: wrouesnel/postgres_exporter:latest
+  # Postgres/TimescaleDB consolidated exporter (ADR-005, OPTION 1) — one
+  # container running one postgres_exporter process per target DB on a
+  # dedicated port. Port mapping: 9187 module, 9188 analytics.
+  postgres-exporter-all:
+    build:
+      context: ./infra/postgres-exporter-all
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
+      POSTGRES_DSN_1: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+      POSTGRES_DSN_2: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
     depends_on:
+      timescaledb-module:
+        condition: service_healthy
       timescaledb-analytics:
         condition: service_healthy
     networks:
@@ -1011,7 +875,7 @@ services:
       MODEL_ID: "${CCTV_MODEL_ID}"
       MINIO_RESULT_BUCKET: "${CCTV_MINIO_RESULT_BUCKET}"
       MIRROR_ANNOTATED: "${CCTV_MIRROR_ANNOTATED}"
-      REDIS_ADDR: "redis-module:6379"
+      REDIS_ADDR: "redis-shared:6379"
       REDIS_PASSWORD: ""
       REDIS_DB: "0"
       MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
@@ -1029,8 +893,8 @@ services:
         condition: service_healthy
       ml:
         condition: service_started
-      redis-module:
-        condition: service_started
+      redis-shared:
+        condition: service_healthy
       mediamtx:
         condition: service_started
     networks:
@@ -1121,6 +985,67 @@ services:
   # ──────────────────────────────────────
   # NOTIFICATION SERVICE — alert notifications via multiple channels
   # ──────────────────────────────────────
+  notification:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      JWT_SECRET: "${JWT_SECRET}"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-notification:3306)/${MYSQL_DATABASE_NOTIFICATION}?parseTime=true&charset=utf8mb4"
+      REDIS_ADDR: "redis-shared:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_DB: "2"
+      NATS_URL: "nats://nats:4222"
+      PROMETHEUS_PORT: "9091"
+    depends_on:
+      mariadb-notification:
+        condition: service_healthy
+      redis-shared:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
+  # EXPORT SERVICE — telemetry/data export (CSV/Parquet) from TimescaleDB
+  # ──────────────────────────────────────
+  export-service:
+    build:
+      context: ./services/export
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      JWT_SECRET: "${JWT_SECRET}"
+      TIMESCALEDB_MODULE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+      REDIS_ADDR: "redis-shared:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_DB: "3"
+      NATS_URL: "nats://nats:4222"
+      PROMETHEUS_PORT: "9092"
+    depends_on:
+      timescaledb-module:
+        condition: service_healthy
+      redis-shared:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
 networks:
   iot-net:
     driver: bridge

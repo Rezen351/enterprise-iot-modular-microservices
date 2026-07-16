@@ -25,7 +25,7 @@ func Load() (*Config, error) {
 		DBDSN:         getEnv("DB_DSN", "alert_user:alert_pass@tcp(mariadb-alert:3306)/alert_db?parseTime=true&charset=utf8mb4"),
 		NATSUrl:       getEnv("NATS_URL", "nats://nats:4222"),
 		JWTSecret:     getEnv("JWT_SECRET", ""),
-		RedisAddr:     getEnv("REDIS_ADDR", "redis-alert:6379"),
+		RedisAddr:     getEnv("REDIS_ADDR", "redis-shared:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       atoiDefault(getEnv("REDIS_DB", "0"), 0),
 	}

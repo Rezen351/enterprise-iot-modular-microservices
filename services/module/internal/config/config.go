@@ -41,7 +41,7 @@ func Load() (*Config, error) {
 		Port:            getEnv("PORT", "8080"),
 		DBDSN:           getEnv("DB_DSN", "module_user:module_pass@tcp(mariadb-module:3306)/module_db?parseTime=true&charset=utf8mb4"),
 		TimescaleDSN:    getEnv("TIMESCALE_DSN", "postgres://module_user:module_pass@timescaledb-module:5432/module_ts?sslmode=disable"),
-		RedisAddr:       getEnv("REDIS_ADDR", "redis-module:6379"),
+		RedisAddr:       getEnv("REDIS_ADDR", "redis-shared:6379"),
 		RedisPassword:   getEnv("REDIS_PASSWORD", ""),
 		RedisDB:         getEnvInt("REDIS_DB", 0),
 		NATSUrl:         getEnv("NATS_URL", "nats://nats:4222"),

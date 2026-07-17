@@ -7,6 +7,17 @@
 
 ## 2026-07-17
 
+### Infrastruktur & Dashboard — MQTT Broker, Prometheus Targets, WS Live Monitor
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **MQTT broker → LAN eksternal:** `.env:50` `MQTT_URL=tcp://192.168.1.103:1884` (per instruksi user; exporter `mosquitto-exporter` di `docker-compose.yml:681` disesuaikan ke endpoint yang sama). Module terbukti `[mqtt] connected to broker tcp://192.168.1.103:1884 ... subscribed: smartfarm/#`. Device `ECE334219870` terbukti publish `smartfarm/ECE334219870/telemetry` + `smartfarm/status/*` ke broker tersebut (tes `mosquitto_sub` dari host). |
+| 2 | ✅ | **13 Prometheus target down:** akar = 5 service (`module`,`analytics`,`export-service` + `mysqld-exporter-all`,`postgres-exporter-all`) exited (bukan crash, `Exited 0/143`) 18 jam lalu, tidak dinyalakan saat `docker compose up` sebagian. Di-start ulang → `DOWN count = 0` (semua target `up`). |
+| 3 | ✅ | **WS "Connection lost" Live MQTT Monitor — ROOT CAUSE beruntun:** (a) `NotificationContext.jsx` membangun WS dari `window.location.host` (=`5173`) bukan `API_BASE` → diarahkan ke `API_BASE` (`http://localhost:8000`); (b) `NodeConfigPage.jsx` & `NodeDetailPanel.jsx` membuka WS **tanpa `?token=`** → wsgateway 401 → "failed"/"closed before established" → ditambahkan `getToken()` ke URL WS (samakan `Monitor.jsx`); (c) `JWT_EXPIRY` `15m`→`12h` di `.env` agar tidak sering logout; (d) StrictMode dev "closed before established" diredam dengan defer pembuatan WS. Pipeline MQTT→NATS `mqtt.ECE334219870` terbukti jalan (`nats sub` + test WS Python via Kong → CONNECTED + telemetry). |
+| 4 | ✅ | **504 PUT `/nodes/:id/tags`:** `module-service` di `infra/kong/kong.yml` `read_timeout`/`write_timeout` = 10s; saat Module/DB sibuk respons >10s → Kong memutus 504. Dinaikkan ke **30s** → PUT tags `200` dalam ~1.1s. Format body dashboard (array `[]NodeTagRequest`) sudah sesuai backend (bukan penyebab). |
+
+**Keputusan Teknis:** Perubahan kode: `dashboard/src/context/NotificationContext.jsx` (WS host → `API_BASE`), `dashboard/src/components/Dashboard/Pages/NodeConfigPage.jsx` (import `getToken` + `?token=` di 3 URL WS + defer StrictMode), `dashboard/src/components/Dashboard/NodeDetailPanel.jsx` (import `getToken` + `?token=` di 2 URL WS). Config: `.env` (`MQTT_URL`, `JWT_EXPIRY=12h`), `docker-compose.yml:681` (exporter→`192.168.1.103:1884`), `infra/kong/kong.yml` (`module-service` timeout 10s→30s). Tidak ada perubahan backend Go. Service di-restart: `module`,`control`,`mysqld-exporter-all`,`postgres-exporter-all`,`analytics`,`export-service`,`auth`,`kong`,`dashboard`.
+
 ### Cross-Cutting TA-Scale §17d — Unit Test 80% (Analytics + ML)
 
 | # | Status | Aktivitas |

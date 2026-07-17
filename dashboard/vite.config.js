@@ -16,6 +16,14 @@ export default defineConfig({
     proxy: {
       '/auth': { target: KONG_URL, changeOrigin: true },
       '/health': { target: KONG_URL, changeOrigin: true },
+      // WebSocket live telemetry bridge (wsgateway behind Kong).
+      // `ws: true` lets Vite forward the WebSocket upgrade handshake so the
+      // dashboard's live MQTT monitor works against the dev server on :5173.
+      '/ws': {
+        target: KONG_URL,
+        changeOrigin: true,
+        ws: true,
+      },
       // MinIO object storage — serves snapshot/recording/images. The
       // Stream Service proxies /storage through Kong using its scoped
       // MinIO credentials, so the bucket stays private (no public-read).

@@ -678,7 +678,7 @@ services:
     image: sapcc/mosquitto-exporter:latest
     restart: unless-stopped
     command:
-      - "--endpoint=tcp://mosquitto:1883"
+      - "--endpoint=tcp://192.168.1.103:1884"
       - "--bind-address=:9234"
     depends_on:
       - mosquitto

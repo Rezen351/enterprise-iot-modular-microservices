@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ArrowLeft, Activity, Tags, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, SlidersHorizontal } from 'lucide-react';
-import { API_BASE } from '../../../api/client';
+import { API_BASE, getToken } from '../../../api/client';
 import { moduleApi } from '../../../api/module';
 
 function safeJson(raw) {
@@ -98,39 +98,58 @@ function NodeConfigPage({ node, onBack }) {
   const nodeId = node.node_id;
 
   const closeWs = useCallback(() => {
-    if (wsRef.current) {
-      try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* ignore */ }
+    const ws = wsRef.current;
+    if (ws) {
+      try { ws.onclose = null; ws.close(); } catch { /* ignore */ }
       wsRef.current = null;
     }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
-    let ws;
-    try { ws = new WebSocket(wsUrl); }
-    catch {
-      setConnState('error');
-      setWsError('Failed to open live monitor connection.');
-      return;
-    }
-    wsRef.current = ws;
+    let started = false;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
 
-    ws.onopen = () => { if (!cancelled) setConnState('open'); };
-    ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Connection lost. The device may be offline or the WebSocket may be unavailable.'); } };
-    ws.onclose = () => { if (!cancelled) setConnState('closed'); };
-    ws.onmessage = (event) => {
+    // Defer socket creation a few ticks so React StrictMode's dev-only double
+    // mount/unmount finishes before we open the WebSocket. Opening it during
+    // the first (discarded) mount and then tearing it down mid-handshake is
+    // what produced the "WebSocket is closed before the connection is
+    // established" warning.
+    const timer = setTimeout(() => {
       if (cancelled) return;
-      try {
-        const data = JSON.parse(event.data);
-        const payload = typeof data.payload === 'string' ? safeJson(data.payload) : data.payload;
-        const entry = { id: `${data.ts}-${Math.random().toString(36).slice(2, 7)}`, topic: data.topic, payload, ts: data.ts };
-        listRef.current = [...listRef.current, entry].slice(-200);
-        setMessages(listRef.current);
-      } catch (err) { console.warn('monitor: bad frame', err); }
-    };
+      started = true;
+      let ws;
+      try { ws = new WebSocket(wsUrl); }
+      catch {
+        setConnState('error');
+        setWsError('Failed to open live monitor connection.');
+        return;
+      }
+      wsRef.current = ws;
 
-    return () => { cancelled = true; closeWs(); };
+      ws.onopen = () => { if (!cancelled) setConnState('open'); };
+      ws.onerror = () => { if (!cancelled) { setConnState('error'); setWsError('Connection lost. The device may be offline or the WebSocket may be unavailable.'); } };
+      ws.onclose = () => { if (!cancelled) setConnState('closed'); };
+      ws.onmessage = (event) => {
+        if (cancelled) return;
+        try {
+          const data = JSON.parse(event.data);
+          const payload = typeof data.payload === 'string' ? safeJson(data.payload) : data.payload;
+          const entry = { id: `${data.ts}-${Math.random().toString(36).slice(2, 7)}`, topic: data.topic, payload, ts: data.ts };
+          listRef.current = [...listRef.current, entry].slice(-200);
+          setMessages(listRef.current);
+        } catch (err) { console.warn('monitor: bad frame', err); }
+      };
+    }, 120);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (started && wsRef.current) {
+        try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* ignore */ }
+        wsRef.current = null;
+      }
+    };
   }, [nodeId, closeWs]);
 
   useEffect(() => {
@@ -166,7 +185,7 @@ function NodeConfigPage({ node, onBack }) {
   const handleDetect = () => {
     setDetecting(true);
     setTagError('');
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch { setTagError('Failed to open live stream for detection.'); setDetecting(false); return; }
@@ -299,7 +318,7 @@ function NodeConfigPage({ node, onBack }) {
   const handleDetectOutputs = () => {
     setDetectingOutputs(true);
     setTagError('');
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch { setTagError('Failed to open live stream for output detection.'); setDetectingOutputs(false); return; }

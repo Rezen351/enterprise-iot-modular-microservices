@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Activity, Tags, X, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, Network } from 'lucide-react';
-import { API_BASE } from '../../api/client';
+import { API_BASE, getToken } from '../../api/client';
 import { moduleApi } from '../../api/module';
 
 function safeJson(raw) {
@@ -68,7 +68,7 @@ function NodeDetailPanel({ node, onClose }) {
 
   useEffect(() => {
     let cancelled = false;
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch {
@@ -116,7 +116,7 @@ function NodeDetailPanel({ node, onClose }) {
   const handleDetect = () => {
     setDetecting(true);
     setTagError('');
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch { setTagError('Failed to open live stream for detection.'); setDetecting(false); return; }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../api/client';
 
 const NotificationContext = createContext();
 
@@ -86,10 +87,8 @@ export function NotificationProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.host;
     const token = sessionStorage.getItem('token') || '';
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/system-status?token=${token}`;
+    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/system-status?token=${token}`;
 
     let socket = null;
     let reconnectTimer = null;

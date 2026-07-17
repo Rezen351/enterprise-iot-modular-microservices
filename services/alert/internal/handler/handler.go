@@ -29,11 +29,11 @@ var (
 var allowedSeverity = map[string]bool{"info": true, "warning": true, "critical": true}
 
 type Handler struct {
-	store *repository.Store
+	store service.Store
 	svc   *service.Service
 }
 
-func New(store *repository.Store, svc *service.Service) *Handler {
+func New(store service.Store, svc *service.Service) *Handler {
 	return &Handler{store: store, svc: svc}
 }
 

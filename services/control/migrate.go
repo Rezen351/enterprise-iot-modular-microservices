@@ -58,6 +58,22 @@ type gormCommand struct {
 
 func (gormCommand) TableName() string { return "commands" }
 
+// gormOutbox is the Transactional Outbox table (ADR-007). Each audit/event the
+// Control Service would previously publish directly to NATS is first written
+// here within the same DB transaction as the business row. A relay worker
+// drains unsent rows and publishes them to NATS with a Nats-Msg-Id header.
+type gormOutbox struct {
+	ID        string     `gorm:"column:id;type:char(36);primaryKey"`
+	MsgID     string     `gorm:"column:msg_id;type:varchar(64);not null;uniqueIndex"` // idempotency key (Nats-Msg-Id)
+	Subject   string     `gorm:"column:subject;type:varchar(128);not null;index"`
+	Payload   string     `gorm:"column:payload;type:longtext;not null"`
+	Sent      bool       `gorm:"column:sent;not null;default:0;index"`
+	CreatedAt time.Time  `gorm:"column:created_at;autoCreateTime"`
+	SentAt    *time.Time `gorm:"column:sent_at"`
+}
+
+func (gormOutbox) TableName() string { return "outbox" }
+
 func runMigrations(dsn string) error {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -67,6 +83,7 @@ func runMigrations(dsn string) error {
 		&gormControlMode{},
 		&gormSchedule{},
 		&gormCommand{},
+		&gormOutbox{},
 	); err != nil {
 		return err
 	}

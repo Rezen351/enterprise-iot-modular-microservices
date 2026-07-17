@@ -38,9 +38,41 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// UserRepository is the persistence seam for users, roles, and tokens. The
+// concrete implementation is *repository.UserRepository; unit tests inject a
+// fake.
+type UserRepository interface {
+	CreateUser(ctx context.Context, u *model.User) error
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	GetUserByIdentifier(ctx context.Context, identifier string) (*model.User, error)
+	GetUserByID(ctx context.Context, id string) (*model.User, error)
+	UpdateLastLogin(ctx context.Context, userID string) error
+	GetUserRoles(ctx context.Context, userID string) ([]string, error)
+	AssignDefaultRole(ctx context.Context, userID string) error
+	ListUsers(ctx context.Context) ([]*model.User, error)
+	SetUserActive(ctx context.Context, userID string, active bool) error
+	SetUserRoles(ctx context.Context, userID string, roleNames []string) error
+	CountAdmins(ctx context.Context) (int, error)
+	GetAllRoles(ctx context.Context) ([]model.Role, error)
+	CreateRefreshToken(ctx context.Context, rt *model.RefreshToken) error
+	GetRefreshToken(ctx context.Context, tokenHash string) (*model.RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, tokenHash string) error
+	RevokeAllUserTokens(ctx context.Context, userID string) error
+	DeleteExpiredRefreshTokens(ctx context.Context) (int64, error)
+	SoftDeleteInactiveUsers(ctx context.Context) (int64, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
+	UsernameExists(ctx context.Context, username string) (bool, error)
+	UsernameExistsExcept(ctx context.Context, username, excludeID string) (bool, error)
+	EmailExistsExcept(ctx context.Context, email, excludeID string) (bool, error)
+	UpdateProfile(ctx context.Context, userID, username, email string) error
+	UpdatePasswordHash(ctx context.Context, userID, newHash string) error
+	SoftDeleteUser(ctx context.Context, userID string) error
+	GetActiveSessions(ctx context.Context, userID string) ([]*model.RefreshToken, error)
+}
+
 // AuthService handles authentication and token lifecycle.
 type AuthService struct {
-	repo *repository.UserRepository
+	repo UserRepository
 	cfg  *config.Config
 	nats NATSPublisher
 }
@@ -50,7 +82,7 @@ type NATSPublisher interface {
 	Publish(subject string, data []byte) error
 }
 
-func NewAuthService(repo *repository.UserRepository, cfg *config.Config, nats NATSPublisher) *AuthService {
+func NewAuthService(repo UserRepository, cfg *config.Config, nats NATSPublisher) *AuthService {
 	return &AuthService{repo: repo, cfg: cfg, nats: nats}
 }
 

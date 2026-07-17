@@ -374,6 +374,7 @@ def log_config() -> None:
         ("PUMP_PATHS", env("PUMP_PATHS", "telemetry.outputs.pump")),
         ("LOAD_PATHS", env("LOAD_PATHS", "telemetry.outputs.load1")),
         ("MINIO_RESULT_BUCKET", env("MINIO_RESULT_BUCKET", "ml-result")),
+        ("MINIO_STREAM_BUCKET", env("MINIO_STREAM_BUCKET", "stream")),
         ("MODEL_ID", env("MODEL_ID", "")),
         ("ML_BASE_URL", env("ML_BASE_URL", "http://ml:8080")),
         ("CCTV_RTSP_URL", env("CCTV_RTSP_URL", "")),
@@ -425,6 +426,11 @@ def run_cycle() -> None:
     client = build_minio_client()
     result_bucket = env("MINIO_RESULT_BUCKET", "ml-result")
     ensure_bucket(client, result_bucket)
+    # The raw frame is also written to the `stream` bucket so the ML service
+    # `/ml/detect/from-stream` endpoint (which reads frames from `stream`) can
+    # run inference on it. This is the integration point validated by §17e.
+    stream_bucket = env("MINIO_STREAM_BUCKET", "stream")
+    ensure_bucket(client, stream_bucket)
     public_url = env("MINIO_PUBLIC_URL", "http://localhost:9000").rstrip("/")
 
     model_id = env("MODEL_ID", "") or None
@@ -466,6 +472,15 @@ def run_cycle() -> None:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         frame_key = f"frames/{target}/{ts}.jpg"
         client.put_object(result_bucket, frame_key, io.BytesIO(frame), length=len(frame), content_type="image/jpeg")
+
+        # Mirror the raw frame into the `stream` bucket (same key prefix) so the
+        # ML `/ml/detect/from-stream` endpoint can pick it up. The `stream`
+        # bucket is the canonical source of frames for from-stream detection.
+        stream_frame_key = f"frames/{target}/{ts}.jpg"
+        try:
+            client.put_object(stream_bucket, stream_frame_key, io.BytesIO(frame), length=len(frame), content_type="image/jpeg")
+        except Exception as exc:
+            logger.warning("could not mirror frame to stream bucket %s: %s", stream_frame_key, exc)
 
         detection: Optional[dict] = None
         try:

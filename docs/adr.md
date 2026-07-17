@@ -106,3 +106,82 @@ redis-exporter        (1 container, sudah ada sejak ADR-004)
 ```
 
 **Yang TIDAK diubah:** Jumlah job & label di `prometheus.yml` tetap sama (per-DB), hanya `targets:` menunjuk port container gabungan. cAdvisor, node-exporter, mosquitto-exporter, nats-exporter, kong tetap 1 masing-masing (sudah shared).
+
+---
+
+## ADR-006 — DLQ Saga via NATS Advisory (2026-07-16)
+
+**Konteks:** planning.md & testing-plan-agent.md §17a menuntut *Dead Letter Queue* yang sesungguhnya, bukan subject `saga.*.dlq` buatan. Saat ini bila sebuah JetStream consumer gagal melewati `MaxDeliver`, pesan hilang tanpa jejak (status "Resilience by Design" di planning.md masih ⬜). NATS JetStream menerbitkan advisory resmi `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.{stream}.{consumer}` saat ini terjadi — mekanisme ini harus dimanfaatkan, bukan dibuat sendiri.
+
+**Keputusan:** Buat **service `dlq` (DLQ Saga Worker)** yang:
+1. Subscribe ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.>` (wildcard semua stream/consumer).
+2. Pada advisory: ambil pesan asli dari source stream via `js.GetMsg(stream, stream_seq)` (bukan body advisory), lalu:
+   - **Republish** pesan asli ke JetStream stream `DLQ` (`Subjects: dlq.msg`, `Retention: Limits`, `MaxAge: 720h` = 30 hari, `Replicas: 2`, `Duplicates: 2m` + header `Nats-Msg-Id` untuk publisher-side dedup).
+   - **Insert** satu baris ke tabel `dlq_messages` di **`mariadb-audit`** (database yang sudah ada, bukan DB baru) berisi `trace_id`, `source_stream`, `source_consumer`, `stream_seq`, `subject`, `reason`, `payload`, `headers`.
+3. Propagasi `trace_id`: baca header NATS `Trace-Id` pada advisory & pesan asli; bila kosong digenerate UUID. `trace_id` dicatat di log tiap span dan di-forward pada republish DLQ (`Trace-Id`) serta disimpan di DB. Helper reusable di `internal/trace` (`X-Trace-Id` HTTP / `Trace-Id` NATS).
+
+**Alasan / Trade-off:**
+1. **Mengapa service khusus, bukan di Audit Service?** DLQ worker butuh lifecycle JetStream consumer pada subject advisory sistem (`$JS.*`) dan akses `GetMsg` lintas stream mana pun. Menaruhnya di Audit mencampuradukkan concern audit-log (Core NATS `audit.log`) dengan infra DLQ. Service `dlq` ringan (hanya NATS + 1 tabel) → isolasi tanggung jawab jelas, sesuai filosofi modular.
+2. **Mengapa tabel `dlq_messages` di `mariadb-audit` (bukan DB baru)?** AGENTS.md §4 mewajibkan *Database-per-Service isolation* — dilarang buat DB baru sembarangan. DLQ adalah **artefak observability/audit** (bukan domain bisnis), sehingga menempatkannya di instance `mariadb-audit` yang sudah ada memenuhi aturan tanpa melanggar isolasi: tidak ada service lain yang menulis/query DB domain milik service lain; dlq & audit adalah dua worker berbeda yang kebetulan berbagi instance MariaDB fisik yang sama (persis seperti pola konsolidasi ADR-001/004/005). Query DLQ hanya via endpoint `GET /dlq/messages` milik service `dlq` sendiri.
+3. **Mengapa `Replicas: 2` padahal NATS dev single-node?** Spesifikasi §17a eksplisit menuntut `Replicas:2`. Di dev single-node, NATS menolak R>1 → worker **tidak panic**: `AddStream` akan gagal dan worker log warning lalu tetap jalan dengan R=1 efektif (lihat catatan verifikasi `[~]`). Di prod (NATS cluster 3-node per planning.md §HA) R=2 terpenuhi penuh. Ini adalah trade-off dokumentasi: spec vs keterbatasan dev single-node.
+4. **Mengapa ambil pesan asli via `GetMsg`, bukan body advisory?** Body advisory hanya *metadata* (stream/consumer/seq/reason), bukan payload asli. Mengambil ulang via `stream_seq` menjamin DLQ menyimpan pesan utuh (subject + header + data) yang sebenarnya gagal diproses.
+
+**Skema akhir:**
+```
+nats (JetStream)
+  └─ advisory $JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.>
+       → dlq worker
+            ├─ GetMsg(source_stream, stream_seq)        # ambil pesan asli
+            ├─ Publish → stream DLQ  (dlq.msg, 30d, R:2) # durable retention
+            └─ INSERT dlq_messages (mariadb-audit)       # audit trail DLQ
+```
+
+**Yang TIDAK diubah:** Tidak ada subject `saga.*.dlq` buatan; tidak ada DB baru; contract NATS lain tidak berubah. §17b/§17d/§17e ditangani agent lain.
+
+---
+
+## ADR-007 — Transactional Outbox untuk Event Publishing (2026-07-16)
+
+**Konteks:** Service penulis event (Module, Control, Alert) saat ini mem-publish event NATS
+(`audit.log`, `control.*`, `alert.*`, `telemetry.ingest`, `system.status`) **setelah** commit DB
+bisnis. Ini adalah *dual-write problem* (lihat `planning.md` § "Data Consistency: Transactional
+Outbox"): bila NATS publish gagal setelah DB commit sukses, event hilang dan subscriber (Audit/
+Alert/Analytics/Notification) kehilangan data tanpa jejak.
+
+**Keputusan:** Terapkan **Transactional Outbox Pattern** di Module, Control, dan Alert.
+1. Setiap service menulis baris bisnis **dan** 1 baris `outbox` (subject + payload + `msg_id`
+   UUID) dalam **satu transaksi DB** MariaDB milik service tersebut (isolasi *Database-per-Service*
+   tetap terjaga — relay hanya baca DB service sendiri).
+2. Sebuah **relay worker** (goroutine per service) mem-poll baris `outbox` yang `sent=false`,
+   mem-publish ke NATS JetStream dengan header **`Nats-Msg-Id` = `msg_id`** (publisher-side dedup
+   resmi NATS), lalu menandai `outbox.sent=true` dalam transaksi terpisah setelah publish sukses.
+3. **Consumer-side idempotency:** subscriber (Audit/Notification/Analytics) mengecek `msg_id`
+   (diambil dari header `Nats-Msg-Id` / payload) dan menolak duplikat — key disimpan di Redis
+   (`redis-shared`, per-DB) dengan TTL > window retry. Kombinasi publisher dedup + consumer
+   idempotency mencapai *exactly-once effect* (sesuai `planning.md`).
+4. Relay dijalankan sebagai goroutine di `main.go` tiap service, dengan **graceful shutdown**
+   (AGENTS.md §7.1.7) via `context` cancellation + `WaitGroup`.
+
+**Alasan:**
+- Menghilangkan *lost event* saat NATS down/blip: outbox row sudah ter-commit, relay kirim nanti.
+- Tidak mengubah kontrak NATS existing (subject & payload identik) — subscriber tidak perlu diubah
+  untuk bisa jalan; idempotensi di sisi consumer bersifat incremental & backward-compatible.
+- `Nats-Msg-Id` adalah fitur JetStream resmi (bukan custom), sehingga publisher dedup otomatis
+  ditangani server NATS dalam window waktu.
+- Minimal & idiomatik: publish code existing **dibungkus** (wrap) dengan outbox, tidak ditulis ulang;
+  migrasi `outbox` ditambah ke `migrate.go` tiap service via GORM AutoMigrate.
+
+**Batasan / Trade-off:**
+- `telemetry.ingest` & `mqtt.{node}` (PublishLive) adalah event live high-volume; baris bisnis
+  telemetry disimpan di TimescaleDB (DB terpisah), sehingga outbox untuk event ini berada di
+  MariaDB module sebagai *durable record* — relay memastikan tidak ada event telemetry hilang saat
+  NATS blip (sebelumnya langsung `Publish` hilang).
+- Relay poll interval default 2s; backoff eksponensial saat NATS disconnect.
+
+**Verifikasi (§17b):**
+- Simulasi NATS down saat business commit sukses → outbox row tetap ada (`sent=false`) → relay
+  kirim setelah NATS recover (event **tidak hilang**).
+- Redelivery (NATS `Nats-Msg-Id` + consumer dedup Redis) → **tidak ada duplikat** di subscriber.
+
+**Yang TIDAK diubah:** `database/sql` raw (module/control) & `*gorm.DB` (alert) tetap dipakai;
+schema bisnis existing tidak diubah; hanya tabel `outbox` baru + relay worker.

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,10 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/almuzky/iot/services/module/internal/cache"
 	"github.com/almuzky/iot/services/module/internal/model"
+	"github.com/almuzky/iot/services/module/internal/outbox"
 	"github.com/almuzky/iot/services/module/internal/repository"
-	"github.com/almuzky/iot/services/module/internal/tsdb"
 )
 
 var (
@@ -40,11 +40,11 @@ const statusTTL = 90 * time.Second
 const latestTTL = 5 * time.Minute
 
 type ModuleService struct {
-	repo  *repository.Repository
-	cache *cache.StatusCache
+	repo  Repository
+	cache StatusCache
 	nats  NATSPublisher
 	js    JetStreamPublisher
-	ts    *tsdb.Store
+	ts    TSDB
 	batch *telemetryBatcher
 
 	// nodeMetaCache caches the per-node tag mapping + module id so the hot-path
@@ -60,7 +60,7 @@ type ModuleService struct {
 	touchPending map[string]struct{}
 }
 
-func New(repo *repository.Repository, c *cache.StatusCache, nats NATSPublisher, js JetStreamPublisher, ts *tsdb.Store) *ModuleService {
+func New(repo Repository, c StatusCache, nats NATSPublisher, js JetStreamPublisher, ts TSDB) *ModuleService {
 	return &ModuleService{
 		repo:         repo,
 		cache:        c,
@@ -612,16 +612,25 @@ func toFloat(v interface{}, dt string) (float64, bool) {
 	}
 }
 
-// publishTelemetry emits a NATS event per reading (downstream: alert/analytics).
-func (s *ModuleService) publishTelemetry(nodeID, metric string, value float64) {
-	if s.nats == nil {
-		return
+// enqueueOutbox writes an outbox row (subject + payload + msg_id) to MariaDB.
+// The relay worker publishes it to NATS and marks it sent (ADR-007). Each call
+// runs in its own committed transaction so no event is lost even if NATS is
+// unavailable — the row persists and the relay retries.
+func (s *ModuleService) enqueueOutbox(subject, payload string) {
+	msgID := outbox.NewMsgID()
+	if err := s.repo.Transact(context.Background(), func(tx *sql.Tx) error {
+		return s.repo.InsertOutboxTx(context.Background(), tx, subject, payload, msgID)
+	}); err != nil {
+		log.Printf("[outbox] enqueue failed subject=%s: %v", subject, err)
 	}
+}
+
+// publishTelemetry emits a NATS event per reading (downstream: alert/analytics).
+// Written to the outbox; the relay publishes it to telemetry.ingest.
+func (s *ModuleService) publishTelemetry(nodeID, metric string, value float64) {
 	envelope := fmt.Sprintf(`{"node_id":%q,"metric":%q,"value":%v,"ts":%d}`,
 		nodeID, metric, value, time.Now().UnixMilli())
-	if err := s.nats.Publish("telemetry.ingest", []byte(envelope)); err != nil {
-		log.Printf("[nats] publish telemetry.ingest failed node=%s metric=%s: %v", nodeID, metric, err)
-	}
+	s.enqueueOutbox("telemetry.ingest", envelope)
 }
 
 // ─── Audit helper ────────────────────────────────────────────────────────────
@@ -629,21 +638,13 @@ func (s *ModuleService) publishTelemetry(nodeID, metric string, value float64) {
 // PublishLive forwards a raw MQTT payload to NATS so the WS-Gateway can stream
 // it to dashboard clients subscribed to that node. Subject: mqtt.{node_id}.
 func (s *ModuleService) PublishLive(nodeID, topic string, payload []byte) {
-	if s.nats == nil {
-		return
-	}
 	envelope := fmt.Sprintf(`{"topic":%q,"payload":%s,"ts":%d}`, topic, string(payload), time.Now().UnixMilli())
-	if err := s.nats.Publish("mqtt."+nodeID, []byte(envelope)); err != nil {
-		log.Printf("[nats] publish live failed node=%s: %v", nodeID, err)
-	}
+	s.enqueueOutbox("mqtt."+nodeID, envelope)
 }
 
 func (s *ModuleService) publishAudit(event string, fields map[string]string) {
-	if s.nats == nil {
-		return
-	}
 	payload := fmt.Sprintf(`{"event":%q,"service":"module","data":%s}`, event, mapToJSON(fields))
-	_ = s.nats.Publish("audit.log", []byte(payload))
+	s.enqueueOutbox("audit.log", payload)
 }
 
 func mapToJSON(m map[string]string) string {

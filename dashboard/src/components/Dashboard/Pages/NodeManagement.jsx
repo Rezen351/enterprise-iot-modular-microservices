@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Network, Trash2, ArrowLeft, AlertTriangle, Radio, RefreshCw, Wifi, WifiOff, Check, Settings } from 'lucide-react';
 import { moduleApi } from '../../../api/module';
 
-function timeAgo(iso) {
+function timeAgo(iso, nowMs) {
   if (!iso) return 'Never';
   const d = new Date(iso);
-  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  const s = Math.floor((nowMs - d.getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
@@ -30,10 +30,11 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
-  const isNodeLive = (node) => {
+  const isNodeLive = (node, nowMs) => {
     if (!node?.last_seen_at) return false;
-    const diff = Date.now() - new Date(node.last_seen_at).getTime();
+    const diff = nowMs - new Date(node.last_seen_at).getTime();
     return diff < 10000;
   };
 
@@ -52,6 +53,13 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
       setIsLoading(false);
     }
   }, [selectedModule.id]);
+
+  // Tick a "now" clock once per second so live-status / time-ago reflect the
+  // current time without calling Date.now() during render (keeps render pure).
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Initial load + poll every 4s so newly-discovered devices appear automatically.
   useEffect(() => {
@@ -237,11 +245,11 @@ function NodeManagement({ selectedModule, onBack, onOpenNodeConfig }) {
                   <div className="flex justify-between gap-2">
                     <span className="text-slate-500 font-black">Last Seen</span>
                     <span className="text-white font-black flex items-center gap-1.5">
-                      {isNodeLive(node) && <span className="relative flex h-2 w-2">
+                      {isNodeLive(node, nowMs) && <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                       </span>}
-                      {timeAgo(node.last_seen_at)}
+                      {timeAgo(node.last_seen_at, nowMs)}
                     </span>
                   </div>
                 </div>

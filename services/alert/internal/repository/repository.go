@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/alert/internal/model"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,18 @@ type Store struct {
 
 func New(db *gorm.DB) *Store {
 	return &Store{db: db}
+}
+
+// DB exposes the underlying gorm handle so callers may run their own
+// transactions (used to write a business row + an outbox row atomically).
+func (s *Store) DB() *gorm.DB { return s.db }
+
+// OutboxRow is a pending event awaiting relay to NATS (ADR-007).
+type OutboxRow struct {
+	ID      string
+	MsgID   string
+	Subject string
+	Payload string
 }
 
 var (
@@ -205,4 +218,61 @@ func (s *Store) DeleteThreshold(ctx context.Context, id string) (*model.Threshol
 		return nil, err
 	}
 	return t, nil
+}
+
+// ─── Outbox relay (ADR-007) ───────────────────────────────────────────────────
+
+// EnqueueOutbox writes an outbox row (subject + payload + msg_id) to MariaDB in
+// its own committed transaction. The relay worker publishes it to NATS and marks
+// it sent. No event is lost even if NATS is unavailable — the row persists and
+// the relay retries.
+func (s *Store) EnqueueOutbox(ctx context.Context, subject, payload string) error {
+	msgID := uuid.New().String()
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.WithContext(ctx).Create(&model.Outbox{
+			ID:      uuid.New().String(),
+			MsgID:   msgID,
+			Subject: subject,
+			Payload: payload,
+			Sent:    false,
+		}).Error
+	})
+}
+
+// InsertOutboxTx writes an outbox row using the provided gorm transaction handle.
+// Callers must use the same tx as the business write.
+func (s *Store) InsertOutboxTx(ctx context.Context, tx *gorm.DB, subject, payload, msgID string) error {
+	return tx.WithContext(ctx).Create(&model.Outbox{
+		ID:      uuid.New().String(),
+		MsgID:   msgID,
+		Subject: subject,
+		Payload: payload,
+		Sent:    false,
+	}).Error
+}
+
+// ListUnsentOutbox returns up to limit pending outbox rows (sent=false), oldest first.
+func (s *Store) ListUnsentOutbox(ctx context.Context, limit int) ([]OutboxRow, error) {
+	var rows []model.Outbox
+	if err := s.db.WithContext(ctx).
+		Where("sent = ?", false).
+		Order("created_at ASC, id ASC").
+		Limit(limit).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]OutboxRow, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, OutboxRow{ID: r.ID, MsgID: r.MsgID, Subject: r.Subject, Payload: r.Payload})
+	}
+	return out, nil
+}
+
+// MarkOutboxSent marks a single outbox row as delivered (idempotent).
+func (s *Store) MarkOutboxSent(ctx context.Context, id string) error {
+	now := time.Now()
+	return s.db.WithContext(ctx).
+		Model(&model.Outbox{}).
+		Where("id = ? AND sent = ?", id, false).
+		Updates(map[string]any{"sent": true, "sent_at": &now}).Error
 }

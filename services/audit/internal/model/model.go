@@ -12,6 +12,18 @@ type AuditLog struct {
 
 func (AuditLog) TableName() string { return "audit_logs" }
 
+// ProcessedMsg records msg_id values already consumed, providing consumer-side
+// idempotency (ADR-007). The audit subscriber checks this before persisting so
+// a redelivered event (NATS redelivery / publisher-side Nats-Msg-Id window
+// expiry) is not stored twice.
+type ProcessedMsg struct {
+	MsgID     string    `gorm:"column:msg_id;type:varchar(64);primaryKey"`
+	Subject   string    `gorm:"column:subject;type:varchar(128);not null"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+}
+
+func (ProcessedMsg) TableName() string { return "processed_msgs" }
+
 // AuditLogDTO is the API representation returned to clients.
 type AuditLogDTO struct {
 	ID         string    `json:"id"`

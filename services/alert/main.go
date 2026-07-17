@@ -15,6 +15,7 @@ import (
 	"github.com/almuzky/iot/services/alert/internal/config"
 	"github.com/almuzky/iot/services/alert/internal/handler"
 	"github.com/almuzky/iot/services/alert/internal/middleware"
+	"github.com/almuzky/iot/services/alert/internal/outbox"
 	"github.com/almuzky/iot/services/alert/internal/repository"
 	"github.com/almuzky/iot/services/alert/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -95,6 +96,18 @@ func main() {
 
 	h := handler.New(store, svc)
 
+	// ─── Outbox relay (ADR-007) ───────────────────────────────────────
+	// Drains the outbox table and publishes events to NATS JetStream with a
+	// Nats-Msg-Id dedupe header. Started within its own context that is
+	// cancelled on shutdown.
+	relayCtx, relayCancel := context.WithCancel(context.Background())
+	defer relayCancel()
+	relay := outbox.New(store, nil)
+	if natsConn != nil {
+		relay.SetNATS(natsConn)
+	}
+	go relay.Start(relayCtx)
+
 	// ─── Router ─────────────────────────────────────────────────────────
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -143,6 +156,7 @@ func main() {
 	if natsConn != nil {
 		_ = natsConn.Drain()
 	}
+	relayCancel()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

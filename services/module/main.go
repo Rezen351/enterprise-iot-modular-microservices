@@ -16,6 +16,7 @@ import (
 	"github.com/almuzky/iot/services/module/internal/handler"
 	"github.com/almuzky/iot/services/module/internal/middleware"
 	mqttsub "github.com/almuzky/iot/services/module/internal/mqtt"
+	"github.com/almuzky/iot/services/module/internal/outbox"
 	"github.com/almuzky/iot/services/module/internal/repository"
 	"github.com/almuzky/iot/services/module/internal/service"
 	"github.com/almuzky/iot/services/module/internal/tsdb"
@@ -156,6 +157,16 @@ func main() {
 	svc := service.New(repo, statusCache, natsPub, jsPub, tsStore)
 	h := handler.New(svc)
 
+	// ─── Outbox relay (ADR-007) ───────────────────────────────────────
+	// Drains the outbox table and publishes events to NATS JetStream with a
+	// Nats-Msg-Id dedupe header. Relay created here; started (after bgCtx is
+	// available) just before the HTTP server so no event written during
+	// startup is lost.
+	relay := outbox.New(repo, nil)
+	if natsConn != nil {
+		relay.SetNATS(natsConn)
+	}
+
 	// ─── MQTT subscriber (device onboarding + publish live to NATS) ───
 	sub, err := mqttsub.New(mqttsub.Config{
 		BrokerURL:   cfg.MQTTURL,
@@ -173,6 +184,7 @@ func main() {
 	// ─── Telemetry batch publisher (telemetry.batch every 1 min) ────
 	bgCtx, bgCancel := context.WithCancel(context.Background())
 	defer bgCancel()
+	go relay.Start(bgCtx)
 	go svc.StartBatchPublisher(bgCtx, time.Minute)
 	// Batched TouchNode flusher: collapses per-message last_seen writes into one
 	// UPDATE per node per interval (default 30s).

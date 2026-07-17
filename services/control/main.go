@@ -15,6 +15,7 @@ import (
 	"github.com/almuzky/iot/services/control/internal/handler"
 	"github.com/almuzky/iot/services/control/internal/middleware"
 	mqttcli "github.com/almuzky/iot/services/control/internal/mqtt"
+	"github.com/almuzky/iot/services/control/internal/outbox"
 	"github.com/almuzky/iot/services/control/internal/repository"
 	"github.com/almuzky/iot/services/control/internal/scheduler"
 	"github.com/almuzky/iot/services/control/internal/service"
@@ -69,6 +70,14 @@ func main() {
 	defaultActuators := service.NewModuleActuatorSource(cfg.ModuleURL, "")
 	svc := service.New(repo, nil, natsPub, defaultActuators)
 
+	// ─── Outbox relay (ADR-007) ───────────────────────────────────────
+	// Drains the outbox table and publishes events to NATS JetStream with a
+	// Nats-Msg-Id dedupe header. Started within bgCtx so it stops on shutdown.
+	relay := outbox.New(repo, nil)
+	if natsConn != nil {
+		relay.SetNATS(natsConn)
+	}
+
 	// ─── MQTT (publish actuator, subscribe confirm/telemetry) ───────────
 	mqttClient, err := mqttcli.New(mqttcli.Config{
 		BrokerURL:   cfg.MQTTURL,
@@ -87,6 +96,7 @@ func main() {
 	// ─── Scheduler engine (server-side automatic control) ───────────────
 	bgCtx, bgCancel := context.WithCancel(context.Background())
 	defer bgCancel()
+	go relay.Start(bgCtx)
 	schedLoc, err := time.LoadLocation(cfg.Timezone)
 	if err != nil {
 		log.Printf("WARN: invalid TIMEZONE %q (%v) — falling back to UTC for schedule windows", cfg.Timezone, err)

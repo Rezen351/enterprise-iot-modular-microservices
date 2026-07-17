@@ -19,7 +19,7 @@ func runMigrations(dsn string) error {
 	if err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&model.AuditLog{}); err != nil {
+	if err := db.AutoMigrate(&model.AuditLog{}, &model.ProcessedMsg{}); err != nil {
 		return err
 	}
 	log.Println("[migrate] audit_db schema OK")

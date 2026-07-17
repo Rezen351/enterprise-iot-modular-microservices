@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/almuzky/iot/services/control/internal/model"
@@ -14,12 +15,48 @@ import (
 // ErrNotFound is returned when a record does not exist.
 var ErrNotFound = errors.New("record not found")
 
+// OutboxRow is a pending event awaiting relay to NATS (ADR-007).
+type OutboxRow struct {
+	ID      string
+	MsgID   string
+	Subject string
+	Payload string
+}
+
 type Repository struct {
 	db *sql.DB
 }
 
 func New(db *sql.DB) *Repository {
 	return &Repository{db: db}
+}
+
+// DB exposes the underlying handle so callers may run their own transactions
+// (used to write a business row + an outbox row atomically).
+func (r *Repository) DB() *sql.DB { return r.db }
+
+// Transact runs fn inside a single SQL transaction. fn receives the *sql.Tx to
+// use for both the business write and the outbox insert so they commit atomically.
+func (r *Repository) Transact(ctx context.Context, fn func(tx *sql.Tx) error) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			log.Printf("[repo] rollback failed: %v (orig err: %v)", rbErr, err)
+		}
+		return err
+	}
+	return tx.Commit()
+}
+
+// InsertOutboxTx writes an outbox row using the provided transaction handle.
+func (r *Repository) InsertOutboxTx(ctx context.Context, tx *sql.Tx, subject, payload, msgID string) error {
+	_, err := tx.ExecContext(ctx,
+		`INSERT INTO outbox (id, msg_id, subject, payload, sent, created_at) VALUES (?, ?, ?, ?, 0, NOW())`,
+		uuid.New().String(), msgID, subject, payload)
+	return err
 }
 
 // ─── Control modes ────────────────────────────────────────────────────────────
@@ -370,4 +407,33 @@ func scanScheduleRow(row scanner) (*model.Schedule, error) {
 		return nil, ErrNotFound
 	}
 	return s, err
+}
+
+// ─── Outbox relay (ADR-007) ───────────────────────────────────────────────────
+
+// ListUnsentOutbox returns up to limit pending outbox rows (sent=false), oldest first.
+func (r *Repository) ListUnsentOutbox(ctx context.Context, limit int) ([]OutboxRow, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, msg_id, subject, payload FROM outbox WHERE sent = 0 ORDER BY created_at ASC, id ASC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []OutboxRow{}
+	for rows.Next() {
+		var o OutboxRow
+		if err := rows.Scan(&o.ID, &o.MsgID, &o.Subject, &o.Payload); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
+// MarkOutboxSent marks a single outbox row as delivered (idempotent).
+func (r *Repository) MarkOutboxSent(ctx context.Context, id string) error {
+	now := time.Now()
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE outbox SET sent = 1, sent_at = ? WHERE id = ? AND sent = 0`, now, id)
+	return err
 }

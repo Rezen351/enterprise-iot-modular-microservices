@@ -90,12 +90,12 @@ function DashboardContent({ onLogout }) {
   const handleSetActiveTab = (tab) => {
     setNodeConfig(null);
     setActiveTab(tab);
-    try { sessionStorage.setItem('dashboard_active_tab', tab); } catch { }
+    try { sessionStorage.setItem('dashboard_active_tab', tab); } catch { /* ignore */ }
   };
 
   const renderContent = () => {
     if (nodeConfig) {
-      return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); try { sessionStorage.setItem('dashboard_active_tab', 'module'); } catch { } }} />;
+      return <NodeConfigPage node={nodeConfig} onBack={() => { setNodeConfig(null); setActiveTab('module'); try { sessionStorage.setItem('dashboard_active_tab', 'module'); } catch { /* ignore */ } }} />;
     }
     switch (activeTab) {
       case 'profile':
@@ -215,7 +215,7 @@ function DashboardContent({ onLogout }) {
   );
 }
 
-function DashboardLayout({ onExit, onLogout }) {
+function DashboardLayout({ onLogout }) {
   return (
     <ModuleProvider>
       <DashboardContent onLogout={onLogout} />

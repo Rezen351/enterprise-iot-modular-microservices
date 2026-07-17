@@ -60,7 +60,7 @@ function NodeMonitorModal({ node, onClose }) {
     let ws;
     try {
       ws = new WebSocket(wsUrl);
-    } catch (err) {
+    } catch {
       setConnState('error');
       setError('Failed to open live monitor connection.');
       return;
@@ -190,8 +190,8 @@ function NodeMonitorModal({ node, onClose }) {
           </button>
         </div>
     </div>
+  , document.body
   );
-}, document.body);
 }
 
 export default NodeMonitorModal;

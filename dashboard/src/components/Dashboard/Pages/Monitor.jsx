@@ -337,7 +337,7 @@ function Monitor() {
   const [actionMsg, setActionMsg] = useState('');
   const [actionErr, setActionErr] = useState('');
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const [throughput, setThroughput] = useState(0);
 
   const socketsRef = useRef({});
@@ -664,8 +664,6 @@ function Monitor() {
 
   const upCount = HEALTH_ROWS.filter((s) => health[s.key] === 'up').length;
   const connectedCount = Object.values(telemetry).filter((t) => t?.status === 'open').length;
-  const nextSchedTs = nextTransitions.length ? nextTransitions[0].ts : null;
-  const schedRemaining = nextSchedTs != null ? (nextSchedTs - now) / 1000 : null;
 
   return (
     <div className="space-y-4">

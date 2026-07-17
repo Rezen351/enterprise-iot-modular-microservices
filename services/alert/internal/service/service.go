@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/almuzky/iot/services/alert/internal/cache"
 	"github.com/almuzky/iot/services/alert/internal/model"
 	"github.com/almuzky/iot/services/alert/internal/repository"
 	"github.com/google/uuid"
@@ -23,14 +22,53 @@ var ErrInvalidRange = errors.New("min must be less than or equal to max")
 const telemetrySubject = "telemetry.ingest"
 const auditSubject = "audit.log"
 
+// Store is the persistence seam for alert + threshold data. The concrete
+// implementation is *repository.Store; unit tests inject a fake.
+type Store interface {
+	ListAlerts(ctx context.Context, f repository.AlertFilter, limit, offset int) ([]model.Alert, int64, error)
+	GetAlert(ctx context.Context, id string) (*model.Alert, error)
+	CreateAlert(ctx context.Context, a *model.Alert) error
+	ResolveActive(ctx context.Context, nodeID, metric string, resolvedAt time.Time) error
+	GetLatestActive(ctx context.Context, nodeID, metric string) (*model.Alert, error)
+	AckAlert(ctx context.Context, id, userID string, ackedAt time.Time) (*model.Alert, error)
+	GetThresholdForNodeMetric(ctx context.Context, nodeID, metric string) (*model.Threshold, error)
+	ListThresholds(ctx context.Context, nodeID, metric string, enabledOnly bool) ([]model.Threshold, error)
+	GetThreshold(ctx context.Context, id string) (*model.Threshold, error)
+	CreateThreshold(ctx context.Context, t *model.Threshold) error
+	UpdateThreshold(ctx context.Context, id string, patch map[string]any) (*model.Threshold, error)
+	DeleteThreshold(ctx context.Context, id string) (*model.Threshold, error)
+
+	// ─── Outbox (ADR-007) ──────────────────────────────────────────────
+	// EnqueueOutbox writes an outbox row atomically (own tx) for later relay.
+	EnqueueOutbox(ctx context.Context, subject, payload string) error
+	// ListUnsentOutbox returns pending (sent=false) outbox rows, oldest first.
+	ListUnsentOutbox(ctx context.Context, limit int) ([]repository.OutboxRow, error)
+	// MarkOutboxSent marks a single outbox row delivered (idempotent).
+	MarkOutboxSent(ctx context.Context, id string) error
+}
+
+// Cache is the threshold + active-alert cache seam. The concrete
+// implementation is *cache.AlertCache; unit tests inject a fake.
+type Cache interface {
+	GetCachedThreshold(ctx context.Context, nodeID, metric string) *model.Threshold
+	SetCachedThreshold(ctx context.Context, nodeID, metric string, t *model.Threshold)
+	ClearThreshold(ctx context.Context, nodeID, metric string)
+	ActiveExists(ctx context.Context, nodeID, metric string) bool
+	SetActive(ctx context.Context, nodeID, metric string)
+	ClearActive(ctx context.Context, nodeID, metric string)
+}
+
 // Service evaluates telemetry against thresholds and persists/relays alerts.
 type Service struct {
-	store *repository.Store
-	cache *cache.AlertCache
+	store Store
+	cache Cache
 	nc    *nats.Conn
 }
 
-func New(store *repository.Store, c *cache.AlertCache, nc *nats.Conn) *Service {
+// New wires the Alert Service with its store, cache, and NATS connection.
+// The store/cache may be real (*repository.Store / *cache.AlertCache) or a
+// test fake implementing the Store / Cache interfaces.
+func New(store Store, c Cache, nc *nats.Conn) *Service {
 	return &Service{store: store, cache: c, nc: nc}
 }
 
@@ -185,9 +223,6 @@ func buildMessage(th *model.Threshold, value float64, boundary *float64) string 
 // ─── Publishing ────────────────────────────────────────────────────────────
 
 func (s *Service) publishAlert(subject string, a *model.Alert) {
-	if s.nc == nil {
-		return
-	}
 	payload, err := json.Marshal(map[string]any{
 		"id":              a.ID,
 		"node_id":         a.NodeID,
@@ -202,17 +237,12 @@ func (s *Service) publishAlert(subject string, a *model.Alert) {
 	if err != nil {
 		return
 	}
-	if err := s.nc.Publish(subject, payload); err != nil {
-		log.Printf("WARN: alert: publish %s failed: %v", subject, err)
-	}
+	s.enqueueOutbox(subject, string(payload))
 }
 
 // publishSystem relays a human-friendly notification onto system.status so the
 // WS-Gateway can push it to the dashboard NotificationContext.
 func (s *Service) publishSystem(a *model.Alert, event string) {
-	if s.nc == nil {
-		return
-	}
 	payload, err := json.Marshal(map[string]any{
 		"type":    "alert",
 		"level":   a.Severity,
@@ -227,20 +257,25 @@ func (s *Service) publishSystem(a *model.Alert, event string) {
 	if err != nil {
 		return
 	}
-	if err := s.nc.Publish("system.status", payload); err != nil {
-		log.Printf("WARN: alert: publish system.status failed: %v", err)
-	}
+	s.enqueueOutbox("system.status", string(payload))
 }
 
 // publishAudit emits a threshold lifecycle event onto the shared audit.log
 // subject so the Audit Service can persist an immutable compliance record.
 func (s *Service) publishAudit(event string, fields map[string]string) {
-	if s.nc == nil {
+	payload := fmt.Sprintf(`{"event":%q,"service":"alert","data":%s}`, event, mapToJSON(fields))
+	s.enqueueOutbox(auditSubject, payload)
+}
+
+// enqueueOutbox writes the event to the outbox table for the relay to publish
+// to NATS (ADR-007). Replaces the previous direct s.nc.Publish so events are
+// never lost on a NATS outage.
+func (s *Service) enqueueOutbox(subject, payload string) {
+	if s.store == nil {
 		return
 	}
-	payload := fmt.Sprintf(`{"event":%q,"service":"alert","data":%s}`, event, mapToJSON(fields))
-	if err := s.nc.Publish(auditSubject, []byte(payload)); err != nil {
-		log.Printf("WARN: alert: publish audit %s failed: %v", event, err)
+	if err := s.store.EnqueueOutbox(context.Background(), subject, payload); err != nil {
+		log.Printf("[outbox] enqueue failed subject=%s: %v", subject, err)
 	}
 }
 

@@ -7,7 +7,7 @@ import NodeManagement from './NodeManagement';
 function ModuleManagement({ onOpenNodeConfig }) {
   const { modules, fetchModules } = useModule();
   const [isEditing, setIsEditing] = useState(false);
-  const [editingModule, setEditingModule] = useState(null);
+  const [, setEditingModule] = useState(null);
   const [formData, setFormData] = useState({ id: null, name: '', description: '', config: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');

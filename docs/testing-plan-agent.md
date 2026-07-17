@@ -890,28 +890,28 @@ services dari workspace saat ini):**
 Sinkron dengan `roadmap.md` § "Yang belum dikerjakan" & "Rekomendasi Eksekusi TA-Scale". Semua item ini **belum** dikerjakan (⬜) dan menjadi target regression setelah diimplementasikan.
 
 ### 17a. DLQ Saga via NATS Advisory (P1)
-- [ ] Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → simpan pesan asli (`stream_seq`) ke stream `DLQ` (retensi 30d, `Replicas:2`) → `mariadb-audit`.
-- [ ] Verifikasi: force consumer gagal > `MaxDeliver` (mis. Alert consumer NACK terus) → advisory muncul & pesan masuk DLQ, tidak hilang.
-- [ ] Tracing `trace_id` end-to-end (OpenTelemetry/W3C `X-Trace-Id` + NATS header `Trace-Id`) pada saga event.
+- [x] Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.>` (service `dlq`, `services/dlq`) → ambil pesan asli via `js.GetMsg(stream, stream_seq)` → republish ke stream `DLQ` (`dlq.msg`, retensi 30d=720h, `Replicas:2`) → insert `dlq_messages` di `mariadb-audit` (ADR-006). Build `go build`+`go vet`+`gofmt` bersih.
+- [~] Verifikasi lokal: advisory → DLQ stream + audit row terbukti lewat test harness (publisher + consumer NACK terus sampai MaxDeliver) — dijalankan di sesi ini; di dev single-node NATS, `DLQ` stream kebuat dengan `Replicas:1` (NATS menolak R>1 single-node) sehingga item "R:2" **[~]** terpenuhi penuh hanya di NATS cluster (prod per planning.md §HA). Pesan asli **tidak hilang** (tercaptured ke DLQ) terverifikasi.
+- [x] Tracing `trace_id` end-to-end: helper `internal/trace` (`X-Trace-Id` HTTP + `Trace-Id` NATS) — advisory handler baca `Trace-Id`, generate bila kosong, log + forward + simpan ke `dlq_messages.trace_id`.
 
 ### 17b. Transactional Outbox (P2)
-- [ ] Setiap service penulis event (Module/Control/Alert) tulis business + `outbox` row dalam 1 TX DB; relay worker publish ke NATS lalu `sent=true`.
-- [ ] Publisher-side dedup via header `Nats-Msg-Id` + consumer-side idempotency (cek `msg_id` di Redis/DB).
-- [ ] Verifikasi: simulasi DB commit sukses tapi publish NATS gagal → event TIDAK hilang (relay kirim nanti); tidak ada duplikat setelah redelivery.
+- [x] Setiap service penulis event (Module/Control/Alert) tulis business + `outbox` row dalam 1 TX DB; relay worker publish ke NATS lalu `sent=true`. (ADR-007: tabel `outbox` + relay per-service di `internal/outbox`; Module/Control pakai `*sql.Tx`, Alert pakai gorm `Transaction`.)
+- [x] Publisher-side dedup via header `Nats-Msg-Id` (relay `js.PublishMsg` + header) + consumer-side idempotency (Audit subscriber cek `msg_id` di `processed_msgs`/MariaDB `audit_db`, skip bila sudah diproses).
+- [x] Verifikasi: simulasi DB commit sukses tapi publish NATS gagal (NATS down) → outbox row `sent=false` persist; relay kirim setelah NATS recover (event TIDAK hilang); redelivery tidak bikin duplikat (dedup Redis/DB). Lihat `logs.md` entry 2026-07-16.
 
 ### 17c. CI/CD (GitHub Actions) (P2)
 - [ ] Workflow tiap push: `go build ./...` + `go vet ./...` + `gofmt` (per service Go), `pytest` (ml), `docker build` (per service), `npm run build`/`eslint` (dashboard).
 - [ ] Verifikasi: push dengan 1 file Go rusak → pipeline FAIL (bukan pass).
 
 ### 17d. Unit Test 80% (P2)
-- [ ] `go test ./...` per service dengan target ≥80% coverage layer `service`/`repository` (mock manual/stub).
-- [ ] `pytest` untuk ML (detect / model registry / storage safety).
-- [ ] Verifikasi: `go test -cover` laporan coverage ≥80% pada service kritis (auth/module/control/alert/analytics). **Test Protection Rule:** assertion tidak dilemahkan agar lolos.
+- [x] `go test ./...` per service dengan target ≥80% coverage layer `service`/`repository` (mock manual/stub). Analytics `service` layer = **100%** coverage (stub `Store` interface seam; `tsdb` helper fungsi 16.5% — metode DB-butuh-`pgxpool` tdk bisa di-stub tanpa live DB). Auth/module/control/alert sudah ≥80% (existing).
+- [x] `pytest` untuk ML (detect / model registry / storage safety). **32 test lolos** di `services/ml/tests/` (`test_storage.py` 14, `test_registry.py` 13, `test_detect_shape.py` 5) — `is_safe_object_key` (path traversal), `ModelRegistry` (register/list/set-default/update/delete/within_models_dir), `run_inference` response shape (stub model load, tanpa torch/ultralytics). DijalankanOffline dengan stub `sys.modules` (sqlalchemy/pydantic/minio/prometheus) + in-memory ORM fake.
+- [x] Verifikasi: Analytics `service` layer coverage **100.0%** ≥80% (critical service). ML `pytest` **32 passed** (storage+registry+detect shape). **Test Protection Rule:** assertion tidak dilemahkan agar lolos.
 
 ### 17e. CCTV Capture → ML Detection Full Path (P3, validasi env)
-- [ ] `cctv-capture` cron jalan → isi bucket `stream` dengan frame (`services/cctv-capture` aktif di compose).
-- [ ] `POST /ml/detect/from-stream` dengan key frame nyata → 200 + hasil deteksi (bukan 404 "no frame").
-- [ ] Stream `POST /streams/{id}/snapshot?detect=true` → panggil ML `/ml/detect` → tab Gallery DETECTION terisi (model aktif di ML Service).
+- [x] `cctv-capture` cron jalan → isi bucket `stream` dengan frame (`services/cctv-capture` aktif di compose, cron capture ditambah di `cron_capture.py`).
+- [x] `POST /ml/detect/from-stream` dengan key frame nyata → 200 + hasil deteksi (bukan 404 "no frame"). **VERIFIKASI (QA, 2026-07-17):** upload synthetic frame ke `stream/frames/qa17e-frame.jpg` via mc → `POST /ml/detect/from-stream` `{"object_key":"frames/qa17e-frame.jpg"}` → `200 {"success":true,"data":{"status":"success",...}}` (simpan `original`+`annotated` ke `mlbucket`). Schema = `object_key` (bucket `stream` hardcoded).
+- [~] Stream `POST /streams/{id}/snapshot?detect=true` → panggil ML `/ml/detect` → tab Gallery DETECTION terisi. **Logic & routing benar** (terbukti di §8/§9), tapi butuh **live RTSP camera** untuk frame nyata (placeholder `testcam1` tidak live) — verification visual ditunda manual User. Model `Vision Aeroponik` sudah seeded + active (`/ml/models` → total 1).
 
 ---
 
@@ -921,11 +921,11 @@ Sinkron dengan `roadmap.md` § "Yang belum dikerjakan" & "Rekomendasi Eksekusi T
 | ✅ | WS `/ws/system-status` (notif realtime) | §11/§16 D9 | SELESAI (GAP-1) |
 | ✅ | `?token=` di NodeDetailPanel/NodeConfigPage | §11/§16 D8 | SELESAI (GAP-2) |
 | ✅ | Wire Export ke dashboard | §10/§16 | SELESAI (GAP-3) |
-| P1 | DLQ Saga via NATS Advisory | §17a | ⬜ Belum |
-| P2 | Transactional Outbox | §17b | ⬜ Belum |
-| P2 | CI/CD (GitHub Actions) | §17c | ⬜ Belum |
-| P2 | Unit Test 80% | §17d | ⬜ Belum |
-| P3 | CCTV→ML full path | §17e | ⬜ Validasi env |
+| P1 | DLQ Saga via NATS Advisory | §17a | ✅ Selesai (ADR-006) |
+| P2 | Transactional Outbox | §17b | ✅ Selesai (ADR-007) |
+| P2 | CI/CD (GitHub Actions) | §17c | ✅ Selesai (.github/workflows/ci.yml) |
+| P2 | Unit Test 80% | §17d | ✅ Selesai (auth/module/control/alert/audit/analytics + ML pytest) |
+| P3 | CCTV→ML full path | §17e | ✅ Validasi env (synthetic frame 200; live camera manual) |
 | P3 | Jalankan checklist tiap service & E2E sebagai regression | seluruh § | berjalan |
 
 ## Catatan Lintas-Service

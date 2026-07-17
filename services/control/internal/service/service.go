@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/control/internal/model"
+	"github.com/almuzky/iot/services/control/internal/outbox"
 	"github.com/almuzky/iot/services/control/internal/repository"
 	"github.com/google/uuid"
 )
@@ -617,12 +619,24 @@ func (s *ControlService) setState(nodeID, output string, value int) {
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
 
+// publishAudit emits a threshold lifecycle event onto the shared audit.log
+// subject. Written to the outbox; the relay publishes it to NATS (ADR-007).
 func (s *ControlService) publishAudit(event string, fields map[string]string) {
-	if s.nats == nil {
-		return
-	}
 	payload := fmt.Sprintf(`{"event":%q,"service":"control","data":%s}`, event, mapToJSON(fields))
-	_ = s.nats.Publish("audit.log", []byte(payload))
+	s.enqueueOutbox("audit.log", payload)
+}
+
+// enqueueOutbox writes an outbox row (subject + payload + msg_id) to MariaDB.
+// The relay worker publishes it to NATS and marks it sent (ADR-007). Each call
+// runs in its own committed transaction so no event is lost even if NATS is
+// unavailable — the row persists and the relay retries.
+func (s *ControlService) enqueueOutbox(subject, payload string) {
+	msgID := outbox.NewMsgID()
+	if err := s.repo.Transact(context.Background(), func(tx *sql.Tx) error {
+		return s.repo.InsertOutboxTx(context.Background(), tx, subject, payload, msgID)
+	}); err != nil {
+		log.Printf("[outbox] enqueue failed subject=%s: %v", subject, err)
+	}
 }
 
 func mapToJSON(m map[string]string) string {

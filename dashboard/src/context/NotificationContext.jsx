@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const NotificationContext = createContext();
 
@@ -61,8 +61,29 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [latestStatus, setLatestStatus] = useState({ status: 'healthy', message: 'System Offline' });
   const [unreadCount, setUnreadCount] = useState(0);
-  // Track ID of the last notification seen when panel was opened
-  const lastSeenIdRef = useRef(null);
+
+  const pushNotification = useCallback((newNotif) => {
+    setNotifications(prev => {
+      // De-duplicate: if exact same message & status in last 5s, update timestamp only
+      const recent = prev[0];
+      if (
+        recent &&
+        recent.message === newNotif.message &&
+        recent.status === newNotif.status &&
+        (new Date(newNotif.timestamp) - new Date(recent.timestamp)) < 5000
+      ) {
+        const updated = [...prev];
+        updated[0] = { ...updated[0], timestamp: newNotif.timestamp };
+        return updated;
+      }
+      return [newNotif, ...prev].slice(0, MAX_NOTIFICATIONS);
+    });
+
+    // Increment unread for actionable categories
+    if (ACTIONABLE_CATEGORIES.includes(newNotif.category) || newNotif.status !== 'info') {
+      setUnreadCount(prev => prev + 1);
+    }
+  }, []);
 
   useEffect(() => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -142,30 +163,7 @@ export function NotificationProvider({ children }) {
       if (socket) socket.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
-  }, []);
-
-  function pushNotification(newNotif) {
-    setNotifications(prev => {
-      // De-duplicate: if exact same message & status in last 5s, update timestamp only
-      const recent = prev[0];
-      if (
-        recent &&
-        recent.message === newNotif.message &&
-        recent.status === newNotif.status &&
-        (new Date(newNotif.timestamp) - new Date(recent.timestamp)) < 5000
-      ) {
-        const updated = [...prev];
-        updated[0] = { ...updated[0], timestamp: newNotif.timestamp };
-        return updated;
-      }
-      return [newNotif, ...prev].slice(0, MAX_NOTIFICATIONS);
-    });
-
-    // Increment unread for actionable categories
-    if (ACTIONABLE_CATEGORIES.includes(newNotif.category) || newNotif.status !== 'info') {
-      setUnreadCount(prev => prev + 1);
-    }
-  }
+  }, [pushNotification]);
 
   const clearUnread = () => setUnreadCount(0);
 

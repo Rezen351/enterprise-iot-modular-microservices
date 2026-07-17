@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Activity, Tags, X, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Check, Wifi, WifiOff, Network } from 'lucide-react';
+import { Activity, Tags, X, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, Network } from 'lucide-react';
 import { API_BASE } from '../../api/client';
 import { moduleApi } from '../../api/module';
 
@@ -71,7 +71,7 @@ function NodeDetailPanel({ node, onClose }) {
     const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
-    catch (err) {
+    catch {
       setConnState('error');
       setWsError('Failed to open live monitor connection.');
       return;
@@ -119,7 +119,7 @@ function NodeDetailPanel({ node, onClose }) {
     const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live`;
     let ws;
     try { ws = new WebSocket(wsUrl); }
-    catch (e) { setTagError('Failed to open live stream for detection.'); setDetecting(false); return; }
+    catch { setTagError('Failed to open live stream for detection.'); setDetecting(false); return; }
     const found = {};
     const timer = setTimeout(() => {
       try { ws.close(); } catch { /* ignore */ }

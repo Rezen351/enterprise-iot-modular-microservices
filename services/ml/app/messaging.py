@@ -19,6 +19,14 @@ _nats = None
 _loop = None
 
 
+# Hard caps so a missing/broken NATS broker can never block an inference
+# response: connect fails fast and we do not retry forever in the background.
+_NATS_CONNECT_TIMEOUT = 2.0
+_NATS_MAX_RECONNECT = 0
+_NATS_RECONNECT_WAIT = 1.0
+_NATS_PUBLISH_TIMEOUT = 3.0
+
+
 async def _get_nats():
     global _nats, _loop
     if not settings.nats_enabled:
@@ -29,7 +37,12 @@ async def _get_nats():
         import nats
 
         _loop = asyncio.get_event_loop()
-        connect_kwargs: dict[str, Any] = {"servers": settings.nats_url}
+        connect_kwargs: dict[str, Any] = {
+            "servers": settings.nats_url,
+            "connect_timeout": _NATS_CONNECT_TIMEOUT,
+            "reconnect_time_wait": _NATS_RECONNECT_WAIT,
+            "max_reconnect_attempts": _NATS_MAX_RECONNECT,
+        }
         if settings.nats_user:
             connect_kwargs["user"] = settings.nats_user
             connect_kwargs["password"] = settings.nats_password
@@ -49,17 +62,36 @@ async def publish_detection(payload: dict[str, Any]) -> None:
         nc = await _get_nats()
         if nc is None:
             return
-        await nc.publish(
-            settings.nats_subject_detection,
-            json.dumps(payload, default=str).encode("utf-8"),
+        await asyncio.wait_for(
+            nc.publish(
+                settings.nats_subject_detection,
+                json.dumps(payload, default=str).encode("utf-8"),
+            ),
+            timeout=_NATS_PUBLISH_TIMEOUT,
         )
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to publish detection event: %s", exc)
 
 
 def publish_detection_sync(payload: dict[str, Any]) -> None:
-    """Fire-and-forget wrapper to call from sync route handlers."""
+    """Fire-and-forget wrapper to call from sync route handlers.
+
+    Runs in a worker thread with a hard timeout so a broken NATS broker can
+    never block (and thus hang) an inference HTTP response.
+    """
+    if not settings.nats_enabled:
+        return
     try:
-        asyncio.run(publish_detection(payload))
+        import threading
+
+        def _run() -> None:
+            try:
+                asyncio.run(publish_detection(payload))
+            except Exception as exc:  # pragma: no cover
+                logger.warning("Failed to publish detection event (sync): %s", exc)
+
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
+        t.join(timeout=_NATS_PUBLISH_TIMEOUT + 1.0)
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to publish detection event (sync): %s", exc)

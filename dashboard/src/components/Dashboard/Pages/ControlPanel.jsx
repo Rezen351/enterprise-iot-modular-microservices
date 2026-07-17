@@ -101,7 +101,7 @@ function TargetTile({ tag, allTargets, onCommand, nodeMode }) {
   const isDigital = outputTypeOf(tag) === 'DIGITAL';
   const [busy, setBusy] = useState(false);
   const [level, setLevel] = useState(128);
-  const [pulseSec, setPulseSec] = useState(3);
+  const pulseSec = 3;
 
   // "output" sent to the Control Service is the firmware target = tag source key
   // (e.g. "outputs.pump" → firmware "pump"). The friendly tag_name is recorded.
@@ -458,7 +458,6 @@ function ControlPanel() {
   const { selectedModule } = useModule();
   const [nodes, setNodes] = useState([]);
   const [nodeId, setNodeId] = useState('');
-  const [tags, setTags] = useState([]);          // raw tag-mapping from Module Service
   const [targets, setTargets] = useState([]);     // actuator tags (filtered)
   const [schedules, setSchedules] = useState([]);
   const [commands, setCommands] = useState([]);
@@ -502,11 +501,10 @@ function ControlPanel() {
   };
 
   const loadTags = useCallback(async (id) => {
-    if (!id) { setTags([]); setTargets([]); return; }
+    if (!id) { setTargets([]); return; }
     // Dedicated actuator tags (kind="actuator") — separate from sensor telemetry.
     const data = await moduleApi.getActuatorTags(id);
     const acts = Array.isArray(data?.tags) ? data.tags : [];
-    setTags(acts);
     // Merge the live actuator state (last_value) from the Control Service so the
     // ON/OFF tile reflects the actually-commanded state, not just the tag def.
     let liveByKey = {};

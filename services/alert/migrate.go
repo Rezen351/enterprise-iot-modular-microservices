@@ -19,7 +19,7 @@ func runMigrations(dsn string) error {
 	if err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&model.Threshold{}, &model.Alert{}); err != nil {
+	if err := db.AutoMigrate(&model.Threshold{}, &model.Alert{}, &model.Outbox{}); err != nil {
 		return err
 	}
 	log.Println("[migrate] alert_db schema OK")

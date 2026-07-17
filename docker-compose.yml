@@ -447,6 +447,35 @@ services:
       - iot-net
 
   # ──────────────────────────────────────
+  # DLQ Saga Worker — captures JetStream MaxDeliver advisories into the DLQ
+  # JetStream stream (30d retention, R:2) and the audit DB. See ADR-006.
+  # ──────────────────────────────────────
+  dlq:
+    build:
+      context: ./services/dlq
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/${MYSQL_DATABASE_AUDIT}?parseTime=true&charset=utf8mb4"
+      NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
+      DLQ_MAX_AGE_HOURS: "720"
+      DLQ_REPLICAS: "2"
+    depends_on:
+      mariadb-audit:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
   # KONG — API Gateway (satu-satunya pintu masuk)
   # ──────────────────────────────────────
   kong:
@@ -850,7 +879,9 @@ services:
   # frame via ffmpeg, runs inference through the ML service API, and stores the
   # frame + result in the `ml-result` MinIO bucket — the SAME bucket the live
   # "Capture Detect AI" button writes to, so both appear in the gallery's
-  # CAPTURES tab. Schedule via CAPTURE_CRON (5-field expr), CAPTURE_INTERVAL_HOURS
+  # CAPTURES tab. The raw frame is ALSO mirrored into the `stream` bucket so the
+  # ML `/ml/detect/from-stream` endpoint can run detection on it (§17e). Schedule
+  # via CAPTURE_CRON (5-field expr), CAPTURE_INTERVAL_HOURS
   # (fixed loop, default 8h), or RUN_ONCE=1 for an external host cron.
   # ──────────────────────────────────────
   cctv-capture:
@@ -874,6 +905,7 @@ services:
       AUTH_PASSWORD: "${CCTV_AUTH_PASSWORD}"
       MODEL_ID: "${CCTV_MODEL_ID}"
       MINIO_RESULT_BUCKET: "${CCTV_MINIO_RESULT_BUCKET}"
+      MINIO_STREAM_BUCKET: "${CCTV_MINIO_STREAM_BUCKET:-stream}"
       MIRROR_ANNOTATED: "${CCTV_MIRROR_ANNOTATED}"
       REDIS_ADDR: "redis-shared:6379"
       REDIS_PASSWORD: ""

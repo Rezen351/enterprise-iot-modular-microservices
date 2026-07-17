@@ -98,13 +98,11 @@ const SECTIONS = [
   { id: 'operations', label: 'Operations' },
 ];
 
-export default function Docs({ onBack, theme }) {
+export default function Docs({ onBack }) {
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
-  const logoCls = `h-8 w-auto object-contain ${theme === 'light' ? 'invert opacity-80' : ''}`;
 
   return (
     <div className="min-h-screen font-sans selection:bg-emerald-500/30 relative" style={{ backgroundColor: 'var(--bg-main)', color: 'var(--text-main)' }}>

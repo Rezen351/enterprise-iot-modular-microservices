@@ -6,17 +6,27 @@ import (
 	"time"
 
 	"github.com/almuzky/iot/services/analytics/internal/model"
-	"github.com/almuzky/iot/services/analytics/internal/tsdb"
 )
+
+// Store is the data-access seam for the Analytics service. It is satisfied by
+// *tsdb.Store (live TimescaleDB) and by in-memory fakes in unit tests, so the
+// service layer can be exercised offline.
+type Store interface {
+	UpsertRollup(ctx context.Context, row model.BatchRow) error
+	QuerySeriesMulti(ctx context.Context, nodeIDs, metrics []string, from, to time.Time, interval string, discreteSet map[string]bool) (map[string]map[string][]model.SeriesPoint, error)
+	QuerySummary(ctx context.Context, nodeID, metric string, from, to time.Time) (*model.SummaryResponse, error)
+	ListNodes(ctx context.Context) ([]model.NodeMetric, error)
+	ExportSeries(ctx context.Context, nodeID, metric string, from, to time.Time, resolution string) ([]model.ExportRow, error)
+}
 
 // Service implements the Analytics business logic: ingest batch aggregates
 // from NATS and serve aggregated queries to the dashboard.
 type Service struct {
-	store *tsdb.Store
+	store Store
 }
 
 // New wires the Analytics Service with its TimescaleDB store.
-func New(store *tsdb.Store) *Service {
+func New(store Store) *Service {
 	return &Service{store: store}
 }
 

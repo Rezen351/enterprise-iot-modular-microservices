@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Favicon = ({ className = "w-12 h-12" }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 

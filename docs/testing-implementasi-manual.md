@@ -342,6 +342,8 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 
 |---|---------|-------|-----------|--------|--------|
 |---|---------|-------|-----------|--------|
+| # | Tes | Target | Ekspektasi | Status | Target |
+|---|---------|-------|-----------|--------|--------|
 | D1 | Login / Register / Profile | `/` | auth flow + ubah password + sesi + deactivate | [ ] | M1 |
 | D2 | User Management | `/users` | admin: toggle aktif, ubah role, hapus (guard) | [ ] | M1 |
 | D3 | Module Management | `/module` | CRUD module, pair/unpair, node config, tags | [ ] | M1 |
@@ -361,6 +363,8 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 
 |---|----------|------|--------|--------|
 |---|----------|------|--------|
+| # | Skenario | Alur | Ekspektasi | Status | Target |
+|---|----------|------|--------|--------|
 | E2E1 | Telemetry → Dashboard | ESP → MQTT → Module → TimescaleDB/Redis → NATS → Analytics → Dashboard chart | [ ] | M2 |
 | E2E2 | Telemetry realtime | ESP → Module → NATS `mqtt.{id}` → WS → Dashboard live | [ ] | M2 |
 | E2E3 | Control → ESP32 | Dashboard → Kong → Control → MQTT `actuator` → ESP → `/confirm` → Control acked | [ ] | M2 |
@@ -455,6 +459,8 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 
 |---|-----|--------|------------|--------|--------|
 |---|-----|--------|------------|--------|
+| # | Tes | Target | Ekspektasi | Status | Target |
+|---|-----|--------|------------|--------|--------|
 | NB1 | Bell terima notifikasi WS | `GET /ws/system-status?token=` | alert/resolved frame muncul di bell | [ ] | M4 |
 | NB2 | Badge increment saat triggered | Alert publish `alert.triggered` → WS | badge angka naik | [ ] | M4 |
 | NB3 | Hilang/berubah warna saat resolved | publish `alert.resolved` → WS | item hilang atau warna berubah | [ ] | M4 |
@@ -481,6 +487,8 @@ Jalankan dari `stress-test/` (`python3 cli.py <cmd>`). Trafik lewat Kong (`KONG_
 
 |---|-----|----------|-----------------|--------|--------|
 |---|-----|----------|-----------------|--------|
+| # | Tes | Tool | Ekspektasi | Status | Target |
+|---|-----|----------|-----------------|--------|--------|
 | PERF1 | HTTP load | `loadtest` (load/soak/spike) | Prometheus before/after | [ ] | M4 |
 | PERF2 | WebSocket load | `wstest` | koneksi `/ws` stabil | [ ] | M4 |
 | PERF3 | MQTT telemetry load | `mqtttest` | ingest Module tidak drop | [ ] | M4 |

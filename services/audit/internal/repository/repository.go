@@ -7,6 +7,7 @@ import (
 
 	"github.com/almuzky/iot/services/audit/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Store persists and queries audit logs.
@@ -52,4 +53,27 @@ func (s *Store) List(ctx context.Context, event, search string, from, to time.Ti
 // subscriber loop (logged by the caller).
 func (s *Store) Insert(ctx context.Context, l *model.AuditLog) error {
 	return s.db.WithContext(ctx).Create(l).Error
+}
+
+// SeenMsgID reports whether msgID was already processed (consumer-side
+// idempotency, ADR-007). MarkMsgID records it atomically; both use the audit
+// service's own MariaDB so no cross-service dependency is introduced.
+func (s *Store) SeenMsgID(ctx context.Context, msgID, subject string) (bool, error) {
+	if msgID == "" {
+		return false, nil // no id → nothing to dedupe on
+	}
+	var count int64
+	if err := s.db.WithContext(ctx).
+		Model(&model.ProcessedMsg{}).
+		Where("msg_id = ?", msgID).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (s *Store) MarkMsgID(ctx context.Context, msgID, subject string) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&model.ProcessedMsg{MsgID: msgID, Subject: subject}).Error
 }

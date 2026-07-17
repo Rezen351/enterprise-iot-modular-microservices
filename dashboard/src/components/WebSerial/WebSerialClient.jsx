@@ -6,21 +6,12 @@ const WebSerialClient = () => {
   const [port, setPort] = useState(null);
   const [status, setStatus] = useState('Disconnected');
   const [logs, setLogs] = useState([]);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [flashProgress, setFlashProgress] = useState(0);
-
-  const [authPass, setAuthPass] = useState('');
-  const [nodeId, setNodeId] = useState('node-01');
-  const [ssid, setSsid] = useState('Wokwi-GUEST');
-  const [wifiPass, setWifiPass] = useState('');
-  const [mqttServer, setMqttServer] = useState('test.mosquitto.org');
-  const [topicPrefix, setTopicPrefix] = useState('smartfarm');
 
   const [fwFile, setFwFile] = useState(null);
   const logEndRef = useRef(null);
   let readerRef = useRef(null);
-  let writerRef = useRef(null);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,11 +58,9 @@ const WebSerialClient = () => {
 
   const readLoop = async (currentPort) => {
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = currentPort.readable.pipeTo(textDecoder.writable);
+    currentPort.readable.pipeTo(textDecoder.writable);
     const reader = textDecoder.readable.getReader();
     readerRef.current = reader;
-
-    let buffer = '';
 
     try {
       while (true) {
@@ -112,42 +101,6 @@ const WebSerialClient = () => {
       setStatus('Disconnected');
       addLog('USB Port Closed.');
     }
-  };
-
-  const syncConfig = async () => {
-    if (!port) {
-      addLog('Error: Please connect USB first.');
-      return;
-    }
-    if (!authPass) {
-      addLog('Error: Hardware Admin Password is required.');
-      return;
-    }
-
-    setIsSyncing(true);
-    const payload = {
-      auth: { password: authPass },
-      device: { node_id: nodeId, fw_version: "1.0.0", description: "SmartFarm Node" },
-      protocols: {
-        wifi: { ssid: ssid, password: wifiPass, auto_reconnect: true },
-        mqtt: { server: mqttServer, port: 1883, topic_prefix: topicPrefix, telemetry_interval_ms: 5000 }
-      }
-    };
-
-    const jsonString = JSON.stringify(payload) + '\n';
-    addLog(`Sending config...`);
-
-    try {
-      const textEncoder = new TextEncoderStream();
-      const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
-      const writer = textEncoder.writable.getWriter();
-      await writer.write(jsonString);
-      writer.releaseLock();
-      addLog('Configuration sent! Waiting for device reboot...');
-    } catch (e) {
-      addLog(`Sync Error: ${e.message}`);
-    }
-    setIsSyncing(false);
   };
 
   const handleFlash = async () => {

@@ -40,6 +40,22 @@ type Alert struct {
 
 func (Alert) TableName() string { return "alerts" }
 
+// Outbox is the Transactional Outbox table (ADR-007). Each alert/event the
+// Alert Service would previously publish directly to NATS is first written here
+// within the same DB transaction as the business row. A relay worker drains
+// unsent rows and publishes them to NATS with a Nats-Msg-Id header.
+type Outbox struct {
+	ID        string     `gorm:"column:id;type:char(36);primaryKey"`
+	MsgID     string     `gorm:"column:msg_id;type:varchar(64);not null;uniqueIndex"` // idempotency key (Nats-Msg-Id)
+	Subject   string     `gorm:"column:subject;type:varchar(128);not null;index"`
+	Payload   string     `gorm:"column:payload;type:longtext;not null"`
+	Sent      bool       `gorm:"column:sent;not null;default:false;index"`
+	CreatedAt time.Time  `gorm:"column:created_at;autoCreateTime"`
+	SentAt    *time.Time `gorm:"column:sent_at"`
+}
+
+func (Outbox) TableName() string { return "outbox" }
+
 // ThresholdDTO is the API representation of a threshold configuration.
 type ThresholdDTO struct {
 	ID       string   `json:"id"`

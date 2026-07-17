@@ -287,17 +287,6 @@ func TestSetNodeModeEmergency(t *testing.T) {
 	}
 }
 
-func TestResumeNode(t *testing.T) {
-	svc, _ := newTestService(t, &fakePublisher{connected: true}, &fakeNATS{})
-	m, err := svc.ResumeNode(context.Background(), "n1")
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	if m != model.ModeAuto {
-		t.Fatalf("expected AUTO after resume, got %s", m)
-	}
-}
-
 // ─── schedules ──────────────────────────────────────────────────────────────────
 
 func TestCreateSchedule(t *testing.T) {
@@ -347,7 +336,7 @@ func TestUpdateScheduleNotFound(t *testing.T) {
 
 func TestDeleteScheduleNotFound(t *testing.T) {
 	svc, fake := newTestService(t, &fakePublisher{connected: true}, &fakeNATS{})
-	fake.ExecErr = sql.ErrNoRows
+	fake.RowsAff = 0
 	err := svc.DeleteSchedule(context.Background(), "missing")
 	if !errors.Is(err, ErrScheduleNotFound) {
 		t.Fatalf("expected ErrScheduleNotFound, got %v", err)
@@ -356,7 +345,7 @@ func TestDeleteScheduleNotFound(t *testing.T) {
 
 func TestSetScheduleEnabledNotFound(t *testing.T) {
 	svc, fake := newTestService(t, &fakePublisher{connected: true}, &fakeNATS{})
-	fake.ExecErr = sql.ErrNoRows
+	fake.RowsAff = 0
 	err := svc.SetScheduleEnabled(context.Background(), "missing", true)
 	if !errors.Is(err, ErrScheduleNotFound) {
 		t.Fatalf("expected ErrScheduleNotFound, got %v", err)
@@ -477,15 +466,11 @@ func TestResumeNode(t *testing.T) {
 	}
 }
 
-func TestGetNodeModeMap(t *testing.T) {
+func TestGetNodeMode(t *testing.T) {
 	svc, fake := newTestService(t, &fakePublisher{connected: true}, &fakeNATS{})
-	fake.SetResponse("output_name = '*'", []testdriver.Row{testdriver.NewRow([]string{"node_id", "mode"}, "n1", model.ModeEmergency)})
-	m, err := svc.GetNodeMode(context.Background(), "n1")
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
+	fake.SetResponse("output_name = '*'", []testdriver.Row{testdriver.NewRow([]string{"mode"}, model.ModeEmergency)})
+	m := svc.GetNodeMode(context.Background(), "n1")
 	if m != model.ModeEmergency {
 		t.Fatalf("expected EMERGENCY, got %s", m)
 	}
-	_ = ptrInt
 }

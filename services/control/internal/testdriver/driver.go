@@ -123,9 +123,6 @@ func (c *conn) Exec(query string, args []driver.Value) (driver.Result, error) {
 		return nil, c.db.ExecErr
 	}
 	aff := c.db.RowsAff
-	if aff == 0 {
-		aff = 1
-	}
 	return &result{rowsAff: aff}, nil
 }
 

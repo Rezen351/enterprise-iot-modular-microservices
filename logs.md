@@ -28,6 +28,16 @@
 | 4 | ✅ | **ML (Python):** buat `services/ml/tests/` dengan `_fakes.py` yang menyuntikkan stub `sys.modules` (sqlalchemy/pydantic/pydantic_settings/prometheus_client/minio) + ORM in-memory fake, sehingga `app.storage` & `app.vision_engine` jalan offline tanpa torch/ultralytics. `pytest` **32 passed**: `test_storage.py` (14 — `is_safe_object_key` path traversal `../../etc/passwd`, `../x`, backslash, leading `/`, control char ditolak; key legal `frames/x.jpg` lolos), `test_registry.py` (13 — register/list/filter/set-default/update/delete/within_models_dir), `test_detect_shape.py` (5 — `run_inference` response shape pakai stub model load, no real weights). |
 | 5 | 📝 | Deps berat (pydantic/sqlalchemy/minio/prometheus_client/ultralytics/torch) **tidak ter-install** di sandbox (butuh approval) — test ML dijalankan murni offline via stub, sesuai aturan "jangan wajibkan model riil". Tidak ada dependensi baru ditambahkan. |
 
+### Bug Fix — Control ON/OFF status tidak terupdate di dashboard (Manual toggle)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **ROOT CAUSE:** `services/control/internal/module/module.go` `ListActuatorTags`/`ListTags` mem-parsing `tags` di **top-level**, padahal Module Service mengembalikan envelope standar `{ success, data: { tags } }` (AGENTS.md §4.4). Akibatnya `out.Tags` selalu kosong → `ControlService.ListTargets` mengembalikan `targets:[]` → dashboard `loadTags` gagal merge `last_value` live → badge ON/OFF tidak berubah walau `POST /control/command` sukses diteruskan ke firmware. |
+| 2 | ✅ | **FIX:** tambah helper `unmarshalTags` yang membongkar envelope `{ data: { tags } }` (dengan fallback shape `{ tags }` mentah). `ListTargets` kini mengembalikan semua actuator target + `last_value` dari in-memory `state`, terbukti via curl: `set_state load1=1` → `last_value=1`, `toggle` → `last_value=0`. Field contract dashboard↔backend (`node_id`,`output`=source_key,`type`,`value`,`duration_sec`,`targets[]`, respons `last_value`) **sudah sesuai** — bukan masalah mismatched field. |
+| 3 | ✅ | **Verifikasi:** rebuild image `microservices-control`, `docker compose up -d control`, uji manual login→MANUAL→command→targets. Test tag `pump` dihapus & node dikembalikan ke AUTO. |
+
+**Keputusan Teknis:** Perubahan kode: `services/control/internal/module/module.go` (helper `unmarshalTags` + 2 call site). Tidak ada perubahan dashboard/field API. Service di-restart: `control`.
+
 **Keputusan Teknis:** Interface seam `Store` di analytics adalah *minimal refactor* (tanpa ubah behavior) agar service layer teruji offline; memenuhi AGENTS.md §4.8 (" tambah interface seam bila dependency hardcoded"). §17d checklist di `testing-plan-agent.md` di-update: Analytics service 100% ≥80%, ML 32 test lolos. §17a/§17b/§17c/§17e & test service lain **tidak disentuh**.
 
 ---

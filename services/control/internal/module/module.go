@@ -68,7 +68,9 @@ func (c *Client) ListTags(nodeID string) ([]Tag, error) {
 	var out struct {
 		Tags []Tag `json:"tags"`
 	}
-	if err := json.Unmarshal(body, &out); err != nil {
+	// The Module Service returns the standard envelope { success, data }.
+	// Unwrap the `data` wrapper (and tolerate a bare { tags } shape too).
+	if err := unmarshalTags(body, &out); err != nil {
 		return nil, err
 	}
 	return out.Tags, nil
@@ -100,10 +102,28 @@ func (c *Client) ListActuatorTags(nodeID string) ([]Tag, error) {
 	var out struct {
 		Tags []Tag `json:"tags"`
 	}
-	if err := json.Unmarshal(body, &out); err != nil {
+	if err := unmarshalTags(body, &out); err != nil {
 		return nil, err
 	}
 	return out.Tags, nil
+}
+
+// unmarshalTags decodes a tag list, accepting both the standard envelope
+// { success, data: { tags } } and a bare { tags } payload.
+func unmarshalTags(body []byte, out *struct {
+	Tags []Tag `json:"tags"`
+}) error {
+	var env struct {
+		Data struct {
+			Tags []Tag `json:"tags"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &env); err == nil && env.Data.Tags != nil {
+		out.Tags = env.Data.Tags
+		return nil
+	}
+	// Fall back to bare { tags } shape.
+	return json.Unmarshal(body, out)
 }
 
 // IsNodeRegistered reports whether a node_id is known to the Module Service.

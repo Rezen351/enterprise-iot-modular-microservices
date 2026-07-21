@@ -7,6 +7,8 @@
 [![Go](https://img.shields.io/badge/services-Go_%2B_Python-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
 
+This end-to-end microservice system is architected as a fortress of isolated services—each owning its own dedicated database with zero shared schemas or cross-service coupling—where NATS JetStream serves as the resilient event backbone, ensuring that a failure in the AI/ML vision pipeline, real-time video streaming layer, or analytics engine can never cascade into critical telemetry ingest, control workflows, or alerting systems; all external traffic is funneled through a hardened Kong API Gateway enforcing JWT authentication, role-based access control, rate-limiting, and strict CORS policies, while IoT devices stream real-time sensor telemetry via MQTT and operators interact with a React dashboard that consumes live WebSocket updates, time-series aggregations, and AI-powered detections—all securely exposed through an outbound-only Cloudflare Tunnel with no open ports; every business transaction is guaranteed through saga-based choreography with compensating transactions, dead-letter queues for failed events, idempotent consumers for exactly-once processing, and full auditability via correlation IDs propagated across NATS, MQTT, and HTTP, while Prometheus metrics from 31+ scrape targets feed Grafana dashboards for complete observability, giving you a production-grade, horizontally scalable, and fault-tolerant platform where each of the 13+ services can be independently built, tested, deployed, and evolved without risking the stability of the entire system.
+
 ---
 
 ## Table of Contents

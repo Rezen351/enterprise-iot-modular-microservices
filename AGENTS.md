@@ -66,9 +66,15 @@ Sebelum melakukan modifikasi kode yang bersifat kompleks (misalnya: membuat serv
 
 ### 2.3 Fase Verifikasi & Pengujian (Verification Phase)
 1. **Verifikasi Fungsional**: Selalu uji kode secara lokal (misalnya menjalankan unit test atau memvalidasi endpoint API via container Docker).
-2. **Pemeriksaan Kompilasi**: Pastikan semua service yang dimodifikasi dapat di-build dengan sukses tanpa error (misalnya `go build` atau compiler React).
-3. **Dokumentasi Pengujian**: Dokumentasikan hasil pengujian atau perintah pengujian yang digunakan dalam [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) atau logs.
-4. **Investigasi Metrik & Health**: Saat menelusuri anomali performa/latensi/error rate, rujuk [grafana-service-health.md](file:///home/almuzky/TA/Microservices/docs/grafana-service-health.md) untuk memahami arti tiap panel dashboard (Prometheus metrics). Gunakan dashboard untuk mengonfirmasi status UP/DOWN, error rate, dan resource usage layanan yang sedang diubah.
+2. **Wajib Tambah / Update Test Case untuk Fitur Baru**:
+   - Setiap kali menambahkan fitur baru, mengubah logika bisnis, atau menambahkan endpoint API baru pada microservices, kontributor / AI Agent **WAJIB menambahkan test case baru** pada Unit & Feature Test Suite ([`test/unit_test.py`](file:///home/almuzky/TA/Microservices/test/unit_test.py)).
+   - Perbarui katalog endpoint pada [`test/config.py`](file:///home/almuzky/TA/Microservices/test/config.py) dan skenario pada [`test/resilience_test.py`](file:///home/almuzky/TA/Microservices/test/resilience_test.py) jika fitur memerlukan pengujian beban/chaos.
+   - Dilarang menganggap fitur selesai tanpa adanya unit test otomatis di folder `test/` yang menguji fungsionalitasnya via Kong Gateway `/v1`.
+3. **Pemeriksaan Kompilasi & Visual Graph Generator**:
+   - Pastikan semua service yang dimodifikasi dapat di-build dengan sukses tanpa error (`go build` / Python check).
+   - Jalankan `python3 test/run_all_tests.py` untuk memverifikasi seluruh test cases PASS (100% OK) dan memastikan 4 grafik PNG visual di [`test/results/`](file:///home/almuzky/TA/Microservices/test/results) ter-update.
+4. **Dokumentasi Pengujian**: Dokumentasikan hasil pengujian atau perintah pengujian yang digunakan dalam [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) atau logs.
+5. **Investigasi Metrik & Health**: Saat menelusuri anomali performa/latensi/error rate, rujuk [grafana-service-health.md](file:///home/almuzky/TA/Microservices/docs/grafana-service-health.md) untuk memahami arti tiap panel dashboard (Prometheus metrics). Gunakan dashboard untuk mengonfirmasi status UP/DOWN, error rate, dan resource usage layanan yang sedang diubah.
 
 ---
 

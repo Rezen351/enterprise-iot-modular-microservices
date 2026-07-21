@@ -238,7 +238,6 @@ jobs:
           echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
           echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
           echo "KONG_JWT_SECRET_FRONTEND=${{ secrets.KONG_JWT_SECRET_FRONTEND }}" >> .env
-          echo "KONG_JWT_SECRET_ESP32=${{ secrets.KONG_JWT_SECRET_ESP32 }}" >> .env
           echo "MODULE_NATS_PASSWORD=${{ secrets.MODULE_NATS_PASSWORD }}" >> .env
           echo "ALERT_NATS_PASSWORD=${{ secrets.ALERT_NATS_PASSWORD }}" >> .env
           echo "CONTROL_NATS_PASSWORD=${{ secrets.CONTROL_NATS_PASSWORD }}" >> .env

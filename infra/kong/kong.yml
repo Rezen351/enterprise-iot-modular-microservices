@@ -17,12 +17,6 @@ consumers:
         algorithm: HS256
         secret: "${KONG_JWT_SECRET_FRONTEND}"
 
-  - username: esp32-device
-    jwt_secrets:
-      - key: esp32-key
-        algorithm: HS256
-        secret: "${KONG_JWT_SECRET_ESP32}"
-
 # ─── Global plugins (berlaku untuk semua route) ──────────────────────
 plugins:
   # Prometheus — expose metrik Kong di Admin API port 8001 (/metrics)

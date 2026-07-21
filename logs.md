@@ -62,7 +62,7 @@
 | # | Status | Aktivitas |
 |---|---|---|
 | 1 | ✅ | Menambahkan job `cd-deploy` ke `.github/workflows/ci.yml`: triggered hanya pada `push` ke `main` (`if: github.ref == 'refs/heads/main'`), runs on `self-hosted`. |
-| 2 | ✅ | Job `cd-deploy` membuat `.env` dari `.env.example` + GitHub Secrets (`MYSQL_ROOT_PASSWORD`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CLOUDFLARED_TUNNEL_TOKEN`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `ADMIN_PASSWORD`, `KONG_JWT_SECRET_FRONTEND`, `KONG_JWT_SECRET_ESP32`, `NATS_PASSWORDS`, `GRAFANA_ADMIN_PASSWORD`, `REDIS_PASSWORD`). |
+| 2 | ✅ | Job `cd-deploy` membuat `.env` dari `.env.example` + GitHub Secrets (`MYSQL_ROOT_PASSWORD`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CLOUDFLARED_TUNNEL_TOKEN`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `ADMIN_PASSWORD`, `KONG_JWT_SECRET_FRONTEND`, `NATS_PASSWORDS`, `GRAFANA_ADMIN_PASSWORD`, `REDIS_PASSWORD`). |
 | 3 | ✅ | Job `cd-deploy` menjalankan `docker compose down --remove-orphans`, `docker compose build --no-cache`, dan `docker compose up -d` untuk deploy seluruh stack. |
 | 4 | ✅ | Job `cd-deploy` menyertakan cleanup `docker image prune -f` (step `Clean Up Old Docker Images`). |
 
@@ -1195,6 +1195,7 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 14 | ✅ | `test/plotter.py` & `test/results/`: Mengintegrasikan engine visualisasi grafik **Matplotlib** yang secara otomatis meng-generate 4 berkas gambar PNG ber-resolusi tinggi di `test/results/` (`01_unit_test_summary.png`, `02_stress_test_throughput.png`, `03_resilience_chaos_audit.png`, `04_overall_system_dashboard.png`). |
 | 15 | ✅ | `AGENTS.md`: Menambahkan aturan wajib (*Mandatory Rule*) pada Bagian 2.3 bahwa setiap penambahan fitur baru atau perubahan endpoint API **wajib menyertakan unit test case baru** di `test/unit_test.py` dan meng-update visual dashboard PNG di `test/results/`. |
 | 16 | ✅ | `docker-compose.yml` & `.github/workflows/ci-cd.yml`: Memperbaiki error `permission denied` pada `/prometheus/queries.active` di CD self-hosted runner dengan menambahkan `user: "root"` pada service `prometheus` serta memperbarui script `Fix Volume Permissions` (`chown 65534:65534` & `chmod 777 ./volumes/prometheus`). |
+| 17 | ✅ | Menghapus consumer JWT `esp32-device` dari `infra/kong/kong.yml` karena ESP32 kini memiliki portal/autentikasi sendiri dan tidak perlu通过 Kong JWT. Menghapus variabel `KONG_JWT_SECRET_ESP32` dari `.env.example`, `.env`, dan `.github/workflows/ci-cd.yml`. |
 
-**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Grafana (port 3000) dan Kong (port 8000) kini sepenuhnya responsif terhadap akses IP Publik, IP LAN, maupun domain eksternal. Error permission log aktif Prometheus di pipeline CD self-hosted telah diperbaiki total dengan penyetelan kepemilikan volume dan hak user root container.
+**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Grafana (port 3000) dan Kong (port 8000) kini sepenuhnya responsif terhadap akses IP Publik, IP LAN, maupun domain eksternal. Error permission log aktif Prometheus di pipeline CD self-hosted telah diperbaiki total dengan penyetelan kepemilikan volume dan hak user root container. Consumer JWT ESP32 dihapus dari Kong karena perangkat kini menggunakan portal/autentikasi mandiri.
 

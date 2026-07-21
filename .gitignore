@@ -5,6 +5,8 @@
 volumes/
 
 # Build artifacts
+node_modules/
+**/node_modules/
 dashboard/dist/
 firmware/aeroponic-node/.pio/
 .pio/

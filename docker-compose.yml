@@ -689,7 +689,7 @@ services:
     command:
       - "--endpoint=tcp://mosquitto:1883"
       - "--user=exporter"
-      - "--password=exporterPass123"
+      - "--pass=exporterPass123"
       - "--bind-address=:9234"
     depends_on:
       - mosquitto

@@ -187,6 +187,15 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Fix Workspace Permissions
+        run: |
+          echo "Fixing workspace ownership..."
+          sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE || true
+          sudo rm -rf dashboard/node_modules 2>/dev/null || true
+          echo "Workspace permissions fixed."
 
       - name: Configure Runner Network Retries
         run: |
@@ -225,12 +234,6 @@ jobs:
           echo "CCTV_AUTH_PASSWORD=${{ secrets.CCTV_AUTH_PASSWORD }}" >> .env
           echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
-
-      - name: Fix Workspace Permissions
-        run: |
-          echo "Fixing workspace ownership..."
-          sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE || true
-          echo "Workspace permissions fixed."
 
       - name: Fix Volume Permissions
         run: |

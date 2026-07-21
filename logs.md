@@ -7,6 +7,18 @@
 
 ## 2026-07-21
 
+### CI/CD — Perbaikan Permission Denied pada Workspace Cleanup (EACCES node_modules)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Tambahkan `with: clean: false` pada `actions/checkout@v4` di job `cd-deploy` ([ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml)) agar runner tidak gagal menghapus direktori berizin root sebelum checkout. |
+| 2 | ✅ | Pindahkan step `Fix Workspace Permissions` (`sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE`) agar dieksekusi langsung setelah checkout, serta tambahkan `sudo rm -rf dashboard/node_modules` untuk membersihkan sisa file root. |
+| 3 | ✅ | Tambahkan `node_modules/` dan `**/node_modules/` ke [.gitignore](file:///home/almuzky/TA/Microservices/.gitignore). |
+
+**Keputusan Teknis:** `actions/checkout@v4` secara default mencoba menghapus file untracked sebelum fetch (clean phase via Node.js `fs.rm`). Ketika `dashboard/node_modules` atau file hasil build Docker terbuat dengan owner `root:root`, runner (`aeroponik`) gagal menghapusnya sebelum langkah user (`sudo chown`) berjalan. Menggunakan `clean: false` mencegah `actions/checkout` gagal di awal, sehingga step `sudo chown` dapat memperbaiki permission secara otomatis.
+
+---
+
 ### Keamanan — Terapkan User/Password di Mosquitto Internal (O1)
 
 | # | Status | Aktivitas |

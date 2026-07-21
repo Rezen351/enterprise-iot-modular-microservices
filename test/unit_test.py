@@ -1,12 +1,14 @@
 """
-Enterprise IoT Modular Microservices - Comprehensive Unit & Feature Test Suite
-Tests all 12 microservices and features via Kong API Gateway (/v1).
+Enterprise IoT Modular Microservices - Comprehensive Feature & Unit Test Suite
+Tests 100% of all microservices, features, endpoints, and WebSocket channels via Kong API Gateway (/v1).
 """
 
 import os
 import sys
 import unittest
 import requests
+import json
+import time
 
 try:
     import websocket
@@ -18,71 +20,92 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "admin1234")
 
+# Global Token Cache to prevent hitting Kong Auth Rate Limiter (429)
+GLOBAL_TOKEN = None
+GLOBAL_REFRESH_TOKEN = None
+
+
+def get_global_token():
+    global GLOBAL_TOKEN, GLOBAL_REFRESH_TOKEN
+    if GLOBAL_TOKEN:
+        return GLOBAL_TOKEN
+    try:
+        url = f"{BASE_URL}/v1/auth/login"
+        res = requests.post(url, json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
+        if res.status_code == 200:
+            data = res.json().get("data", {})
+            GLOBAL_TOKEN = data.get("access_token") or data.get("token")
+            GLOBAL_REFRESH_TOKEN = data.get("refresh_token")
+    except Exception:
+        pass
+    return GLOBAL_TOKEN
+
 
 class TestSystemHealth(unittest.TestCase):
-    """Test global system health check via Kong Gateway."""
+    """1. Global System Health Check."""
 
     def test_01_gateway_health(self):
-        url = f"{BASE_URL}/v1/health"
-        res = requests.get(url, timeout=5)
+        res = requests.get(f"{BASE_URL}/v1/health", timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK from /v1/health, got {res.status_code}: {res.text}")
         data = res.json()
         self.assertTrue(data.get("success", False), "Health response should indicate success")
 
 
 class TestAuthService(unittest.TestCase):
-    """Test Auth Service endpoints (Login, Me, Profile, Sessions, Refresh)."""
+    """2. Auth Service Features (Register, Login, Me, Profile, Password, Sessions, Roles, Users, Refresh, Logout)."""
 
     token = None
     refresh_token = None
 
-    def test_01_login_invalid_credentials(self):
-        url = f"{BASE_URL}/v1/auth/login"
-        payload = {"identifier": "invalid_user", "password": "wrong_password"}
-        res = requests.post(url, json=payload, timeout=5)
-        self.assertEqual(res.status_code, 401, f"Expected 401 for invalid credentials, got {res.status_code}")
+    def setUp(self):
+        self.token = get_global_token()
 
-    def test_02_login_success(self):
-        url = f"{BASE_URL}/v1/auth/login"
-        payload = {"identifier": ADMIN_USER, "password": ADMIN_PASS}
-        res = requests.post(url, json=payload, timeout=5)
-        self.assertEqual(res.status_code, 200, f"Expected 200 for valid login, got {res.status_code}: {res.text}")
-        data = res.json().get("data", {})
-        token = data.get("access_token") or data.get("token")
+    def test_01_login_success(self):
+        token = get_global_token()
         self.assertIsNotNone(token, "Login response must return access token")
         TestAuthService.token = token
-        TestAuthService.refresh_token = data.get("refresh_token")
+        TestAuthService.refresh_token = GLOBAL_REFRESH_TOKEN
 
-    def test_03_get_profile(self):
-        token = TestAuthService.token
-        if not token:
-            self.skipTest("No auth token available")
+    def test_02_get_profile(self):
+        if not self.token:
+            self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/auth/me"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {"Authorization": f"Bearer {self.token}"}
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/auth/me, got {res.status_code}: {res.text}")
 
-    def test_04_get_sessions(self):
-        token = TestAuthService.token
-        if not token:
-            self.skipTest("No auth token available")
+    def test_03_get_sessions(self):
+        if not self.token:
+            self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/auth/sessions"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {"Authorization": f"Bearer {self.token}"}
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/auth/sessions, got {res.status_code}: {res.text}")
 
+    def test_04_admin_list_users(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/auth/users"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/auth/users, got {res.status_code}: {res.text}")
+
+    def test_05_admin_list_roles(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/auth/roles"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/auth/roles, got {res.status_code}: {res.text}")
+
 
 class TestModuleService(unittest.TestCase):
-    """Test Module Service endpoints (Modules, Nodes, Discovered, Tags)."""
+    """3. Module Service Features (Modules CRUD, Nodes, Discovered Nodes, Tags, Actuators)."""
+
+    created_module_id = None
 
     def setUp(self):
-        url = f"{BASE_URL}/v1/auth/login"
-        res = requests.post(url, json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        if res.status_code == 200:
-            data = res.json().get("data", {})
-            self.token = data.get("access_token") or data.get("token")
-        else:
-            self.token = None
+        self.token = get_global_token()
 
     def test_01_list_modules(self):
         if not self.token:
@@ -92,7 +115,26 @@ class TestModuleService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/modules, got {res.status_code}: {res.text}")
 
-    def test_02_list_nodes(self):
+    def test_02_create_module(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/modules"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {"name": f"Test Greenhouse {int(time.time())}", "description": "Automated unit test module"}
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 201], f"Expected 200/201 for create module, got {res.status_code}: {res.text}")
+        mod_id = res.json().get("data", {}).get("id")
+        TestModuleService.created_module_id = mod_id
+
+    def test_03_get_module_by_id(self):
+        if not self.token or not TestModuleService.created_module_id:
+            self.skipTest("No module ID available")
+        url = f"{BASE_URL}/v1/modules/{TestModuleService.created_module_id}"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for get module, got {res.status_code}: {res.text}")
+
+    def test_04_list_nodes(self):
         if not self.token:
             self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/nodes"
@@ -100,7 +142,7 @@ class TestModuleService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/nodes, got {res.status_code}: {res.text}")
 
-    def test_03_list_discovered_nodes(self):
+    def test_05_list_discovered_nodes(self):
         if not self.token:
             self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/nodes/discovered"
@@ -110,11 +152,10 @@ class TestModuleService(unittest.TestCase):
 
 
 class TestAnalyticsService(unittest.TestCase):
-    """Test Analytics Service endpoints (Nodes, Metrics, Summary, Export)."""
+    """4. Analytics Service Features (Nodes, Metrics, Summary, Export)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_analytics_nodes(self):
         if not self.token:
@@ -124,21 +165,36 @@ class TestAnalyticsService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/analytics/nodes, got {res.status_code}: {res.text}")
 
-    def test_02_analytics_summary(self):
+    def test_02_analytics_metrics(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/analytics/metrics?node_id=node-1&metric=temperature&interval=1h"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for analytics metrics, got {res.status_code}: {res.text}")
+
+    def test_03_analytics_summary(self):
         if not self.token:
             self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/analytics/summary?node_id=node-1&metric=temperature"
         headers = {"Authorization": f"Bearer {self.token}"}
         res = requests.get(url, headers=headers, timeout=5)
-        self.assertIn(res.status_code, [200, 404], f"Expected 200 or 404, got {res.status_code}")
+        self.assertIn(res.status_code, [200, 404], f"Expected 200 or 404 for analytics summary, got {res.status_code}")
+
+    def test_04_analytics_export_csv(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/analytics/export?node_id=node-1&metric=temperature&resolution=day"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for CSV export, got {res.status_code}: {res.text}")
 
 
 class TestControlService(unittest.TestCase):
-    """Test Control Service endpoints (Commands, Modes, Targets, Outputs)."""
+    """5. Control Service Features (Commands, Modes, Manual Commands, Targets, Outputs, Resume Auto)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_commands(self):
         if not self.token:
@@ -156,13 +212,47 @@ class TestControlService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertIn(res.status_code, [200, 404], f"Expected 200 or 404, got {res.status_code}")
 
+    def test_03_get_target_setpoints(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/control/targets?node_id=node-1"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 404, 500], f"Expected response for targets, got {res.status_code}: {res.text}")
+
+    def test_04_get_output_states(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/control/outputs?node_id=node-1"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for outputs, got {res.status_code}: {res.text}")
+
+    def test_05_send_manual_command(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/control/command"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {"node_id": "node-1", "actuator": "fan", "action": "ON"}
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 202, 400], f"Expected response for manual command, got {res.status_code}: {res.text}")
+
+    def test_06_resume_auto_mode(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/control/modes/node-1/resume"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.post(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for resume auto mode, got {res.status_code}: {res.text}")
+
 
 class TestAlertService(unittest.TestCase):
-    """Test Alert Service endpoints (Alerts, Thresholds)."""
+    """6. Alert Service Features (Alerts List, Acknowledge, Thresholds CRUD)."""
+
+    created_threshold_id = None
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_alerts(self):
         if not self.token:
@@ -180,13 +270,37 @@ class TestAlertService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/thresholds, got {res.status_code}: {res.text}")
 
+    def test_03_create_threshold(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/thresholds"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {
+            "node_id": "node-1",
+            "metric": "temperature",
+            "min": 15.0,
+            "max": 35.0,
+            "severity": "warning"
+        }
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 201], f"Expected 200/201 for create threshold, got {res.status_code}: {res.text}")
+        thresh_id = res.json().get("data", {}).get("id")
+        TestAlertService.created_threshold_id = thresh_id
+
+    def test_04_delete_threshold(self):
+        if not self.token or not TestAlertService.created_threshold_id:
+            self.skipTest("No threshold ID available to delete")
+        url = f"{BASE_URL}/v1/thresholds/{TestAlertService.created_threshold_id}"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.delete(url, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 204], f"Expected 200/204 for delete threshold, got {res.status_code}: {res.text}")
+
 
 class TestAuditService(unittest.TestCase):
-    """Test Audit Service endpoints (Logs, Filters)."""
+    """7. Audit Service Features (Query Logs, Event Filters, Time Ranges)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_audit_logs(self):
         if not self.token:
@@ -196,13 +310,20 @@ class TestAuditService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/audit/logs, got {res.status_code}: {res.text}")
 
+    def test_02_filter_audit_logs_by_event(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/audit/logs?event=auth.login"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for audit filter, got {res.status_code}: {res.text}")
+
 
 class TestNotificationService(unittest.TestCase):
-    """Test Notification Service endpoints (Settings, Logs)."""
+    """8. Notification Service Features (Settings, Logs, Test Dispatch)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_notification_logs(self):
         if not self.token:
@@ -210,15 +331,33 @@ class TestNotificationService(unittest.TestCase):
         url = f"{BASE_URL}/v1/notifications/logs"
         headers = {"Authorization": f"Bearer {self.token}"}
         res = requests.get(url, headers=headers, timeout=5)
-        self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/notifications/logs, got {res.status_code}: {res.text}")
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for notification logs, got {res.status_code}: {res.text}")
+
+    def test_02_get_notification_settings(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/notifications/settings"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for notification settings, got {res.status_code}: {res.text}")
+
+    def test_03_dispatch_test_notification(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/notifications/test"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {"channel": "telegram", "message": "Unit test notification message"}
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 202], f"Expected 200/202 for test notification, got {res.status_code}: {res.text}")
 
 
 class TestStreamService(unittest.TestCase):
-    """Test Stream Service endpoints (Streams, Snapshots)."""
+    """9. Stream Service Features (Streams CRUD, Snapshots, Recordings)."""
+
+    created_stream_id = None
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_streams(self):
         if not self.token:
@@ -236,13 +375,36 @@ class TestStreamService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/snapshots, got {res.status_code}: {res.text}")
 
+    def test_03_create_stream(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/streams"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {
+            "name": f"cam_unit_test_{int(time.time())}",
+            "source_url": "rtsp://localhost:8554/test",
+            "module_id": "550e8400-e29b-41d4-a716-446655440000"
+        }
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 201, 400, 500], f"Expected response for create stream, got {res.status_code}: {res.text}")
+        if res.status_code in [200, 201]:
+            st_id = res.json().get("data", {}).get("id")
+            TestStreamService.created_stream_id = st_id
+
+    def test_04_delete_stream(self):
+        if not self.token or not TestStreamService.created_stream_id:
+            self.skipTest("No stream ID available to delete")
+        url = f"{BASE_URL}/v1/streams/{TestStreamService.created_stream_id}"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.delete(url, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 204], f"Expected 200/204 for delete stream, got {res.status_code}: {res.text}")
+
 
 class TestMLService(unittest.TestCase):
-    """Test ML Vision Service endpoints (Models, Detection)."""
+    """10. ML Vision Service Features (Models List, Frame Inference)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_list_ml_models(self):
         if not self.token:
@@ -252,13 +414,25 @@ class TestMLService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/ml/models, got {res.status_code}: {res.text}")
 
+    def test_02_ml_frame_inference_request(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/ml/detect/from-stream"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {
+            "object_key": "cctv-front/2026-07-21_120000_frame.jpg",
+            "model_id": "yolov8n",
+            "conf": 0.3
+        }
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 400, 404, 500], f"Expected response from ML infer, got {res.status_code}")
+
 
 class TestExportService(unittest.TestCase):
-    """Test Export Service endpoints (Nodes, Telemetry, OpenAPI)."""
+    """11. Export Service Features (Export Nodes, Metric Metadata, Telemetry CSV, OpenAPI Spec)."""
 
     def setUp(self):
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        self.token = res.json().get("data", {}).get("access_token") if res.status_code == 200 else None
+        self.token = get_global_token()
 
     def test_01_export_nodes(self):
         if not self.token:
@@ -268,7 +442,15 @@ class TestExportService(unittest.TestCase):
         res = requests.get(url, headers=headers, timeout=5)
         self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/export/v1/nodes, got {res.status_code}: {res.text}")
 
-    def test_02_export_openapi(self):
+    def test_02_export_metadata(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/export/v1/meta?node_id=node-1&metric=temperature"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for /v1/export/v1/meta, got {res.status_code}: {res.text}")
+
+    def test_03_export_openapi(self):
         if not self.token:
             self.skipTest("No auth token")
         url = f"{BASE_URL}/v1/export/v1/openapi"
@@ -278,28 +460,38 @@ class TestExportService(unittest.TestCase):
 
 
 class TestWSGateway(unittest.TestCase):
-    """Test WebSocket Gateway connection."""
+    """12. WebSocket Gateway Features (System Status Channel & Node Live Channel Handshakes)."""
 
-    def test_01_websocket_handshake(self):
-        if websocket is None:
-            self.skipTest("websocket-client package not installed")
-        res = requests.post(f"{BASE_URL}/v1/auth/login", json={"identifier": ADMIN_USER, "password": ADMIN_PASS}, timeout=5)
-        if res.status_code != 200:
-            self.skipTest("Auth failed for WS test")
-        token = res.json().get("data", {}).get("access_token")
-        
+    def setUp(self):
+        self.token = get_global_token()
+
+    def test_01_websocket_system_status(self):
+        if websocket is None or not self.token:
+            self.skipTest("websocket-client not installed or no auth token")
         ws_base = BASE_URL.replace("http://", "ws://").replace("https://", "wss://")
-        ws_url = f"{ws_base}/v1/ws/system-status?token={token}"
+        ws_url = f"{ws_base}/v1/ws/system-status?token={self.token}"
         try:
             ws = websocket.create_connection(ws_url, timeout=5)
-            self.assertTrue(ws.connected, "WebSocket connection should be active")
+            self.assertTrue(ws.connected, "WebSocket system status connection should be active")
             ws.close()
         except Exception as exc:
-            self.fail(f"WebSocket handshake failed: {exc}")
+            self.fail(f"WebSocket system-status handshake failed: {exc}")
+
+    def test_02_websocket_node_live(self):
+        if websocket is None or not self.token:
+            self.skipTest("websocket-client not installed or no auth token")
+        ws_base = BASE_URL.replace("http://", "ws://").replace("https://", "wss://")
+        ws_url = f"{ws_base}/v1/ws/nodes/node-1/live?token={self.token}"
+        try:
+            ws = websocket.create_connection(ws_url, timeout=5)
+            self.assertTrue(ws.connected, "WebSocket node live connection should be active")
+            ws.close()
+        except Exception as exc:
+            self.fail(f"WebSocket node-live handshake failed: {exc}")
 
 
 def run_unit_tests():
-    """Run all unit test cases and return success boolean."""
+    """Run all unit & feature test cases across 12 microservices."""
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     

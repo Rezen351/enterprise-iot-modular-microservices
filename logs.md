@@ -23,6 +23,17 @@
 
 ---
 
+### Dokumentasi — Pembaruan README.md Standar Modern GitHub
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Perbarui berkas [README.md](file:///home/almuzky/TA/Microservices/README.md) mengikuti standar repositori open-source modern di GitHub: menambahkan badge shields (Architecture, Docker, Go, Python, Kong, NATS, License), diagram arsitektur Mermaid, ringkasan fitur utama, tabel ekosistem 12 mikroservis, petunjuk Quick Start, struktur proyek, dan indeks dokumentasi. |
+| 2 | ✅ | Bersihkan istilah legacy spesifik ("aeroponiks") dari [README.md](file:///home/almuzky/TA/Microservices/README.md) dan selaraskan dengan judul utama proyek: **Enterprise IoT Modular Microservices — Environment Monitoring System**. |
+
+**Keputusan Teknis:** `README.md` menggunakan format GitHub-Flavored Markdown dengan badge visual, Mermaid diagram, dan navigasi anchor agar mudah dibaca oleh kontributor eksternal maupun tim internal. Seluruh teks dan deskripsi ditulis dalam Bahasa Inggris sesuai AGENTS.md §1.
+
+---
+
 ### Keamanan — Terapkan User/Password di Mosquitto Internal (O1)
 
 | # | Status | Aktivitas |

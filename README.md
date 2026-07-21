@@ -1,231 +1,209 @@
-# Enterprise IoT Modular Microservices — Environment Monitoring System
+<div align="center">
 
-![Architecture](https://img.shields.io/badge/architecture-microservice-blue?logo=cloudbees&logoColor=white)
-![Docker](https://img.shields.io/badge/docker-compose-ready-brightgreen?logo=docker&logoColor=white)
-![Go](https://img.shields.io/badge/services-Go_%2B_Python-orange?logo=go&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
-![MQTT](https://img.shields.io/badge/iot-MQTT-green?logo=eclipse&logoColor=white)
-![Kong](https://img.shields.io/badge/gateway-Kong_3.6-FF6B35?logo=kong&logoColor=white)
-![NATS](https://img.shields.io/badge/event_bus-NATS_JetStream-2C4B7B?logo=nats&logoColor=white)
+# Enterprise IoT Modular Microservices
 
-> **General-purpose environment monitoring and control system** built on a microservice architecture with database-per-service isolation, event-driven communication via NATS JetStream, and a centralized API Gateway via Kong. This end-to-end IoT solution ingests telemetry from ESP32-based sensor nodes via MQTT, processes alerts, stores time-series data, and exposes a React dashboard for real-time visualization and manual control.
+### *High-Performance, Event-Driven Environment Monitoring & Industrial IoT Architecture*
 
-**Keywords:** Environment Monitoring System, IoT Microservices, Enterprise IoT Architecture, Docker Compose, Go Microservices, Python ML Service, NATS JetStream, Kong API Gateway, Time-Series Database, MQTT IoT, ESP32 Telemetry, Real-Time Dashboard, React Vite, Prometheus Grafana, Cloudflare Tunnel, MediaMTX RTSP, YOLO Inference, MariaDB, TimescaleDB, Redis, MinIO S3, Event-Driven Architecture, Observability, JWT Authentication, RBAC, CORS, Rate Limiting, DevOps, CI/CD, GitHub Actions, Self-Hosted, Open Source, Sensor Monitoring, Smart Environment, Industrial IoT
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Microservices](#microservices)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [CI/CD](#cicd)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
+[![Architecture](https://img.shields.io/badge/Architecture-Microservice-blue?style=for-the-badge&logo=cloudbees&logoColor=white)](./docs/planning.md)
+[![Docker](https://img.shields.io/badge/Docker_Compose-v2.20+-2496ED?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Kong](https://img.shields.io/badge/Kong-3.6-FF6B35?style=for-the-badge&logo=kong&logoColor=white)](https://konghq.com/)
+[![NATS](https://img.shields.io/badge/NATS-JetStream-2C4B7B?style=for-the-badge&logo=nats&logoColor=white)](https://nats.io/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](./LICENSE)
 
 ---
 
-## Overview
+<p align="center">
+  <a href="#key-features">Key Features</a> •
+  <a href="#system-architecture">Architecture</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#microservices-ecosystem">Microservices</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#documentation">Documentation</a> •
+  <a href="#license">License</a>
+</p>
 
-This project implements an **end-to-end IoT system for general environment monitoring and control**. It ingests telemetry from ESP32-based sensor nodes via MQTT, processes alerts using rule-based threshold evaluation, stores time-series data efficiently, and exposes a React dashboard for real-time visualization and manual actuator control.
-
-### Key Characteristics
-
-- **Database-per-Service**: each microservice owns its schema (MariaDB / TimescaleDB / Redis logical DB)
-- **Event-driven**: NATS JetStream for async pub/sub and durable streams
-- **API Gateway**: Kong handles JWT, rate-limiting, CORS, and routing
-- **Observability**: Prometheus + Grafana + exporters (mysqld, postgres, redis, nats, node, cadvisor)
-- **Secure ingress**: Cloudflare Tunnel (outbound-only, no exposed ports)
-- **ML/Vision**: YOLO inference via MediaMTX RTSP/HLS pipeline
-- **Real-time**: NATS-to-WebSocket bridge for live dashboard updates
-- **Scalable**: Docker Compose orchestration with health checks and restart policies
-
-### Use Cases
-
-- General environment and sensor monitoring
-- IoT sensor data logging and analytics
-- Real-time alerting and multi-channel notifications
-- Computer vision for object detection and analysis
-- Time-series data analytics and CSV export
-- Multi-tenant device management with role-based access control
-- Smart building and industrial monitoring systems
+</div>
 
 ---
 
-## Architecture
+## 📌 Overview
+
+**Enterprise IoT Modular Microservices** is a production-grade, event-driven environment monitoring and control platform designed for high throughput, strict service isolation, and horizontal scalability. 
+
+Built with a **database-per-service pattern**, it ingests telemetry from IoT sensor nodes via MQTT, evaluates threshold alerts in real-time, stores time-series data using TimescaleDB, and streams live telemetry to a React Vite dashboard over WebSocket.
+
+---
+
+## 🚀 Key Features
+
+- ⚡ **Database-per-Service Isolation**: Complete schema and storage autonomy across all services (MariaDB, TimescaleDB, Redis).
+- 🔄 **Event-Driven Messaging**: High-throughput pub/sub and state streaming powered by **NATS JetStream** and **Mosquitto MQTT**.
+- 🛡️ **Centralized API Gateway**: **Kong 3.6** handles JWT validation, RBAC, Rate Limiting, and CORS policies as the single entry point.
+- 📊 **Real-Time Dashboard**: React (Vite + Tailwind) frontend with a **NATS-to-WebSocket bridge** for live telemetry streaming and manual actuator control.
+- 📈 **Time-Series Analytics**: Aggregated rollup metrics and time-series history powered by **TimescaleDB**.
+- 👁️ **Computer Vision & ML Pipeline**: Real-time object detection via MediaMTX RTSP/HLS and YOLO inference engine.
+- 🔍 **Full Observability**: Prometheus metrics aggregation paired with Grafana dashboards for database, message broker, and container resource monitoring.
+- 🔒 **Zero-Trust Ingress**: Outbound-only **Cloudflare Tunnel** integration eliminating open inbound host ports.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    User([Browser / Client]) -->|HTTPS| Cloudflare[Cloudflare Tunnel]
+    Cloudflare -->|HTTP:8000| Kong[Kong API Gateway :8000]
+    
+    subgraph Core Microservices
+        Kong --> Auth[Auth Service]
+        Kong --> Module[Module Service]
+        Kong --> Analytics[Analytics Service]
+        Kong --> Control[Control Service]
+        Kong --> Alert[Alert Service]
+        Kong --> Audit[Audit Service]
+        Kong --> WSGateway[WS Gateway]
+        Kong --> Stream[Stream Service]
+    end
+
+    subgraph Messaging & Storage
+        Module -->|MQTT| Mosquitto[Mosquitto Broker]
+        Module -->|Events| NATS[NATS JetStream]
+        Control -->|State| NATS
+        Alert -->|Evaluation| NATS
+        WSGateway -->|Subscribe| NATS
+        
+        Auth --> DB1[(MariaDB Auth)]
+        Module --> DB2[(MariaDB & TimescaleDB)]
+        Analytics --> DB3[(TimescaleDB Analytics)]
+        Control --> DB4[(MariaDB Control)]
+        Alert --> DB5[(MariaDB Alert)]
+        Audit --> DB6[(MariaDB Audit)]
+    end
+
+    subgraph Observability
+        Prometheus[Prometheus] -->|Scrape| Exporters[Service Exporters]
+        Grafana[Grafana Dashboard] -->|Query| Prometheus
+    end
+```
+
+For complete architectural details, bounded contexts, and system design decisions, refer to [docs/planning.md](./docs/planning.md).
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Backend Services** | Go 1.26 (Microservices) · Python 3.11 (ML Service / YOLO) |
+| **Frontend** | React 18 · Vite · Tailwind CSS |
+| **API Gateway** | Kong 3.6 (Declarative Configuration) |
+| **Message Broker** | NATS JetStream 2.10 · Eclipse Mosquitto 2 (MQTT) |
+| **Databases** | MariaDB 10.11 · TimescaleDB 2.17 (PostgreSQL 16) · Redis 7 |
+| **Storage & Media** | MinIO (S3 Object Store) · MediaMTX (RTSP/HLS/WebRTC) |
+| **Monitoring** | Prometheus v3.4 · Grafana 11.3 · Node Exporter · cAdvisor |
+| **Ingress & DevOps** | Cloudflare Tunnel · Docker Compose v2 · GitHub Actions CI/CD |
+
+---
+
+## 🧩 Microservices Ecosystem
+
+| Microservice | Port | Database | Primary Responsibility |
+|---|---|---|---|
+| `auth` | `8080` | MariaDB (`auth_db`) | Authentication, RBAC, JWT issuance, and refresh tokens |
+| `module` | `8080` | MariaDB + TimescaleDB | Device registry, MQTT discovery, and telemetry ingest |
+| `analytics` | `8080` | TimescaleDB (`analytics_ts`) | Time-series rollups, aggregated queries, and analytics |
+| `control` | `8080` | MariaDB (`control_db`) | Manual/scheduled actuator commands & mode arbitration |
+| `alert` | `8080` | MariaDB (`alert_db`) | Rule-based threshold evaluation & alert history |
+| `audit` | `8080` | MariaDB (`audit_db`) | Append-only system audit log store |
+| `notification`| `8080` | MariaDB (`notification_db`)| Multi-channel alert dispatcher (Telegram, Email, Push) |
+| `stream` | `8080` | MariaDB (`stream_db`) | Camera stream metadata, MediaMTX paths & snapshots |
+| `ml` | `8080` | MariaDB (`ml_db`) | YOLO computer vision model registry & inference API |
+| `export` | `8080` | Redis Shared (DB 3) | Data export processing (CSV) |
+| `wsgateway` | `8090` | Memory | Single bridged WebSocket for real-time telemetry |
+| `dlq` | `8080` | MariaDB (`audit_db`) | Dead Letter Queue saga worker for failed messages |
+
+---
+
+## 📂 Project Structure
 
 ```
-Browser (HTTPS via Cloudflare Tunnel)
-          │
-          ▼
-     ┌─────────┐
-     │  Kong    │  API Gateway :8000/:8443
-     │  :8000   │  - JWT validation
-     └────┬────┘  - Rate limiting
-          │        - CORS
-          ▼
-     ┌─────────────────────────────────────────┐
-     │         Microservices (Docker)          │
-     │                                         │
-     │  auth → module → analytics → wsgateway  │
-     │     ↘     ↓      ↓         ↓            │
-     │      control ← alert ← notification     │
-     │         ↓      ↓                        │
-     │       audit   export                    │
-     │                                         │
-     │  stream → ml → cctv-capture             │
-     │                                         │
-     │  Infrastructure:                        │
-     │  nats, mosquitto, redis-shared,         │
-     │  timescaledb, mariadb, minio,           │
-     │  mediamtx, prometheus, grafana          │
-     └─────────────────────────────────────────┘
+.
+├── .github/workflows/     # CI/CD pipeline (GitHub Actions)
+├── dashboard/             # React + Vite frontend application
+├── docs/                  # System documentation, ADRs, runbooks & guides
+│   ├── integration-guides/# Service-specific API contracts & examples
+│   ├── adr.md             # Architecture Decision Records
+│   ├── planning.md        # Core system architecture & design rationale
+│   └── runbook.md         # Operational troubleshooting & diagnostics
+├── firmware/              # ESP32 node firmware & hardware simulator
+├── infra/                 # Infrastructure configs (Kong, NATS, Mosquitto, Prometheus, Grafana)
+├── services/              # Go & Python microservices
+└── docker-compose.yml     # Master container orchestration manifest
 ```
 
-See [docs/planning.md](./docs/planning.md) for the full architecture, bounded contexts, and design rationale.
-
 ---
 
-## Tech Stack
+## ⚡ Quick Start
 
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | Go 1.26 (microservices) + Python 3.11 (ML service) |
-| **Frontend** | React + Vite + Tailwind CSS |
-| **API Gateway** | Kong 3.6 (declarative config) |
-| **Event Bus** | NATS JetStream 2.10 |
-| **MQTT** | Eclipse Mosquitto 2 |
-| **Databases** | MariaDB 10.11, TimescaleDB 2.17 (PostgreSQL 16), Redis 7 |
-| **Storage** | MinIO (S3-compatible object storage) |
-| **Streaming** | MediaMTX (RTSP / HLS / WebRTC) |
-| **Monitoring** | Prometheus + Grafana + exporters |
-| **Deployment** | Docker Compose + Cloudflare Tunnel |
+### 1. Prerequisites
+- [Docker Engine 24.0+](https://docs.docker.com/engine/install/)
+- [Docker Compose v2.20+](https://docs.docker.com/compose/)
+- [Git](https://git-scm.com/)
 
----
-
-## Microservices
-
-| Service | Port | Responsibility |
-|---------|------|----------------|
-| `auth` | 8080 | Authentication, RBAC, JWT issuance, refresh tokens |
-| `module` | 8080 | Device registry, MQTT discovery, telemetry ingest |
-| `analytics` | 8080 | Time-series aggregation, rollups, export |
-| `control` | 8080 | Manual/scheduled actuator commands, mode arbitration |
-| `alert` | 8080 | Threshold evaluation, alert history |
-| `audit` | 8080 | Append-only audit log API |
-| `notification` | 8080 | Multi-channel alerts (Telegram, Email, Push) |
-| `stream` | 8080 | Stream metadata, MediaMTX path registry, snapshot/recording |
-| `ml` | 8080 | YOLO model registry and inference |
-| `export-service` | 8080 | Telemetry/data export (CSV) |
-| `wsgateway` | 8090 | NATS-to-WebSocket bridge (realtime dashboard) |
-| `dlq` | 8080 | Dead Letter Queue saga worker |
-| `cctv-capture` | — | External cron job for CCTV frame capture and ML inference |
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Docker Engine 24+ and Docker Compose v2
-- Git
-- (Optional) Go 1.26 and Node.js 20 for local development
-
-### Setup
+### 2. Installation & Running
 
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/Rezen351/enterprise-iot-modular-microservices.git
 cd enterprise-iot-modular-microservices
 
-# 2. Copy environment file and fill in secrets
+# Configure Environment
 cp .env.example .env
-# Edit .env with your values (JWT secret, DB passwords, Cloudflare token, etc.)
+# Edit .env to set your JWT secrets, DB passwords, and Cloudflare tokens
 
-# 3. Start all services
+# Start the full microservices stack
 docker compose up -d
 
-# 4. Verify health
+# Verify Gateway Health
 curl http://localhost:8000/auth/health
 ```
 
-### Dashboard
+### 3. Local Dashboard Development
 
 ```bash
-# Build and run dashboard (dev mode with hot reload)
 cd dashboard
-npm ci
+npm install
 npm run dev
-
-# Or build for production
-npm run build
 ```
-
 Access the dashboard at `http://localhost:5173`.
 
 ---
 
-## Configuration
+## 🔄 CI/CD Pipeline
 
-Environment variables are split into two categories:
+The project incorporates an automated GitHub Actions pipeline ([.github/workflows/ci-cd.yml](./.github/workflows/ci-cd.yml)):
 
-- **`.env.example`** — secrets only (DB credentials, JWT secrets, API tokens, MQTT passwords, Cloudflare tunnel token). Never commit `.env`.
-- **`docker-compose.yml`** — inline defaults for non-secret config (database names, service URLs, timeouts, bucket names, topic prefixes). This makes the stack portable across environments without a large `.env` file.
-
-Secrets should be injected via GitHub Actions Secrets in CI/CD, or set manually in `.env` for local development.
+- **CI Stage**: Runs `gofmt`, `go vet`, and `go build` across all Go services, executes `pytest` for the ML service, lints the React dashboard, and builds Docker images using **Docker Buildx layer caching (`type=gha`)**.
+- **CD Stage**: Automated deployment to a self-hosted runner on `push` to `main`, leveraging **Sparse Checkout** (`docker-compose.yml`, `infra/`) to minimize network bandwidth down to ~5MB per release.
 
 ---
 
-## CI/CD
+## 📖 Documentation Index
 
-GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
-
-| Stage | What it does |
-|-------|--------------|
-| **CI** | `gofmt` check, `go vet`, `go build` for all Go services; `pytest` for ML service; Docker build & push to GHCR for all services; `npm ci` + lint + build for dashboard |
-| **CD** | On push to `main`: checkout, generate `.env` from secrets, `docker compose pull` from GHCR, `docker compose up -d`, prune old images |
-
-Deploys to a self-hosted runner via Docker.
-
----
-
-## Documentation
-
-Project documentation is organized as follows:
-
-| Document | Purpose |
-|----------|---------|
-| [docs/planning.md](./docs/planning.md) | System architecture, bounded contexts, design rationale, scalability, and tech choices |
-| [docs/adr.md](./docs/adr.md) | Architecture Decision Records — key decisions with context and consequences |
-| [docs/roadmap.md](./docs/roadmap.md) | Feature roadmap, phase checklist, and delivery status |
-| [docs/runbook.md](./docs/runbook.md) | Operational troubleshooting guide for production incidents |
-| [docs/security-audit.md](./docs/security-audit.md) | Penetration test findings and hardening measures (Kong, JWT/RBAC, CORS, exporters) |
-| [docs/testing-plan-agent.md](./docs/testing-plan-agent.md) | Backend API testing checklist (agent-executed) |
-| [docs/testing-implementasi-manual.md](./docs/testing-implementasi-manual.md) | Manual UI/visual testing scenarios (user-executed) |
-| [docs/grafana-service-health.md](./docs/grafana-service-health.md) | Guide to reading the Grafana "Service Health" dashboard |
-| [docs/system-update.md](./docs/system-update.md) | System sync notes and infrastructure gap tracking |
-| [docs/integration-guides/](./docs/integration-guides/) | Per-service integration guides — API contracts, NATS/MQTT topics, database schema, curl examples, and error codes for each microservice |
-| [AGENTS.md](./AGENTS.md) | Project rules, coding guidelines, and AI agent workflow |
+| Document | Description |
+|---|---|
+| [planning.md](./docs/planning.md) | Full architectural blueprint, bounded contexts, and system design |
+| [adr.md](./docs/adr.md) | Architecture Decision Records (ADRs) and trade-offs |
+| [roadmap.md](./docs/roadmap.md) | Development phase status and feature checklists |
+| [runbook.md](./docs/runbook.md) | Operational runbook & troubleshooting guidelines |
+| [security-audit.md](./docs/security-audit.md) | Penetration testing report & security hardening policies |
+| [integration-guides/](./docs/integration-guides/) | Service-by-service API contracts, NATS/MQTT topics & curl examples |
+| [AGENTS.md](./AGENTS.md) | Project guidelines, code standards, and commit rules |
 
 ---
 
-## Contributing
+## 📄 License
 
-See [AGENTS.md](./AGENTS.md) for project rules, coding standards, and commit conventions.
-
-General workflow:
-1. Create a feature branch
-2. Make changes following the coding guidelines
-3. Run `gofmt`, `go vet`, `go test` for Go services
-4. Ensure `docker compose config` passes validation
-5. Open a pull request to `main`
-
----
-
-## License
-
-MIT
+Distributed under the **MIT License**. See [LICENSE](./LICENSE) for more information.

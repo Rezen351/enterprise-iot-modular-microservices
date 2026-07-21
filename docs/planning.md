@@ -2,7 +2,7 @@
 
 > **Versi Dokumen:** 2.16.0  
 > **Tanggal:** 2026-07-16  
-> **Status:** 🟢 Fase 1-5 + Monitor Selesai — + Hardening Arsitektur (2.12–2.16: resilience, outbox, testing, deployment, SLA, TA-Scale Roadmap, cosmetic cleanup) 
+> **Status:** 🟢 Fase 1-5 + Monitor Selesai — + Hardening Arsitektur (2.12–2.16: resilience, outbox, testing, deployment, SLA, Architecture Roadmap, cosmetic cleanup) 
 > **Penulis:** Alif Muhammad Rizky
 > **Dokumen Terkait:** [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) · [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) · [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) · [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md) · [logs.md](file:///home/almuzky/TA/Microservices/logs.md) · [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) · [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md)
 
@@ -61,31 +61,33 @@ Sistem terdiri dari beberapa lapisan yang saling terintegrasi:
 - **Streaming Layer:** Stream Service + MediaMTX (RTSP→HLS/WebRTC) + MinIO bersama (bucket `stream`: snapshot/recording) untuk kamera CCTV/ESP32-CAM
 - **Gateway Layer:** Kong sebagai API Gateway tunggal untuk semua traffic eksternal, termasuk REST/HTTP dan WebSocket (route `/ws` diteruskan ke WS-Gateway)
 - **Presentation Layer:** Dashboard (React) dan **WS-Gateway** untuk real-time updates. Dashboard membuka WebSocket ke Kong (`/ws`), Kong meneruskan ke WS-Gateway, yang menjadi jembatan ke **NATS** (subscribe subject untuk push ke client)
-- **Integration Layer:** Webhook Service sebagai jembatan event-driven ke sistem eksternal
-- **Observability Layer:** Prometheus + exporter terkonsolidasi (1× mysqld-exporter-all untuk 8 MariaDB, 1× postgres-exporter-all untuk 2 TimescaleDB, 1× redis-exporter untuk redis-shared, + mosquitto/nats/node/cadvisor) untuk aggregasi metrik; resource container dipantau via cAdvisor/node-exporter (Monitor Service di-remove)
+- **Integration Layer:** DLQ Saga Worker untuk menangkap event gagal dari JetStream (`$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*`) dan menyimpannya ke `mariadb-audit` untuk investigasi.
+- **Observability Layer:** Prometheus + exporter terkonsolidasi (1× mysqld-exporter-all untuk 8 MariaDB, 1× postgres-exporter-all untuk 2 TimescaleDB, 1× redis-exporter untuk redis-shared, + mosquitto/nats/node/cadvisor) untuk aggregasi metrik; resource container dipantau via cAdvisor/node-exporter.
 - **Infrastructure Layer:** NATS untuk event bus, Cloudflare Tunnel (scaffold) untuk akses aman dari internet
 
 ### Diagram Alur Data End-to-End (Saat Ini)
 
 ```
 ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
-                                            → TimescaleDB (time-series)
-                                            → Redis (cache)
-                                             → NATS (telemetry.ingest + telemetry.batch)
-                                                  → Analytics Service → TimescaleDB (analytics)
-                                                   → WS-Gateway (subscribe mqtt.> / system.status) → WebSocket → Dashboard (realtime telemetry)
-                                                  → Stream Service → MediaMTX (HLS/WebRTC) + MinIO bucket `stream` (snapshot/recording)
-                                                 → (future) Alert Service
-                                                 → (future) Audit Service
+                                             → TimescaleDB (time-series)
+                                             → Redis (cache)
+                                              → NATS (telemetry.ingest + telemetry.batch)
+                                                   → Analytics Service → TimescaleDB (analytics)
+                                                    → WS-Gateway (subscribe mqtt.> / system.status) → WebSocket → Dashboard (realtime telemetry)
+                                                   → Stream Service → MediaMTX (HLS/WebRTC) + MinIO bucket `stream` (snapshot/recording)
+                                                  → Alert Service → Notification (Telegram/Email/Push)
 
 CCTV / ESP32-CAM → RTSP → MediaMTX → Stream Service (register path) → HLS/WebRTC → Dashboard Live View
+Stream Service → snapshot → MinIO bucket `stream` → ML Service (detect) → MinIO bucket `ml-result`
 
 User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
-                                      → Module Service (CRUD modules/nodes)
-                                      → Analytics Service (query agregasi)
-                                      → Control Service (perintah actuator)
-                                      → Stream Service (CRUD stream + snapshot/recording)
-                                      → WS-Gateway (WebSocket real-time, route /ws)
+                                       → Module Service (CRUD modules/nodes)
+                                       → Analytics Service (query agregasi)
+                                       → Control Service (perintah actuator)
+                                       → Stream Service (CRUD stream + snapshot/recording)
+                                       → ML Service (inference)
+                                       → WS-Gateway (WebSocket real-time, route /ws)
+                                       → Export Service (CSV export)
 ```
 
 ### Diagram Alur Data (Mermaid)
@@ -109,11 +111,12 @@ flowchart TB
     MTX --> DASH
     STR --> MINIO[("MinIO multi-bucket")]
     MINIO --> BSTR["bucket stream"]
-    MINIO --> BML["bucket ml-vision"]
-    MINIO --> BOTA["bucket ota"]
+    MINIO --> BML["bucket ml"]
+    MINIO --> BMLR["bucket ml-result"]
     STR -.->|snapshot to AI detect| ML["ML Vision API"]
     ML -->|read frame| BSTR
     ML --> BML
+    ML -->|write result| BMLR
     ML --> MLDB[("MariaDB ML")]
     ML ==>|detection result| NATS
     NATS ==> ALERT["Alert Service"]
@@ -173,25 +176,23 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | Control | `mariadb-control` | — | — | — | ✅ Running |
 | Stream | `mariadb-stream` | — | — | bucket `stream` | ✅ Running |
 | Alert | `mariadb-alert` | — | DB1 `alert` | — | ✅ Running |
-| ML / Vision | `mariadb-ml` | — | — | bucket `ml-vision` | ✅ Running |
-| OTA | `mariadb-ota` | — | — | bucket `ota` | ⬜ Belum |
+| ML / Vision | `mariadb-ml` | — | — | bucket `ml` | ✅ Running |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
 | Export | — | `timescaledb-module` (read) | DB3 `export` | — | ✅ Running |
 | Notification | `mariadb-notification` | — | DB2 `notification` | — | ✅ Running |
 | Audit | `mariadb-audit` | — | — | — | ✅ Running |
-| Webhook | `mariadb-webhook` | — | — | — | ⬜ Belum |
-| Monitor | — (docker stats) | — | — | — | ⬜ Dihapus (service di-remove) |
+| DLQ | — | — | — | — | ✅ Running |
 
-> **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`, `minio-ota`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml-vision`, `ota`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml-vision`.
+> **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml`, `ml-result`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml`.
 >
-> **Keputusan Konsolidasi Redis (2026-07-16, ADR-004):** Tidak lagi membuat instance Redis terpisah per service (`redis-module`, `redis-alert`, `redis-notification`, `redis-export`). Cukup **1 instance Redis bersama** (`redis-shared`) dengan **multi-DB logical** (module=DB0, alert=DB1, notification=DB2, export=DB3) + **1 exporter bersama**. Redis hanya cache/ephemeral store (bukan sumber kebenaran domain), sehingga konsolidasi ini tidak melanggar prinsip *Database-per-Service* (MariaDB/TimescaleDB tetap per-service). cctv-capture tetap pakai DB0 milik module.
-
+> **Keputusan Konsolidasi Redis (2026-07-16, ADR-004):** Tidak lagi membuat instance Redis terpisah per service (`redis-module`, `redis-alert`, `redis-notification`, `redis-export`). Cukup **1 instance Redis bersama** (`redis-shared`) dengan **multi-DB logical** (module=DB0, alert=DB1, notification=DB2, export=DB3) + **1 exporter bersama**. Redis hanya cache/ephemeral store (bukan sumber kebenaran domain), sehingga konsolidasi ini tidak melanggar prinsip *Database-per-Service* (MariaDB/TimescaleDB tetap per-service).
+>
 > **Keputusan Konsolidasi Exporter (2026-07-16, ADR-005):** 11 container exporter terpisah (8× mysqld, 2× postgres, 1× redis) digabung menjadi **3 container per tipe** (`mysqld-exporter-all`, `postgres-exporter-all`, `redis-exporter`). Tiap container menjalankan beberapa proses exporter pada port berbeda (satu per DB target). Jumlah job & `instance` label di Prometheus **tetap sama** (per-DB) → dashboard Grafana tidak berubah. Tujuannya mengurangi beban orkestrasi container, bukan mengurangi cakupan metrik. cAdvisor, node-exporter, mosquitto-exporter, nats-exporter, kong tetap 1 masing-masing (sudah shared).
 
-**Object storage:** 1× instance MinIO bersama (`minio`, multi-bucket + scoped access key) untuk Stream / ML / OTA.
+**Object storage:** 1× instance MinIO bersama (`minio`, multi-bucket + scoped access key) untuk Stream / ML.
 **Cache:** 1× instance Redis bersama (`redis-shared`, multi-DB) untuk Module / Alert / Notification / Export.
-**Total instance database terpisah:** 10× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **14 instance** (turun dari 17 setelah konsolidasi Redis)
-**Sudah berjalan:** 4× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **8 instance**
+**Total instance database terpisah:** 8× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **12 instance** (turun dari 17 setelah konsolidasi Redis)
+**Sudah berjalan:** 8× MariaDB · 2× TimescaleDB · 1× Redis · 1× MinIO = **12 instance**
 
 ---
 
@@ -217,15 +218,15 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `module/` ✅ — Service manajemen device & telemetri (Go)
   - `analytics/` ✅ — Service agregasi data time-series (Go)
   - `wsgateway/` ✅ — WebSocket bridge NATS → Dashboard (Go)
-  - `export/` ⬜ — Service ekspor data untuk akses eksternal/Python (Go/Python)
+  - `export/` ✅ — Service ekspor data CSV (Go)
   - `control/` ✅ — Service kontrol device
   - `alert/` ✅ — Service evaluasi threshold
-  - `stream/` ⬜ — Service streaming video
-  - `ota/` ⬜ — Service update firmware
-  - `notification/` ⬜ — Service notifikasi multi-channel
-  - `audit/` ⬜ — Service audit log
-  - `webhook/` ⬜ — Service webhook eksternal
-- **`ml/`** ⬜ — Service Python untuk YOLOv8 inference
+  - `stream/` ✅ — Service streaming video & MediaMTX path registry
+  - `ml/` ✅ — Service YOLOv8 inference (Python)
+  - `notification/` ✅ — Service notifikasi multi-channel
+  - `audit/` ✅ — Service audit log
+  - `dlq/` ✅ — DLQ Saga Worker (Go)
+  - `cctv-capture/` ⬜ — External script CCTV capture (tidak di-deploy via compose)
 - **`dashboard/`** ✅ — Frontend React untuk antarmuka pengguna
 - **`docs/`** — Dokumentasi kontrak API, NATS subjects, MQTT topics, webhook payload schema
 - **`volumes/`** — Persistent data storage (diabaikan oleh git)
@@ -358,14 +359,14 @@ Saat ini Prometheus **scrape langsung** tiap service (`/metrics`). Target akhir 
 
 ### Service Mesh — Out of Scope (Keputusan Sadar)
 
-Literatur 2026 (Ilir Ivezaj) menyebut service mesh (Envoy/Istio) untuk mTLS & traffic control. Untuk TA ini **sengaja di luar scope** dan diganti dengan:
+Literatur 2026 (Ilir Ivezaj) menyebut service mesh (Envoy/Istio) untuk mTLS & traffic control. Untuk sistem ini **sengaja di luar scope** dan diganti dengan:
 - **mTLS antar-service:** ditangani via NATS ACL per-user + Mosquitto ACL (sudah ada), bukan sidecar mesh.
 - **Traffic control & retry:** di-handle di level aplikasi via pola Resilience (Circuit Breaker/Bulkhead, lihat seksi terkait).
-- **Alasan:** mengurangi kompleksitas operasional & resource (sidecar per pod berat untuk 13+ service di 1 host). Kong + NATS ACL sudah cukup untuk kebutuhan TA.
+- **Alasan:** mengurangi kompleksitas operasional & resource (sidecar per pod berat untuk 13+ service di 1 host). Kong + NATS ACL sudah cukup untuk kebutuhan sistem.
 
 ### SLA & Latency Budget
 
-Target kinerja end-to-end yang terukur (TA scale, ~30 node):
+Target kinerja end-to-end yang terukur (production scale, ~30 node):
 
 | Jalur | Budget Latency | Catatan |
 |---|---|---|
@@ -394,21 +395,20 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `system.status` | Alert Service | WS-Gateway (`/ws/system-status`) | Pub/Sub | ✅ Aktif (route WS + publisher Alert Service jalan; dashboard `NotificationContext` konsumsi) |
 | `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
 | `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ✅ Dipublish |
-| `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module, Control, Stream) & ✅ di-consume oleh Audit Service |
+| `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module, Control, Stream, ML, Alert, Notification, Export, DLQ) & ✅ di-consume oleh Audit Service |
 | `metrics.health` | Semua service | Prometheus | Pub/Sub | ⬜ Belum (masih scrape langsung) |
-| `webhook.delivery` | Webhook Service | Audit Service | Pub/Sub | ⬜ Belum |
-| `webhook.retry` | Webhook Service | Webhook Service (internal) | Queue | ⬜ Belum |
+| `webhook.delivery` | Webhook (future) | Audit Service | Pub/Sub | ⬜ Belum |
+| `webhook.retry` | Webhook (future) | Webhook (future) | Queue | ⬜ Belum |
 
 ### Saga Events
 
 | Subject | Publisher | Subscriber(s) | Pattern |
-|---|---|---|---|
+|---|---|---|
 | `saga.telemetry.>` | Module Service | Alert, Analytics | Saga Step |
 | `saga.control.>` | Control Service | ESP32 / Mosquitto | Saga Step |
-| `saga.ota.>` | OTA Service | Module, Notification | Saga Step |
 | `saga.alert.ml` | Alert Service | Notification Service | Saga Step |
 | `saga.*.compensate` | Service terkait | Service terkait | Compensating Transaction |
-| `saga.*.dlq` | NATS (auto) | Audit Service | Dead Letter Queue |
+| `saga.*.dlq` | NATS (auto) | DLQ Worker | Dead Letter Queue |
 
 ### Catatan Penting: Core NATS vs JetStream
 
@@ -435,7 +435,7 @@ Sistem menggunakan **Choreography-based Saga** untuk menangani transaksi terdist
 
 ### Implementasi Aktual vs Aspirasional
 
-> **Status kejujuran arsitektur:** Prinsip *Resilience by Design* (baris 28) menyebut saga + DLQ + compensating transaction. Saat ini yang **sudah jalan** hanya narasi choreography & publish `saga.*` (Module/Control). Yang **belum** terimplementasi: DLQ consumer (Audit Service consume `saga.*.dlq`), compensating transaction nyata, dan `trace_id` end-to-end. Item ini wajib diselesaikan sebelum klaim "resilient" dapat dipertahankan di defense.
+> **Status kejujuran arsitektur:** Prinsip *Resilience by Design* (baris 28) menyebut saga + DLQ + compensating transaction. Saat ini yang **sudah jalan** hanya narasi choreography & publish `saga.*` (Module/Control). Yang **belum** terimplementasi: DLQ consumer (Audit Service consume `saga.*.dlq`), compensating transaction nyata, dan `trace_id` end-to-end. Item ini wajib diselesaikan sebelum klaim "resilient" dapat dipertahankan di lingkungan produksi.
 
 | Komponen Saga | Status |
 |---|---|
@@ -533,17 +533,14 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | 2 | Module Service (onboarding + telemetry ingest) | ✅ Selesai | P2 |
 | 3 | Analytics + WS-Gateway | ✅ Selesai | P2 |
 | 4 | Control Service (manual + scheduler + emergency/resume) | ✅ Selesai | P1 |
-| 5 | Alert Service | ✅ Selesai | P1 |
-| 5 | Notification Service | ✅ Selesai | P1 |
+| 5 | Alert Service + Notification Service | ✅ Selesai | P1 |
 | 5/6 | Stream Service (MediaMTX + MinIO) | ✅ Selesai | P3 |
 | 6 | ML / Vision API (YOLOv8 Model Registry) | ✅ Selesai | P3 |
 | 6b/6c | Snapshot→AI Detection + CCTV Recording | ✅ Selesai | P3 |
+| 7 | DLQ Saga Worker | ✅ Selesai | P1 |
 | 8 | Audit Service | ✅ Selesai | P1 |
 | 9 | Dashboard Lengkap | ✅ Selesai | P3 |
 | 9b | Export Service / Data API | ✅ Selesai | P3 |
-| 10 | OTA Service | ⬜ Future | P4 |
-| 11 | Prometheus Metrics Service | ⬜ Future | P4 |
-| 12 | Cloudflare Tunnel | ⬜ Future | P4 |
 
 > **Catatan:** Detail kontrak firmware (Control), endpoint ML, dan implementasi Stream (ffmpeg/ffprobe) berada di `roadmap.md`. Keputusan arsitektur (MinIO, Export Opsi A, Shared JWT) berada di [`adr.md`](./adr.md`).
 
@@ -589,6 +586,9 @@ Untuk menjaga konsistensi hak akses lintas mikroservis, berikut adalah detail pe
 | **Stream (Read)** | List Streams, Snapshots, Play HLS (MediaMTX) | `✓` | `✓` | `✓` | Read-only streaming video & foto galeri. |
 | **Stream (Write)** | CRUD Streams, Capture AI Detect, Record control | `✗` | `✓` | `✓` | Operator/Admin untuk kelola stream & ambil foto. |
 | **ML Service** | Model Registry, YOLO weights upload, Inference API | `✓` | `✓` | `✓` | Read/Inference=semua, CRUD/Upload model=operator/admin. |
+| **Export Service** | CSV export telemetry/data | `✓` | `✓` | `✓` | Read-only export data untuk eksternal. |
+| **Notification** | Alert notifications (Telegram, Email, Push) | `✗` | `✗` | `✓` | Admin only untuk konfigurasi channel; alert triggers otomatis. |
+| **DLQ Worker** | Dead Letter Queue consumer | `✗` | `✗` | `✓` | Admin only untuk investigasi pesan gagal. |
 
 Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikroservis (*defense-in-depth*) setelah lolos validasi JWT di Kong Gateway.
 
@@ -608,8 +608,8 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 
 ### Target Prometheus Saat Ini
 
-> **Total: 31 target** (`count(up)` = 31, 0 DOWN) — sesuai realita live per `logs.md` §13 #10 / #4.
-> Sesi **C/D belum di-merge**, sehingga angka di bawah menggunakan *current reality* (compose + `infra/prometheus/prometheus.yml` on-disk), bukan snapshot branch lain. Keputusan konsolidasi ADR-004/ADR-005 (Redis & MariaDB diekspor via exporter tunggal) **tidak diubah** — jumlah *instance database* tetap 14 (lihat §"Database Isolation"), sedangkan jumlah *target Prometheus* adalah 31 karena beberapa target merepresentasikan pelabelan per-DB (mis. `redis-shared` = 4 series DB0–DB3).
+> **Total: 30 target** (`count(up)` = 30, 0 DOWN) — sesuai realita live per `logs.md` §13 #10 / #4.
+> Sesi **C/D belum di-merge**, sehingga angka di bawah menggunakan *current reality* (compose + `infra/prometheus/prometheus.yml` on-disk), bukan snapshot branch lain. Keputusan konsolidasi ADR-004/ADR-005 (Redis & MariaDB diekspor via exporter tunggal) **tidak diubah** — jumlah *instance database* tetap 12 (lihat §"Database Isolation"), sedangkan jumlah *target Prometheus* adalah 30 karena beberapa target merepresentasikan pelabelan per-DB (mis. `redis-shared` = 4 series DB0–DB3).
 
 **A. Self / Gateway (2)**
 | Target | Endpoint | Status |
@@ -617,7 +617,7 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | `prometheus` | `localhost:9090` | ✅ UP |
 | `kong` (instance `kong-gateway`) | `kong:8001/metrics` | ✅ UP |
 
-**B. Application Services (11)**
+**B. Application Services (13)**
 | Target | Endpoint | Status |
 |---|---|---|
 | `auth-service` | `auth:8080/metrics` | ✅ UP |
@@ -631,6 +631,8 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | `notification-service` | `notification:8080/metrics` | ✅ UP |
 | `export-service` | `export:8080/metrics` | ✅ UP |
 | `ml-service` | `ml:8080/metrics` | ✅ UP |
+| `dlq-service` | `dlq:8080/metrics` | ✅ UP |
+| `kong` | `kong:8001/metrics` | ✅ UP |
 
 **C. Database Exporters (11)**
 | Target | Endpoint | Status |
@@ -707,43 +709,39 @@ Sesuai AGENTS.md (wajib unit test pada layer `service`/`repository`), berikut st
 
 ---
 
-## 🎓 TA-Scale Implementation Roadmap
+## 🚀 Implementation Roadmap
 
-Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butuh keahlian infrastruktur enterprise) dari **future enterprise work** (didokumentasikan sebagai evolusi, bukan dikerjakan di TA). Tujuannya: klaim arsitektur tetap defensible tanpa berlebihan di depan penguji.
+Roadmap ini memisahkan **implementasi praktis** (yang dapat diselesaikan dengan infrastruktur standar Docker Compose) dari **enterprise evolution** (yang membutuhkan infrastruktur tambahan). Tujuannya: memastikan arsitektur tetap defensible tanpa berlebihan.
 
-### ✅ Dikerjakan di TA (Reliable, No Heavy Infra)
+### ✅ Practical Implementation
 
-| # | Item | Mengapa TA-relevant | Hint / Cara Kerja |
+| # | Item | Reason | Hint / Approach |
 |---|---|---|---|
-| 1 | **DLQ Saga (NATS Advisory)** | Bukti nyata resilience, bukan narasi | Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → simpan pesan gagal ke tabel `audit` (`mariadb-audit`). Cukup Go + 1 tabel. Tidak butuh K8s/Vault. |
-| 2 | **Lengkapi Audit Compliance** | Infrastruktur sudah ada (Audit Service + `audit.log`) | Pastikan **semua** service (Control, Stream, ML, Notification) publish `audit.log` ke NATS. Audit Service sudah consume — tinggal lengkapi publisher. |
-| 3 | **CI/CD Sederhana (GitHub Actions)** | AGENTS.md sudah wajibkan; gampang | Workflow YAML: `go build` + `go vet` + `docker build` tiap push ke `main`. Tanpa K8s — cukup Docker Compose. |
-| 4 | **Pertahankan `.env` (jangan Vault)** | `.env` + `.env.example` sudah best-practice dev | Pastikan `.env` **tidak di-commit** (cek `.gitignore`). Itu sudah cukup "compliance" untuk TA. Jangan pindah ke Vault (terlalu berat). |
-| 5 | **Unit Test kritis (80%)** | AGENTS.md wajibkan | Fokus layer `service`/`repository` dengan mock sederhana. Tidak perlu integration test berat di awal. |
+| 1 | **DLQ Saga (NATS Advisory)** | Concrete resilience proof | Subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → simpan pesan gagal ke tabel `audit` (`mariadb-audit`). Cukup Go + 1 tabel. |
+| 2 | **Lengkapi Audit Compliance** | Infrastructure already exists | Pastikan **semua** service (Control, Stream, ML, Notification) publish `audit.log` ke NATS. Audit Service sudah consume — tinggal lengkapi publisher. |
+| 3 | **CI/CD (GitHub Actions)** | Standard practice | Workflow YAML: `go build` + `go vet` + `docker build` tiap push ke `main`. Cukup Docker Compose. |
+| 4 | **Environment Configuration** | `.env` + `.env.example` best practice | Pastikan `.env` **tidak di-commit** (cek `.gitignore`). |
+| 5 | **Unit Test kritis (80%)** | Standard requirement | Fokus layer `service`/`repository` dengan mock sederhana. |
 
-> **Catatan Tambahan (penulis — Teknik Fisika):** Saya bukan lulusan informatika, sehingga item di atas dipilih karena (a) tidak butuh orchestration/K8s, (b) tidak butuh secrets manager eksternal, (c) langsung terlihat hasilnya di defense. Pola seperti circuit breaker sudah didokumentasikan di planning sebagai *design*, implementasinya bisa minimal (cukup timeout + retry di HTTP client).
+### 🔮 Future Enterprise Work (Documented, Not Planned)
 
-### 🔮 Future Enterprise Work (Didokumentasikan, BUKAN di TA)
-
-| Item | Alasan Diluar TA | Status |
+| Item | Reason Outside Scope | Status |
 |---|---|---|
 | Kubernetes Orchestration + HPA | Butuh cluster terpisah, bukan Compose | Future |
 | HashiCorp Vault / Secrets Rotation | Butuh server PKI terpisah | Future |
-| Chaos Engineering (GameDays) | Butuh tool + eksperimen terkontrol | Future |
-| Multi-region DR (geo-replication) | Butuh 2 host beda lokasi fisik | Future |
+| Chaos Engineering | Butuh tool + eksperimen terkontrol | Future |
+| Multi-region DR | Butuh 2 host beda lokasi fisik | Future |
 | Service Mesh (Istio/Envoy) | Sidecar berat untuk 13+ service | Out-of-scope (sudah di seksi HA) |
-| Live Jaeger/OTel Tracing | Collector berat; `trace_id` di log cukup untuk TA | Future |
+| Live Jaeger/OTel Tracing | Collector berat; `trace_id` di log cukup | Future |
 | SLO / Error Budget / Alerting otomatis | Butuh proses operasional mature | Future |
 
-> **Prinsip:** TA fokus pada **bukti arsitektur yang benar & berjalan di scale kecil**. Enterprise evolution di atas adalah *roadmap pengembangan lanjutan*, bukan kegagalan TA. Memisahkan keduanya justru menunjukkan pemahaman batas ruang lingkup (scope discipline).
-
-> **Konsistensi status `⬜`:** Setiap marka `⬜` (belum dikerjakan) di dokumen ini — baik di tabel service, fase, maupun saga — merupakan item yang termasuk kategori **Future Enterprise Work** di atas, kecuali secara eksplisit masuk daftar "Dikerjakan di TA". Dengan aturan ini, tidak ada `⬜` yang implicitly diklaim sebagai kegagalan TA.
+> **Principle:** Focus on **proven architecture that works at small scale**. Enterprise evolution above is a *future development roadmap*, not a failure of the current design. Keeping the two separate demonstrates scope discipline.
 
 ---
 
 ## ✅ Kriteria Selesai
 
-- Semua service dan 14 instance database dalam status `healthy` setelah `docker compose up -d`
+- Semua service dan 12 instance database dalam status `healthy` setelah `docker compose up -d`
 - Tidak ada service yang mengakses database milik service lain (verifikasi via environment variables dan network policy)
 - End-to-end flow ESP32 → Module → NATS → WebSocket → Dashboard berjalan ✅
 - End-to-end flow Module → Analytics → Dashboard berjalan ✅
@@ -754,14 +752,14 @@ Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butu
 - End-to-end flow Metrics: semua service → NATS → Prometheus → /metrics berjalan
 - Kong JWT validation berfungsi pada semua protected routes ✅
 - WebSocket Gateway dengan JWT authentication ✅
-- Webhook Service dapat mengirim event ke endpoint eksternal dengan retry mechanism — **Future P4** (belum dikerjakan di TA)
+- Webhook Service dapat mengirim event ke endpoint eksternal dengan retry mechanism — **Future P4** (belum dikerjakan dalam fase ini)
 - Semua service memiliki unit test dengan minimal 80% code coverage
 
 ---
 
 ## 📝 Catatan Teknis
 
-- **Bahasa Pemrograman:** Go 1.22+ untuk microservices, Python untuk Vision API, JavaScript/React untuk Dashboard
+- **Bahasa Pemrograman:** Go 1.26 untuk microservices, Python 3.11 untuk ML service, JavaScript/React untuk Dashboard
 - **Container Runtime:** Docker Compose untuk development dan staging
 - **Message Broker:** NATS JetStream untuk event bus, Mosquitto untuk MQTT
 - **Database:** MariaDB 10.11 untuk data relasional, TimescaleDB 2.17 untuk time-series, Redis 7 untuk caching, MinIO untuk object storage
@@ -786,7 +784,7 @@ Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butu
 
 ### Capacity & Sizing (Estimasi Throughput)
 
-| Metrik | Estimasi (TA scale) | Dampak |
+| Metrik | Estimasi (production scale) | Dampak |
 |---|---|---|
 | Node aktif | ~10–30 ESP32 | Telemetry per node 5s → 6 msg/node/menit |
 | `telemetry.ingest` rate | ~180 msg/menit (30 node) | Core NATS fan-out WS — ringan |
@@ -805,7 +803,7 @@ Roadmap ini memisahkan **yang dikerjakan dalam skala TA** (realistis, tidak butu
 | NATS/Kong single-instance SPOF | Event bus / gateway mati → sistem lumpuh | ✅ Ditambah seksi HA & Resilience (NATS 3-node cluster + JetStream R=2, Kong 2+ replica di prod) |
 | Saga DLQ/tracing hanya narasi | Kegagalan terdistribusi tak terinvestigasi | ⬜ Perlu implementasi `saga.*.dlq` consumer (Audit) + `trace_id` (lihat seksi Saga) |
 | Tidak ada CI/CD | Manual build & deploy rawan human error | Setup GitHub Actions atau GitLab CI sederhana |
-| Shared `JWT_SECRET` lintas service | Melanggar Zero-Trust Internal | Diterima untuk TA (sama secret, validasi di service masing-masing); produksi disarankan per-service key + mTLS |
+| Shared `JWT_SECRET` lintas service | Melanggar Zero-Trust Internal | Diterima untuk skala ini (sama secret, validasi di service masing-masing); produksi disarankan per-service key + mTLS |
 
 ---
 

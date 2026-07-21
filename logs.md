@@ -37,6 +37,18 @@
 
 ---
 
+### Dokumentasi — Integration Guide untuk Stream Service
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Baca seluruh source code `services/stream/` (main.go, handler, service, repository, model, config, clients: mediamtx/minio/ml, middleware). |
+| 2 | ✅ | Baca `docs/planning.md` (300 baris pertama) untuk konteks arsitektur. |
+| 3 | ✅ | Buat `docs/integration-guides/stream.md` covering: overview, REST API endpoints (method/path/body/auth), request/response contracts, MediaMTX integration, MinIO integration, ML service integration, NATS subjects (none), environment variables, database schema, dan example curl commands. |
+
+**Keputusan Teknis:** Dokumentasi ditulis sepenuhnya dalam Bahasa Inggris sesuai aturan proyek. Semua endpoint, field, dan contoh respons didasari pada kode sumber aktual (bukan spekulasi). Stream service tidak menggunakan NATS (hanya REST + outbound HTTP ke MediaMTX/MinIO/ML). Directory `docs/integration-guides/` dibuat baru untuk menampung guide per-service.
+
+---
+
 ## 2026-07-17
 
 ### Infrastruktur & Dashboard — MQTT Broker, Prometheus Targets, WS Live Monitor
@@ -1100,4 +1112,16 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 - Outbox relay: business+outbox ditulis 1 TX (`unsent=1` → relay publish dengan header `Nats-Msg-Id=verify-msg-001` → `unsent=0`, `MarkOutboxSent` sukses). Bukti no-loss saat NATS down: relay simpan row `sent=false` lalu kirim saat konek.
 - Consumer-side idempotency: `Store.SeenMsgID` → `first-seen=false`, setelah `MarkMsgID` → `true`, `other=false`. Dedup `msg_id` via `processed_msgs` (MariaDB audit) terbukti.
 - Catatan `Nats-Msg-Id`: berlaku sebagai server-dedup pada **JetStream** subject; `audit.log` adalah **Core NATS** subject sehingga dedup sejati bergantung pada consumer-side (`SeenMsgID`) — sesuai desain ADR-007.
+### Dokumentasi — Integration Guide Analytics Service
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menyusun [docs/integration-guides/analytics.md](file:///home/almuzky/TA/Microservices/docs/integration-guides/analytics.md) berdasarkan source code aktual `services/analytics/` (handler, service, tsdb, nats subscriber, middleware, model, config) + `infra/timescaledb/analytics/init.sql` + `planning.md`. |
+| 2 | ✅ | Sesi pembacaan kode: `main.go`, `internal/config/config.go`, `internal/model/model.go`, `internal/handler/handler.go`, `internal/service/service.go`, `internal/tsdb/tsdb.go`, `internal/nats/subscriber.go`, `internal/middleware/auth.go`, `internal/middleware/prometheus.go`, `internal/service/service_test.go`, `internal/tsdb/tsdb_test.go`, `internal/testdriver/driver.go`. |
+| 3 | ✅ | Dokumen mencakup: Overview, REST API Endpoints (method/path/query/response/auth), Input Contracts (NATS `telemetry.batch`), Output Contracts (REST wrapper + Prometheus), Integration Steps (frontend & backend), Environment Variables, Database Schema Overview (hypertable + continuous aggregates), Example curl commands. |
+
+**Keputusan Teknis:** Integration guide ditulis sepenuhnya berbasis source code aktual (bukan asumsi). Semua endpoint, field, format request/response, NATS subject, dan skema TimescaleDB terdokumentasi secara akurat. Bahasa Inggris sesuai standar proyek (AGENTS.md §1).
+
+---
+
 - `go build`+`vet`+`gofmt` BERSIH (module/control/alert/audit). Container verification di-stop setelah sesi (`docker compose stop`). Tidak ada orphan container.

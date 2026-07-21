@@ -42,10 +42,11 @@ export function withToken(url) {
       path = url;
     }
   }
+  const apiPath = path.startsWith('/v1/') || path === '/v1' ? path : `/v1${path.startsWith('/') ? '' : '/'}${path}`;
   const base = API_BASE || 'http://localhost:8000';
-  const sep = path.includes('?') ? '&' : '?';
+  const sep = apiPath.includes('?') ? '&' : '?';
   const token = getToken();
-  return `${base}${path}${token ? `${sep}token=${encodeURIComponent(token)}` : ''}`;
+  return `${base}${apiPath}${token ? `${sep}token=${encodeURIComponent(token)}` : ''}`;
 }
 
 export function setSession({ access_token, refresh_token, user }) {
@@ -125,9 +126,11 @@ export async function request(path, { method = 'GET', body, auth = false, header
     if (token) finalHeaders.Authorization = `Bearer ${token}`;
   }
 
+  const apiPath = path.startsWith('/v1/') || path === '/v1' ? path : `/v1${path.startsWith('/') ? '' : '/'}${path}`;
+
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(`${API_BASE}${apiPath}`, {
       method,
       headers: finalHeaders,
       body: body != null ? JSON.stringify(body) : undefined,

@@ -1184,4 +1184,8 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 4 | ✅ | `dashboard/nginx.conf`: Menambahkan regex location proxy untuk seluruh endpoint backend ke `http://kong:8000` pada server Nginx produksi. |
 | 5 | ✅ | Verifikasi via `curl -X OPTIONS` dengan header `Origin: http://192.168.1.100:5173` → Kong mengembalikan `200 OK` dengan header CORS lengkap (`Access-Control-Allow-Origin: http://192.168.1.100:5173`). |
 
-**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses. Bila diakses dari peranti lain dalam jaringan lokal (mis. `http://192.168.1.50:5173`), request API & WebSocket secara otomatis diarahkan ke `http://192.168.1.50:8000` (Kong Gateway pada mesin host) tanpa perlu mengubah file `.env` manual.
+| 6 | ✅ | `infra/kong/kong.yml`: Menambahkan rute `-v1` dengan plugin `request-transformer` untuk secara otomatis mengupas (strip) prefix `/v1` dan membelokkan request ke backend upstream tanpa perlu mengubah kode microservices Go/Python. |
+| 7 | ✅ | `dashboard/src/api/client.js`: Fungsi `request()` dan `withToken()` otomatis memformat path dengan prefix `/v1`. |
+
+**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Bila diakses dari peranti lain dalam jaringan lokal atau internet (mis. `http://192.168.1.50:5173/v1/auth/login`), request API & WebSocket secara otomatis diproses oleh Kong Gateway via reverse proxy.
+

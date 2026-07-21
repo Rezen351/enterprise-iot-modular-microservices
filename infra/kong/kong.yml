@@ -276,6 +276,25 @@ services:
 
     routes:
       # ── Public routes (no JWT required) ──────────────────────────
+      - name: auth-public-v1
+        paths:
+          - ~/v1(?<rel_uri>/auth/login)
+          - ~/v1(?<rel_uri>/auth/register)
+          - ~/v1(?<rel_uri>/auth/refresh)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 60
+              hour: 2000
+              policy: local
+              fault_tolerant: true
+              error_message: "Too many login attempts. Please try again later."
+
       - name: auth-public
         paths:
           - /auth/login
@@ -299,6 +318,16 @@ services:
       # ── Health check (public, NOT rate-limited) ──────────────────
       # Probes must stay reachable under load, so /health gets only the
       # generous global limit instead of the strict auth-public one.
+      - name: auth-health-v1
+        paths:
+          - ~/v1(?<rel_uri>/health)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+
       - name: auth-health
         paths:
           - /health
@@ -308,6 +337,29 @@ services:
         strip_path: false
 
       # ── Protected routes (JWT required) ──────────────────────────
+      - name: auth-protected-v1
+        paths:
+          - ~/v1(?<rel_uri>/auth/me)
+          - ~/v1(?<rel_uri>/auth/logout)
+          - ~/v1(?<rel_uri>/auth/password)
+          - ~/v1(?<rel_uri>/auth/sessions)
+          - ~/v1(?<rel_uri>/auth/account)
+          - ~/v1(?<rel_uri>/auth/users.*)
+          - ~/v1(?<rel_uri>/auth/roles.*)
+          - ~/v1(?<rel_uri>/auth/permissions.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
       - name: auth-protected
         paths:
           - /auth/me
@@ -326,17 +378,11 @@ services:
           - OPTIONS
         strip_path: false
         plugins:
-          # JWT Verification — Kong memverifikasi token sebelum diteruskan ke service
-          # Catatan: Auth Service menggunakan JWT_SECRET sendiri (bukan Kong consumer secret).
-          # Kong di sini bertindak sebagai rate-limiter & entry point;
-          # validasi claims dilakukan oleh Auth Service middleware (JWTAuth).
           - name: request-termination
             config:
               status_code: 401
               message: "missing or invalid Authorization header"
             enabled: false   # disabled — JWT validation handled by the service itself
-
-          # Rate-limit untuk route terlindungi
           - name: rate-limiting
             config:
               minute: 300
@@ -354,6 +400,22 @@ services:
     read_timeout: 30000
 
     routes:
+      - name: module-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/modules.*)
+          - ~/v1(?<rel_uri>/nodes.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: module-routes
         paths:
           - /modules
@@ -382,6 +444,21 @@ services:
     write_timeout: 60000
     read_timeout: 60000
     routes:
+      - name: wsgateway-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/ws.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: wsgateway-routes
         paths:
           - /ws
@@ -406,6 +483,22 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: analytics-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/analytics.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+              error_message: "Analytics request limit reached. Please try again later."
       - name: analytics-routes
         paths:
           - /analytics
@@ -423,7 +516,6 @@ services:
               error_message: "Analytics request limit reached. Please try again later."
 
   # Control Service — device command dispatch (manual + scheduled)
-  # JWT/RBAC (operator/admin) divalidated by Control Service middleware.
   - name: control-service
     host: control-upstream
     port: 8080
@@ -432,6 +524,21 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: control-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/control.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: control-routes
         paths:
           - /control
@@ -455,8 +562,7 @@ services:
               policy: local
               fault_tolerant: true
 
-  # Audit Service — append-only audit log API (sensitive, admin-only read).
-  # JWT validated + admin role enforced by Audit Service middleware.
+  # Audit Service — append-only audit log API
   - name: audit-service
     host: audit-upstream
     port: 8080
@@ -465,6 +571,21 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: audit-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/audit.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: audit-routes
         paths:
           - /audit
@@ -481,8 +602,6 @@ services:
               fault_tolerant: true
 
   # Alert Service — threshold evaluation API + alert history/notifications.
-  # JWT validated by Alert Service middleware (any authenticated user for reads;
-  # operator/admin for threshold mutations and alert acknowledgement).
   - name: alert-service
     host: alert-upstream
     port: 8080
@@ -491,6 +610,22 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: alert-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/alerts.*)
+          - ~/v1(?<rel_uri>/thresholds.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: alert-routes
         paths:
           - /alerts
@@ -511,7 +646,6 @@ services:
               fault_tolerant: true
 
   # Stream Service — CCTV stream metadata + MediaMTX path registry.
-  # JWT/RBAC (operator/admin for writes) validated by Stream Service middleware.
   - name: stream-service
     host: stream-upstream
     port: 8080
@@ -520,6 +654,23 @@ services:
     write_timeout: 120000
     read_timeout: 120000
     routes:
+      - name: stream-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/streams.*)
+          - ~/v1(?<rel_uri>/snapshots.*)
+          - ~/v1(?<rel_uri>/storage.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: stream-routes
         paths:
           - /streams
@@ -567,8 +718,7 @@ services:
               policy: local
               fault_tolerant: true
 
-  # ML SERVICE — YOLO model registry + inference. JWT/RBAC (operator/admin
-  # for writes, all roles for reads) validated by ML Service middleware.
+  # ML SERVICE — YOLO model registry + inference.
   - name: ml-service
     host: ml-upstream
     port: 8080
@@ -577,6 +727,21 @@ services:
     write_timeout: 60000
     read_timeout: 60000
     routes:
+      - name: ml-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/ml.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: ml-routes
         paths:
           - /ml
@@ -604,6 +769,21 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: notification-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/notifications.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: notification-routes
         paths:
           - /notifications
@@ -631,6 +811,21 @@ services:
     write_timeout: 30000
     read_timeout: 30000
     routes:
+      - name: export-routes-v1
+        paths:
+          - ~/v1(?<rel_uri>/export.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: export-routes
         paths:
           - /export
@@ -646,8 +841,7 @@ services:
               policy: local
               fault_tolerant: true
 
-  # MediaMTX HLS — proxied through Kong so dashboards play HLS via the gateway.
-  # /hls/{name}/index.m3u8 -> mediamtx:8888/{name}/index.m3u8
+  # MediaMTX HLS — proxied through Kong
   - name: mediamtx-hls-service
     host: mediamtx-hls-upstream
     port: 8888
@@ -656,6 +850,21 @@ services:
     write_timeout: 10000
     read_timeout: 10000
     routes:
+      - name: stream-hls-v1
+        paths:
+          - ~/v1(?<rel_uri>/hls.*)
+        strip_path: false
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: $(uri_captures['rel_uri'])
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
       - name: stream-hls
         paths:
           - /hls

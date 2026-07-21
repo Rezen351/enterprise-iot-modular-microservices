@@ -14,6 +14,7 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     proxy: {
+      '/v1': { target: KONG_URL, changeOrigin: true, ws: true },
       '/auth': { target: KONG_URL, changeOrigin: true },
       '/health': { target: KONG_URL, changeOrigin: true },
       '/modules': { target: KONG_URL, changeOrigin: true },

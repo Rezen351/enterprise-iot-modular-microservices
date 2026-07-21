@@ -1,4 +1,4 @@
-# IOT-Modular-Microservice
+# Enterprise IoT Modular Microservices
 
 > **Aeroponic monitoring and control system** built on a microservice architecture with database-per-service isolation, event-driven communication via NATS JetStream, and a centralized API Gateway via Kong.
 
@@ -6,21 +6,6 @@
 [![Docker](https://img.shields.io/badge/docker-compose-ready-brightgreen)]()
 [![Go](https://img.shields.io/badge/services-Go_%2B_Python-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
-
-This end-to-end microservice system is architected as a fortress of isolated services—each owning its own dedicated database with zero shared schemas or cross-service coupling—where NATS JetStream serves as the resilient event backbone, ensuring that a failure in the AI/ML vision pipeline, real-time video streaming layer, or analytics engine can never cascade into critical telemetry ingest, control workflows, or alerting systems; all external traffic is funneled through a hardened Kong API Gateway enforcing JWT authentication, role-based access control, rate-limiting, and strict CORS policies, while IoT devices stream real-time sensor telemetry via MQTT and operators interact with a React dashboard that consumes live WebSocket updates, time-series aggregations, and AI-powered detections—all securely exposed through an outbound-only Cloudflare Tunnel with no open ports; every business transaction is guaranteed through saga-based choreography with compensating transactions, dead-letter queues for failed events, idempotent consumers for exactly-once processing, and full auditability via correlation IDs propagated across NATS, MQTT, and HTTP, while Prometheus metrics from 31+ scrape targets feed Grafana dashboards for complete observability, giving you a production-grade, horizontally scalable, and fault-tolerant platform where each of the 13+ services can be independently built, tested, deployed, and evolved without risking the stability of the entire system.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [CI/CD](#cicd)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
 
 ---
 
@@ -101,8 +86,8 @@ See [docs/planning.md](./docs/planning.md) for the full architecture, bounded co
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<org>/<repo>.git
-cd <repo>
+git clone https://github.com/Rezen351/enterprise-iot-modular-microservices.git
+cd enterprise-iot-modular-microservices
 
 # 2. Copy environment file and fill in secrets
 cp .env.example .env
@@ -148,10 +133,10 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 
 | Stage | What it does |
 |-------|--------------|
-| **CI** | `gofmt` check, `go vet`, `go build` for all Go services; `pytest` for ML service; Docker build for all services; `npm ci` + lint + build for dashboard |
-| **CD** | On push to `main`: checkout, generate `.env` from secrets, `docker compose down`, `docker compose build --no-cache`, `docker compose up -d`, prune old images |
+| **CI** | `gofmt` check, `go vet`, `go build` for all Go services; `pytest` for ML service; Docker build & push to GHCR for all services; `npm ci` + lint + build for dashboard |
+| **CD** | On push to `main`: checkout, generate `.env` from secrets, `docker compose pull` from GHCR, `docker compose up -d`, prune old images |
 
-Deploys to a self-hosted runner via SSH/Docker.
+Deploys to a self-hosted runner via Docker.
 
 ---
 
@@ -171,7 +156,7 @@ Project documentation is organized as follows:
 | [docs/grafana-service-health.md](./docs/grafana-service-health.md) | Guide to reading the Grafana "Service Health" dashboard |
 | [docs/system-update.md](./docs/system-update.md) | System sync notes and infrastructure gap tracking |
 | [docs/integration-guides/](./docs/integration-guides/) | Per-service integration guides — API contracts, NATS/MQTT topics, database schema, curl examples, and error codes for each microservice |
-| [AGENTS.md](../AGENTS.md) | Project rules, coding guidelines, and AI agent workflow |
+| [AGENTS.md](./AGENTS.md) | Project rules, coding guidelines, and AI agent workflow |
 
 ---
 
@@ -197,7 +182,7 @@ Project documentation is organized as follows:
 
 ## Contributing
 
-See [AGENTS.md](../AGENTS.md) for project rules, coding standards, and commit conventions.
+See [AGENTS.md](./AGENTS.md) for project rules, coding standards, and commit conventions.
 
 General workflow:
 1. Create a feature branch

@@ -16,6 +16,19 @@ export default defineConfig({
     proxy: {
       '/auth': { target: KONG_URL, changeOrigin: true },
       '/health': { target: KONG_URL, changeOrigin: true },
+      '/modules': { target: KONG_URL, changeOrigin: true },
+      '/nodes': { target: KONG_URL, changeOrigin: true },
+      '/analytics': { target: KONG_URL, changeOrigin: true },
+      '/control': { target: KONG_URL, changeOrigin: true },
+      '/audit': { target: KONG_URL, changeOrigin: true },
+      '/alerts': { target: KONG_URL, changeOrigin: true },
+      '/thresholds': { target: KONG_URL, changeOrigin: true },
+      '/streams': { target: KONG_URL, changeOrigin: true },
+      '/snapshots': { target: KONG_URL, changeOrigin: true },
+      '/ml': { target: KONG_URL, changeOrigin: true },
+      '/notifications': { target: KONG_URL, changeOrigin: true },
+      '/export': { target: KONG_URL, changeOrigin: true },
+      '/hls': { target: KONG_URL, changeOrigin: true },
       // WebSocket live telemetry bridge (wsgateway behind Kong).
       // `ws: true` lets Vite forward the WebSocket upgrade handshake so the
       // dashboard's live MQTT monitor works against the dev server on :5173.

@@ -5,9 +5,20 @@
 // routes /auth/* to the Auth Service. Override with VITE_API_URL if needed.
 // ============================================================================
 
-const ENV_API_BASE = import.meta.env?.VITE_API_URL;
-export const API_BASE =
-  ENV_API_BASE !== undefined ? ENV_API_BASE : 'http://localhost:8000';
+function resolveApiBase() {
+  const envUrl = import.meta.env?.VITE_API_URL;
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (!envUrl || (envUrl.includes('localhost') && !isLocalhost)) {
+      return `${window.location.protocol}//${hostname}:8000`;
+    }
+    return envUrl;
+  }
+  return envUrl || 'http://localhost:8000';
+}
+
+export const API_BASE = resolveApiBase();
 
 // ---- Session helpers ------------------------------------------------------
 export const getToken = () => sessionStorage.getItem('token');

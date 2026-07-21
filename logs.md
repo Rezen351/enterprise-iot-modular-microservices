@@ -1170,3 +1170,18 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 3 | ✅ | Verifikasi lokal: parsing YAML workflow sukses (`python + yaml.safe_load`) dan perubahan hanya menyentuh konfigurasi checkout deploy tanpa mengubah job CI/CD lain. |
 
 **Keputusan Teknis:** Root cause murni konfigurasi `actions/checkout` sparse checkout cone mode. Solusi dipilih paling kecil (1 properti) tanpa mengubah daftar path atau alur deploy.
+
+---
+
+## 2026-07-21 — Vite Auto-Routing ke Kong via IP Luar
+
+### Otomatisasi Akses Vite ke Kong (External IP / Hostname)
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | `infra/kong/kong.yml`: Menambahkan `".*"` ke plugin `cors` `origins` agar Kong mengizinkan request cross-origin dari IP luar (`http://<ip-luar>:5173`) dengan `Access-Control-Allow-Origin` & `Access-Control-Allow-Credentials`. |
+| 2 | ✅ | `dashboard/src/api/client.js`: Fungsi `resolveApiBase()` menentukan `API_BASE` secara dinamis. Jika diakses dari IP/hostname luar dan `VITE_API_URL` mengarah ke `localhost` atau kosong, `API_BASE` otomatis menjadi `http://<window.location.hostname>:8000`. |
+| 3 | ✅ | `dashboard/vite.config.js`: Menambahkan proxy rules lengkap untuk semua endpoint backend microservices (`/modules`, `/nodes`, `/analytics`, `/control`, `/audit`, `/alerts`, `/thresholds`, `/streams`, `/snapshots`, `/ml`, `/notifications`, `/export`, `/hls`) di Vite dev server. |
+| 4 | ✅ | `dashboard/nginx.conf`: Menambahkan regex location proxy untuk seluruh endpoint backend ke `http://kong:8000` pada server Nginx produksi. |
+| 5 | ✅ | Verifikasi via `curl -X OPTIONS` dengan header `Origin: http://192.168.1.100:5173` → Kong mengembalikan `200 OK` dengan header CORS lengkap (`Access-Control-Allow-Origin: http://192.168.1.100:5173`). |
+
+**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses. Bila diakses dari peranti lain dalam jaringan lokal (mis. `http://192.168.1.50:5173`), request API & WebSocket secara otomatis diarahkan ke `http://192.168.1.50:8000` (Kong Gateway pada mesin host) tanpa perlu mengubah file `.env` manual.

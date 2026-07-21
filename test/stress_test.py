@@ -51,6 +51,15 @@ class Stats:
         idx = math.ceil((p / 100.0) * len(sorted_l)) - 1
         return sorted_l[max(0, min(idx, len(sorted_l) - 1))]
 
+    def p50(self) -> float:
+        return self.percentile(50)
+
+    def p99(self) -> float:
+        return self.percentile(99)
+
+    def status_code_distribution(self) -> dict:
+        return dict(self.status_counter)
+
     def error_rate(self) -> float:
         if self.total == 0:
             return 0.0
@@ -150,11 +159,23 @@ def run_breakpoint_test(base_url: str, token: str) -> dict:
     for lvl in levels:
         print(f"  -> Testing Concurrency={lvl['users']}, Target RPS={lvl['rps']}...")
         st = run_load_test(base_url, token, lvl["users"], lvl["duration"], lvl["rps"])
+        p50 = st.p50()
         p95 = st.percentile(95)
+        p99 = st.p99()
         err_rate = st.error_rate()
-        results.append({"users": lvl["users"], "target_rps": lvl["rps"], "actual_rps": st.rps(), "p95": p95, "err": err_rate})
-        
-        print(f"     Actual RPS: {st.rps():.1f} | P95 Latency: {p95:.1f}ms | Error Rate: {err_rate:.1f}%")
+        status_dist = st.status_code_distribution()
+        results.append({
+            "users": lvl["users"],
+            "target_rps": lvl["rps"],
+            "actual_rps": st.rps(),
+            "p50": p50,
+            "p95": p95,
+            "p99": p99,
+            "err": err_rate,
+            "status_codes": status_dist,
+        })
+
+        print(f"     Actual RPS: {st.rps():.1f} | P50: {p50:.1f}ms | P95: {p95:.1f}ms | P99: {p99:.1f}ms | Error Rate: {err_rate:.1f}%")
         
         if (p95 > 2000.0 or err_rate > 10.0) and knee_point is None:
             knee_point = lvl

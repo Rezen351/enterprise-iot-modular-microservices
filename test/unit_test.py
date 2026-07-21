@@ -1,6 +1,7 @@
 """
 Enterprise IoT Modular Microservices - Comprehensive Feature & Unit Test Suite
 Tests 100% of all microservices, features, endpoints, and WebSocket channels via Kong API Gateway (/v1).
+Enhanced with per-service execution time tracking for analytics.
 """
 
 import os
@@ -39,6 +40,29 @@ def get_global_token():
     except Exception:
         pass
     return GLOBAL_TOKEN
+
+
+class TimedTestResult(unittest.TextTestResult):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.test_times = {}
+        self.test_class_times = {}
+
+    def startTest(self, test):
+        super().startTest(test)
+        test._start_time = time.time()
+
+    def stopTest(self, test):
+        elapsed = time.time() - getattr(test, "_start_time", time.time())
+        class_name = test.__class__.__name__
+        self.test_class_times[class_name] = self.test_class_times.get(class_name, 0) + elapsed
+        self.test_times[str(test)] = elapsed
+        super().stopTest(test)
+
+
+class TimedTestRunner(unittest.TextTestRunner):
+    def _makeResult(self):
+        return TimedTestResult(self.stream, self.descriptions, self.verbosity)
 
 
 class TestSystemHealth(unittest.TestCase):
@@ -494,7 +518,7 @@ def run_unit_tests():
     """Run all unit & feature test cases across 12 microservices."""
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
-    
+
     suite.addTest(loader.loadTestsFromTestCase(TestSystemHealth))
     suite.addTest(loader.loadTestsFromTestCase(TestAuthService))
     suite.addTest(loader.loadTestsFromTestCase(TestModuleService))
@@ -507,12 +531,67 @@ def run_unit_tests():
     suite.addTest(loader.loadTestsFromTestCase(TestMLService))
     suite.addTest(loader.loadTestsFromTestCase(TestExportService))
     suite.addTest(loader.loadTestsFromTestCase(TestWSGateway))
-    
-    runner = unittest.TextTestRunner(verbosity=2)
+
+    runner = TimedTestRunner(verbosity=2)
     result = runner.run(suite)
-    return result.wasSuccessful()
 
+    # Build service names list aligned with test classes
+    service_names = [
+        "SystemHealth", "Auth", "Module", "Analytics", "Control",
+        "Alert", "Audit", "Notification", "Stream", "ML", "Export", "WSGateway"
+    ]
 
-if __name__ == "__main__":
-    success = run_unit_tests()
-    sys.exit(0 if success else 1)
+    pass_counts = []
+    skip_counts = []
+    fail_counts = []
+    exec_times = []
+
+    class_map = {
+        TestSystemHealth: "SystemHealth",
+        TestAuthService: "Auth",
+        TestModuleService: "Module",
+        TestAnalyticsService: "Analytics",
+        TestControlService: "Control",
+        TestAlertService: "Alert",
+        TestAuditService: "Audit",
+        TestNotificationService: "Notification",
+        TestStreamService: "Stream",
+        TestMLService: "ML",
+        TestExportService: "Export",
+        TestWSGateway: "WSGateway",
+    }
+
+    class_stats = {name: {"skip": 0, "fail": 0} for name in service_names}
+
+    for test, err in result.errors + result.failures:
+        class_name = class_map.get(test.__class__, test.__class__.__name__)
+        class_stats[class_name]["fail"] += 1
+
+    for test, reason in result.skipped:
+        class_name = class_map.get(test.__class__, test.__class__.__name__)
+        class_stats[class_name]["skip"] += 1
+
+    known_totals = {
+        "SystemHealth": 1, "Auth": 5, "Module": 5, "Analytics": 4,
+        "Control": 6, "Alert": 4, "Audit": 2, "Notification": 3,
+        "Stream": 4, "ML": 2, "Export": 3, "WSGateway": 2,
+    }
+
+    for name in service_names:
+        total = known_totals.get(name, 0)
+        skipped = class_stats[name]["skip"]
+        failed = class_stats[name]["fail"]
+        passed = max(0, total - skipped - failed)
+        pass_counts.append(passed)
+        skip_counts.append(skipped)
+        fail_counts.append(failed)
+        exec_times.append(0.0)
+
+    if hasattr(result, "test_class_times"):
+        for i, name in enumerate(service_names):
+            time_val = result.test_class_times.get(name, 0.0)
+            if time_val == 0.0:
+                time_val = result.test_class_times.get(f"Test{name}", 0.0)
+            exec_times[i] = time_val
+
+    return result.wasSuccessful(), service_names, pass_counts, skip_counts, fail_counts, exec_times

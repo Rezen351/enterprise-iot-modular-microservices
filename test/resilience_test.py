@@ -1,6 +1,7 @@
 """
 Enterprise IoT Modular Microservices - Chaos Engineering & Resilience Test Suite
 Tests System Resiliency, Graceful Degradation, Circuit Breaking, and Self-Healing capabilities under service outages.
+Enhanced with recovery time tracking for analytics.
 """
 
 import os
@@ -38,24 +39,35 @@ class ResilienceAuditor:
     def __init__(self):
         self.results = []
 
-    def log_result(self, scenario: str, status: str, details: str):
-        symbol = "✅ PASS" if status == "PASS" else ("⚠️ DEGRADED" if status == "DEGRADED" else "❌ FAIL")
-        self.results.append({"scenario": scenario, "status": symbol, "details": details})
-        print(f"[{symbol}] {scenario}: {details}")
+    def log_result(self, scenario: str, status: str, details: str, recovery_time: float = 0.0):
+        symbol = "PASS" if status == "PASS" else ("DEGRADED" if status == "DEGRADED" else "FAIL")
+        self.results.append({
+            "scenario": scenario,
+            "status": symbol,
+            "details": details,
+            "recovery_time": recovery_time
+        })
+        print(f"[{symbol}] {scenario}: {details}" + (f" (Recovery: {recovery_time:.1f}s)" if recovery_time > 0 else ""))
 
     def report(self):
         print("\n" + "=" * 70)
         print("  MICROSERVICES CHAOS & RESILIENCE TEST AUDIT REPORT")
         print("=" * 70)
         for r in self.results:
-            print(f" {r['status']:<12} | {r['scenario']:<35} | {r['details']}")
+            print(f" {r['status']:<10} | {r['scenario']:<35} | {r['details']}")
         print("=" * 70 + "\n")
+
+    def get_scenarios(self):
+        return [{"scenario": r["scenario"], "status": r["status"], "details": r["details"]} for r in self.results]
+
+    def get_recovery_times(self):
+        return [r.get("recovery_time", 0.0) for r in self.results]
 
 
 def test_scenario_1_non_critical_outage(auditor: ResilienceAuditor, token: str):
     """Scenario 1: Non-Critical Service Outage (ml-service crash)."""
     print("\n[*] Scenario 1: Injecting Outage into 'ml-service'...")
-    
+
     # 1. Stop ml-service
     run_cmd("docker compose stop ml-service")
     time.sleep(2)
@@ -80,14 +92,16 @@ def test_scenario_1_non_critical_outage(auditor: ResilienceAuditor, token: str):
 
     # 4. Self-Healing: Restart ml-service & verify recovery
     print("  -> Restarting 'ml-service' for self-healing verification...")
+    recovery_start = time.time()
     run_cmd("docker compose start ml-service")
     time.sleep(5)
+    recovery_time = time.time() - recovery_start
 
     rec_res = requests.get(f"{BASE_URL}/v1/ml/models", headers=headers, timeout=5)
     if rec_res.status_code == 200:
-        auditor.log_result("ML Self-Healing Recovery", "PASS", "ml-service automatically recovered to 200 OK")
+        auditor.log_result("ML Self-Healing Recovery", "PASS", "ml-service automatically recovered to 200 OK", recovery_time=recovery_time)
     else:
-        auditor.log_result("ML Self-Healing Recovery", "FAIL", f"ml-service failed to recover: {rec_res.status_code}")
+        auditor.log_result("ML Self-Healing Recovery", "FAIL", f"ml-service failed to recover: {rec_res.status_code}", recovery_time=recovery_time)
 
 
 def test_scenario_2_secondary_services_outage(auditor: ResilienceAuditor, token: str):
@@ -110,16 +124,18 @@ def test_scenario_2_secondary_services_outage(auditor: ResilienceAuditor, token:
 
     # Restart services
     print("  -> Restarting 'notification-service' & 'stream-service'...")
+    recovery_start = time.time()
     run_cmd("docker compose start notification-service stream-service")
     time.sleep(4)
+    recovery_time = time.time() - recovery_start
 
     notif_rec = requests.get(f"{BASE_URL}/v1/notifications/logs", headers=headers, timeout=5)
     stream_rec = requests.get(f"{BASE_URL}/v1/streams", headers=headers, timeout=5)
 
     if notif_rec.status_code == 200 and stream_rec.status_code == 200:
-        auditor.log_result("Aux Services Self-Healing", "PASS", "Notification & Stream services recovered to 200 OK")
+        auditor.log_result("Aux Services Self-Healing", "PASS", "Notification & Stream services recovered to 200 OK", recovery_time=recovery_time)
     else:
-        auditor.log_result("Aux Services Self-Healing", "FAIL", f"Recovery incomplete: Notif={notif_rec.status_code}, Stream={stream_rec.status_code}")
+        auditor.log_result("Aux Services Self-Healing", "FAIL", f"Recovery incomplete: Notif={notif_rec.status_code}, Stream={stream_rec.status_code}", recovery_time=recovery_time)
 
 
 def test_scenario_3_event_bus_interruption(auditor: ResilienceAuditor, token: str):
@@ -140,14 +156,36 @@ def test_scenario_3_event_bus_interruption(auditor: ResilienceAuditor, token: st
 
     # Restart NATS & test auto-reconnection
     print("  -> Restarting NATS Broker & verifying auto-reconnection...")
+    recovery_start = time.time()
     run_cmd("docker compose start nats")
     time.sleep(5)
+    recovery_time = time.time() - recovery_start
 
     audit_res = requests.get(f"{BASE_URL}/v1/audit/logs", headers=headers, timeout=5)
     if audit_res.status_code == 200:
-        auditor.log_result("NATS Auto-Reconnection", "PASS", "Microservices successfully reconnected to NATS JetStream event bus")
+        auditor.log_result("NATS Auto-Reconnection", "PASS", "Microservices successfully reconnected to NATS JetStream event bus", recovery_time=recovery_time)
     else:
-        auditor.log_result("NATS Auto-Reconnection", "FAIL", f"Audit logs error after NATS restart: {audit_res.status_code}")
+        auditor.log_result("NATS Auto-Reconnection", "FAIL", f"Audit logs error after NATS restart: {audit_res.status_code}", recovery_time=recovery_time)
+
+
+def run_chaos_suite(token: str = None):
+    """Run all chaos & resilience scenarios and return structured results."""
+    if token is None:
+        token = get_token()
+
+    auditor = ResilienceAuditor()
+
+    try:
+        test_scenario_1_non_critical_outage(auditor, token)
+        test_scenario_2_secondary_services_outage(auditor, token)
+        test_scenario_3_event_bus_interruption(auditor, token)
+    finally:
+        # Ensure all services are running after chaos tests
+        print("\n[*] Cleanup: Ensuring all microservices are running...")
+        run_cmd("docker compose start ml-service notification-service stream-service nats")
+        auditor.report()
+
+    return auditor.get_scenarios(), auditor.get_recovery_times()
 
 
 def main():
@@ -161,17 +199,14 @@ def main():
     else:
         print("[*] Successfully authenticated with Auth Service!")
 
-    auditor = ResilienceAuditor()
+    scenarios, recovery_times = run_chaos_suite(token)
 
-    try:
-        test_scenario_1_non_critical_outage(auditor, token)
-        test_scenario_2_secondary_services_outage(auditor, token)
-        test_scenario_3_event_bus_interruption(auditor, token)
-    finally:
-        # Ensure all services are running after chaos tests
-        print("\n[*] Cleanup: Ensuring all microservices are running...")
-        run_cmd("docker compose start ml-service notification-service stream-service nats")
-        auditor.report()
+    # Print summary
+    pass_count = sum(1 for s in scenarios if s["status"] == "PASS")
+    degraded_count = sum(1 for s in scenarios if s["status"] == "DEGRADED")
+    fail_count = sum(1 for s in scenarios if s["status"] == "FAIL")
+
+    print(f"\n  SUMMARY: {pass_count} PASS, {degraded_count} DEGRADED, {fail_count} FAIL")
 
 
 if __name__ == "__main__":

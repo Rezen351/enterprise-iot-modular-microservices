@@ -35,6 +35,8 @@ jobs:
           - dlq
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -66,6 +68,8 @@ jobs:
         working-directory: services/ml
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -101,6 +105,8 @@ jobs:
           - postgres-exporter-all
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -134,6 +140,8 @@ jobs:
     needs: dashboard
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -162,6 +170,8 @@ jobs:
         working-directory: dashboard
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -196,6 +206,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           clean: false
+          fetch-depth: 1
 
       - name: Configure Runner Network Retries
         run: |

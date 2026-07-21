@@ -14,6 +14,7 @@
 | 1 | ✅ | Pindahkan step `Pre-checkout Fix Permissions` (`sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE` & `sudo rm -rf $GITHUB_WORKSPACE/dashboard/node_modules`) menjadi **step paling awal SEBELUM `actions/checkout@v4`** di job `cd-deploy` ([ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml)). |
 | 2 | ✅ | Tambahkan `with: clean: false` pada `actions/checkout@v4` untuk mencegah `actions/checkout` menghapus untracked directory sebelum fetch. |
 | 3 | ✅ | Tambahkan `node_modules/` dan `**/node_modules/` ke [.gitignore](file:///home/almuzky/TA/Microservices/.gitignore). |
+| 4 | ✅ | Tambahkan `with: fetch-depth: 1` pada seluruh step `actions/checkout@v4` di [.github/workflows/ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml) untuk mengoptimalkan kecepatan clone git & meminimalkan konsumsi bandwidth. |
 
 **Keputusan Teknis:** `actions/checkout@v4` dieksekusi oleh runner Node.js sebelum langkah lain jika ditaruh di awal. Jika direktori `$GITHUB_WORKSPACE` mengandung file/folder `root:root` (seperti `dashboard/node_modules`), `actions/checkout` akan gagal me-rmdir file tersebut sebelum step `sudo chown` sempat berjalan. Menaruh step `Pre-checkout Fix Permissions` (menggunakan `sudo`) **sebelum** `actions/checkout@v4` memastikan kepemilikan file dikembalikan ke user `aeroponik` & `node_modules` dibersihkan terlebih dahulu sebelum `actions/checkout@v4` dipanggil.
 

@@ -1,6 +1,6 @@
 # 🔧 Security Audit — Gateway & Service Hardening (2026-07-14)
 
-> Laporan *stress test & penetration test* (toolkit di `stress-test/`). Dipisahkan dari `planning.md` karena ini adalah laporan hasil pengujian, bukan dokumen arsitektur.
+> Laporan *stress test & penetration test* (toolkit di `test/`). Dipisahkan dari `planning.md` karena ini adalah laporan hasil pengujian, bukan dokumen arsitektur.
 
 ## Temuan & Perbaikan
 
@@ -19,7 +19,7 @@
 
 ## Verifikasi
 
-Jalankan `python3 stress-test/cli.py pentest` (ekspektasi: *Protected routes reject unauthenticated access* → PASS) dan `python3 stress-test/cli.py metrics` (ekspektasi job `node-exporter` & `cadvisor` muncul).
+Jalankan `python3 test/cli.py pentest` (ekspektasi: *Protected routes reject unauthenticated access* → PASS) dan `python3 test/cli.py metrics` (ekspektasi job `node-exporter` & `cadvisor` muncul).
 
 ## Remediasi Terbuka (Open Items — Belum Selesai)
 

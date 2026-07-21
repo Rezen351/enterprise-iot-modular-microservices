@@ -46,7 +46,7 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 ```
 
 ### Tools Tersedia (sudah ada di repo)
-- `stress-test/` — toolkit load/soak/spike + pentest (`loadtest.py`, `wstest.py`, `mqtttest.py`, `pentest.py`, `metrics.py`, `report.py`, `cli.py`). Jalankan via `python3 cli.py <subcommand>`.
+- `test/` — toolkit unit test, load/soak/spike + pentest (`unit_test.py`, `loadtest.py`, `wstest.py`, `mqtttest.py`, `pentest.py`, `metrics.py`, `report.py`, `cli.py`). Jalankan via `python3 cli.py <subcommand>`.
 - `mosquitto_sub` / `mosquitto_pub` — verifikasi MQTT end-to-end.
 - `nats` CLI — `nats sub "mqtt.<NODE_ID>"`, `nats sub "telemetry.ingest"`, dst.
 
@@ -481,9 +481,9 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 
 ---
 
-## 15. ⚡ Performance & Penetration (pakai `stress-test/`)
+## 15. ⚡ Performance & Penetration (pakai `test/`)
 
-Jalankan dari `stress-test/` (`python3 cli.py <cmd>`). Trafik lewat Kong (`KONG_PUBLIC_URL`).
+Jalankan dari `test/` (`python3 cli.py <cmd>`). Trafik lewat Kong (`KONG_PUBLIC_URL`).
 
 |---|-----|----------|-----------------|--------|--------|
 |---|-----|----------|-----------------|--------|

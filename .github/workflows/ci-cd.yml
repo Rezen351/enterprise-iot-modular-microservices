@@ -113,7 +113,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE=ghcr.io/${{ github.repository }}/${{ matrix.service }}
+          IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}
           docker build -f services/${{ matrix.service }}/Dockerfile services/${{ matrix.service }} \
             --tag $IMAGE:latest \
             --tag $IMAGE:${{ github.sha }}
@@ -164,7 +164,7 @@ jobs:
 
       - name: Log in to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $(echo '${{ github.actor }}' | tr '[:upper:]' '[:lower:]') --password-stdin
 
       - name: Set up Docker Compose Environment
         run: |

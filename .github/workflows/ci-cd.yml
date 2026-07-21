@@ -97,6 +97,8 @@ jobs:
           - wsgateway
           - dlq
           - ml
+          - mysqld-exporter-all
+          - postgres-exporter-all
     steps:
       - uses: actions/checkout@v4
 
@@ -217,12 +219,20 @@ jobs:
           echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
+      - name: Fix Workspace Permissions
+        run: |
+          echo "Fixing workspace ownership..."
+          sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE || true
+          echo "Workspace permissions fixed."
+
       - name: Force Clean Workspace
         run: |
           echo "Stopping existing containers..."
           docker compose down --remove-orphans || true
           echo "Removing old images..."
           docker image prune -f || true
+          echo "Cleaning workspace..."
+          rm -rf $GITHUB_WORKSPACE/* $GITHUB_WORKSPACE/.??* || true
 
       - name: Pull and Deploy with Docker Compose
         run: |

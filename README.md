@@ -168,6 +168,7 @@ Project documentation is organized as follows:
 | [docs/testing-implementasi-manual.md](./docs/testing-implementasi-manual.md) | Manual UI/visual testing scenarios (user-executed) |
 | [docs/grafana-service-health.md](./docs/grafana-service-health.md) | Guide to reading the Grafana "Service Health" dashboard |
 | [docs/system-update.md](./docs/system-update.md) | System sync notes and infrastructure gap tracking |
+| [docs/integration-guides/](./docs/integration-guides/) | Per-service integration guides — API contracts, NATS/MQTT topics, database schema, curl examples, and error codes for each microservice |
 | [AGENTS.md](../AGENTS.md) | Project rules, coding guidelines, and AI agent workflow |
 
 ---

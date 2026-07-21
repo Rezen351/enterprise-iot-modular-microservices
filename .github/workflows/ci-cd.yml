@@ -128,11 +128,12 @@ jobs:
             CONTEXT=services/${{ matrix.service }}
             DOCKERFILE=services/${{ matrix.service }}/Dockerfile
           fi
-          docker build -f "$DOCKERFILE" "$CONTEXT" \
+          docker buildx build -f "$DOCKERFILE" "$CONTEXT" \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
             --tag $IMAGE:latest \
-            --tag $IMAGE:${{ github.sha }}
-          docker push $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
+            --tag $IMAGE:${{ github.sha }} \
+            --push
 
   dashboard-docker-build:
     name: Dashboard Docker build & push
@@ -156,11 +157,12 @@ jobs:
       - name: Build and push Dashboard image
         run: |
           IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/dashboard
-          docker build -f dashboard/Dockerfile dashboard \
+          docker buildx build -f dashboard/Dockerfile dashboard \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
             --tag $IMAGE:latest \
-            --tag $IMAGE:${{ github.sha }}
-          docker push $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
+            --tag $IMAGE:${{ github.sha }} \
+            --push
 
   dashboard:
     name: Dashboard (lint/build)

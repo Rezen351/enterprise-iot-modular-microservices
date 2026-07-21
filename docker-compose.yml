@@ -877,58 +877,6 @@ services:
       - iot-net
 
   # ──────────────────────────────────────
-  # CCTV CAPTURE CRON — external data-collection job (NOT a microservice)
-  # When the pump is OFF or the output load is 0 (no misting), it grabs a CCTV
-  # frame via ffmpeg, runs inference through the ML service API, and stores the
-  # frame + result in the `ml-result` MinIO bucket — the SAME bucket the live
-  # "Capture Detect AI" button writes to, so both appear in the gallery's
-  # CAPTURES tab. The raw frame is ALSO mirrored into the `stream` bucket so the
-  # ML `/ml/detect/from-stream` endpoint can run detection on it (§17e). Schedule
-  # via CAPTURE_CRON (5-field expr), CAPTURE_INTERVAL_HOURS
-  # (fixed loop, default 8h), or RUN_ONCE=1 for an external host cron.
-  # ──────────────────────────────────────
-  cctv-capture:
-    build:
-      context: ./services/cctv-capture
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      CAPTURE_INTERVAL_HOURS: "8"
-      CAPTURE_CRON: ""
-      CAPTURE_STREAMS: ""
-      PUMP_PATHS: ""
-      LOAD_PATHS: ""
-      NODE_IDS: ""
-      CONDITION_MODE: ""
-      SKIP_WHEN_TELEMETRY_MISSING: ""
-      ML_BASE_URL: http://ml:8080
-      ML_API_TOKEN: "${CCTV_ML_API_TOKEN}"
-      AUTH_BASE_URL: http://auth:8080
-      AUTH_USERNAME: "${CCTV_AUTH_USERNAME}"
-      AUTH_PASSWORD: "${CCTV_AUTH_PASSWORD}"
-      MODEL_ID: ""
-      MINIO_RESULT_BUCKET: ml-result
-      MINIO_STREAM_BUCKET: stream
-      MIRROR_ANNOTATED: ""
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
-      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
-      MINIO_USE_SSL: "false"
-      MINIO_PUBLIC_URL: http://localhost:8000/minio
-      LOG_LEVEL: INFO
-    depends_on:
-      minio:
-        condition: service_healthy
-      ml:
-        condition: service_started
-      redis-shared:
-        condition: service_healthy
-      mediamtx:
-        condition: service_started
-    networks:
-      - iot-net
-
-  # ──────────────────────────────────────
   # STREAM SERVICE — CCTV stream metadata + MediaMTX path registry
   # ──────────────────────────────────────
   stream:

@@ -19,6 +19,7 @@ Dokumen di folder `docs/` adalah **single source of truth** untuk arsitektur, ke
 | [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) | Checklist pengujian **backend/API** (diperbolehkan & dijalankan Agent). | Perbarui `[ ]`→`[x]` per step saat verifikasi API. |
 | [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) | Checklist pengujian **UI/visual** (wajib manual oleh User). | Hanya User yang mengubah status; Agent boleh menulis draf skenario. |
 | [logs.md](file:///home/almuzky/TA/Microservices/logs.md) | Log harian aktivitas & keputusan teknis (wajib diupdate tiap tugas). | Update setelah setiap tugas selesai. |
+| [docs/integration-guides/](file:///home/almuzky/TA/Microservices/docs/integration-guides/) | **Per-service integration guides** — API contracts, NATS/MQTT topics, database schema, curl examples, dan error codes untuk setiap microservice. | Wajib diperbarui saat arsitektur service berubah (tambah/hapus endpoint, ubah schema, topic, env, atau contract). |
 
 > **Catatan integrasi:** Keputusan arsitektur (ADR), runbook operasional, hasil audit keamanan, dan panduan monitoring Grafana di bawah ini merujuk ke dokumen di atas agar tidak terjadi duplikasi aturan.
 
@@ -113,40 +114,43 @@ Untuk menjaga kualitas codebase, kontributor wajib mengikuti pola arsitektur yan
    - Setiap microservice wajib menggunakan struktur respons JSON yang seragam untuk mempermudah konsumsi data di sisi frontend.
    - Respons Sukses (2xx): `{ "success": true, "data": <payload/array/object> }`.
    - Respons Eror (4xx/5xx): `{ "success": false, "error": { "code": "<KODE_ERROR>", "message": "<pesan_error_dalam_bahasa_inggris>" } }`.
-   - **Prioritas Standarisasi Backend atas Kesiapan UI:** Jika ada endpoint lama yang belum mengikuti format wrapper standar di atas, Agent **wajib tetap mengimplementasikan standarisasi format tersebut di sisi backend**. Jangan menghindari perubahan kritis ini hanya karena takut akan merusak (break) tampilan UI dashboard. Kerjakan saja perubahan standar di backend tersebut, lalu sesuaikan kode UI/dashboard agar mengikuti dan mengonsumsi standar respons baru dari backend.
-5. **Manajemen Migrasi Database**
+    - **Prioritas Standarisasi Backend atas Kesiapan UI:** Jika ada endpoint lama yang belum mengikuti format wrapper standar di atas, Agent **wajib tetap mengimplementasikan standarisasi format tersebut di sisi backend**. Jangan menghindari perubahan kritis ini hanya karena takut akan merusak (break) tampilan UI dashboard. Kerjakan saja perubahan standar di backend tersebut, lalu sesuaikan kode UI/dashboard agar mengikuti dan mengonsumsi standar respons baru dari backend.
+ 5. **Sinkronisasi Integration Guide**
+    - Setiap kali mengubah arsitektur service — termasuk menambah/menghapus endpoint, mengubah skema database, menambah/menghapus NATS/MQTT topic, menambah/mengubah environment variable, atau mengubah request/response contract — **wajib** memperbarui file integration guide yang sesuai di [`docs/integration-guides/`](file:///home/almuzky/TA/Microservices/docs/integration-guides/).
+    - Integration guide adalah **single source of truth** untuk API contract, NATS/MQTT topics, database schema, dan curl examples. Jangan sampai kode berubah tanpa dokumentasi integrasi yang menyertainya.
+ 6. **Manajemen Migrasi Database**
    - Setiap perubahan skema database wajib dikelola menggunakan sistem migrasi kode resmi (misal: migrations file di Go, atau auto-migration GORM yang terkelola dengan baik).
    - Dilarang melakukan modifikasi skema database (seperti menambah kolom, mengubah tipe data, atau menghapus tabel) secara manual langsung pada DBMS di lingkungan staging/produksi.
-6. **Korelasi ID Log (Distributed Tracing / Log Correlation)**
-   - Mengingat skala microservice yang besar (~30 services), setiap request HTTP wajib menyertakan ID korelasi (`X-Correlation-ID` or `X-Request-ID`) di dalam header.
-   - ID korelasi ini harus dipropagasikan ke setiap downstream service tujuan, termasuk payload event yang dikirim melalui Event Bus (NATS).
-   - Cantumkan ID korelasi ini di setiap baris log terkait agar memudahkan pelacakan log terdistribusi secara end-to-end.
-9. **Keputusan Arsitektur (ADR)** — Setiap keputusan arsitektur penting (pemilihan infrastruktur, pola integrasi, trade-off) **wajib** dicatat sebagai ADR di [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) sebelum/selama implementasi. Jangan mengubah arah keputusan yang sudah ada (mis. konsolidasi MinIO, shared JWT) tanpa menambahkan ADR baru yang merujuk ke alasan perubahannya. ADR bersifat *immutable* — keputusan yang dibatalkan cukup ditandai, tidak dihapus.
+ 6. **Korelasi ID Log (Distributed Tracing / Log Correlation)**
+    - Mengingat skala microservice yang besar (~30 services), setiap request HTTP wajib menyertakan ID korelasi (`X-Correlation-ID` or `X-Request-ID`) di dalam header.
+    - ID korelasi ini harus dipropagasikan ke setiap downstream service tujuan, termasuk payload event yang dikirim melalui Event Bus (NATS).
+    - Cantumkan ID korelasi ini di setiap baris log terkait agar memudahkan pelacakan log terdistribusi secara end-to-end.
+ 8. **Keputusan Arsitektur (ADR)** — Setiap keputusan arsitektur penting (pemilihan infrastruktur, pola integrasi, trade-off) **wajib** dicatat sebagai ADR di [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) sebelum/selama implementasi. Jangan mengubah arah keputusan yang sudah ada (mis. konsolidasi MinIO, shared JWT) tanpa menambahkan ADR baru yang merujuk ke alasan perubahannya. ADR bersifat *immutable* — keputusan yang dibatalkan cukup ditandai, tidak dihapus.
 
-7. **Single Source of Truth & Larangan Kontainer Yatim (Orphaned Containers)**
-   - Semua infrastruktur, database, cache, broker, dan microservices yang berjalan **wajib dideklarasikan secara resmi** di dalam `docker-compose.yml`.
-   - **DILARANG KERAS** membiarkan kontainer/sumber daya berjalan secara mandiri (*orphaned* atau sisa dari branch/worktree lain) tanpa terdaftar di `docker-compose.yml` utama.
-   - Jika suatu layanan tidak digunakan atau dinonaktifkan di branch/sesi saat ini, definisinya beserta target monitoring-nya (seperti Prometheus scrape job dan exporters) harus dihapus secara bersih, dan kontainer fisiknya dimatikan menggunakan perintah `docker compose up -d --remove-orphans`.
-8. **Optimasi Docker Build & Caching Dependensi (Docker Layer Caching)**
-   - Saat membuat atau memodifikasi `Dockerfile` (terutama untuk service dengan dependensi besar seperti Service ML/Python, Node, atau Go), **wajib menggunakan metode Docker Layer Caching yang optimal** agar tidak perlu menginstal ulang seluruh dependensi dari awal setiap kali ada perubahan kecil pada program.
-   - **Metode/Aturan Penulisan Dockerfile yang Benar:**
-     1. **Salin Berkas Manifes Dependensi Terlebih Dahulu**: Salin berkas manifes dependensi (misal: `requirements.txt`, `package.json`, `go.mod` dan `go.sum`, atau `Gemfile`) secara terpisah sebelum menyalin kode sumber program.
-     2. **Jalankan Instalasi Dependensi Terlebih Dahulu**: Jalankan perintah instalasi dependensi (misal: `pip install`, `npm install`, atau `go mod download`). Layer ini akan di-cache oleh Docker dan tidak akan dibangun ulang selama berkas manifes dependensi tidak berubah.
-     3. **Salin Kode Sumber Program**: Salin sisa kode program (source code) setelah tahap instalasi dependensi selesai. Perubahan kode program kecil hanya akan membatalkan cache dari langkah penyalinan kode sumber ini ke bawah, sehingga proses build tetap sangat cepat.
-     4. **Gunakan Multi-Stage Build**: Selalu gunakan multi-stage build untuk memisahkan lingkungan build (SDK penuh) dengan lingkungan runtime minimal agar ukuran akhir image seminimal mungkin.
-     5. **Gunakan Cache Mounts**: Jika didukung oleh Docker builder/runner, gunakan cache mount (misal: `type=cache` untuk pip cache, npm cache, atau go build cache) untuk mempercepat instalasi dependensi.
-   - **Contoh Struktur Dockerfile (Python/ML Service):**
-     ```dockerfile
-     FROM python:3.10-slim AS builder
-     WORKDIR /app
-     # 1. Salin manifes dependensi terpisah
-     COPY requirements.txt .
-     # 2. Install dependensi (layer ini akan dicache)
-     RUN --mount=type=cache,target=/root/.cache/pip \
-         pip install -r requirements.txt
-     # 3. Salin sisa kode program
-     COPY . .
-     ```
+ 9. **Single Source of Truth & Larangan Kontainer Yatim (Orphaned Containers)**
+    - Semua infrastruktur, database, cache, broker, dan microservices yang berjalan **wajib dideklarasikan secara resmi** di dalam `docker-compose.yml`.
+    - **DILARANG KERAS** membiarkan kontainer/sumber daya berjalan secara mandiri (*orphaned* atau sisa dari branch/worktree lain) tanpa terdaftar di `docker-compose.yml` utama.
+    - Jika suatu layanan tidak digunakan atau dinonaktifkan di branch/sesi saat ini, definisinya beserta target monitoring-nya (seperti Prometheus scrape job dan exporters) harus dihapus secara bersih, dan kontainer fisiknya dimatikan menggunakan perintah `docker compose up -d --remove-orphans`.
+ 10. **Optimasi Docker Build & Caching Dependensi (Docker Layer Caching)**
+    - Saat membuat atau memodifikasi `Dockerfile` (terutama untuk service dengan dependensi besar seperti Service ML/Python, Node, atau Go), **wajib menggunakan metode Docker Layer Caching yang optimal** agar tidak perlu menginstal ulang seluruh dependensi dari awal setiap kali ada perubahan kecil pada program.
+    - **Metode/Aturan Penulisan Dockerfile yang Benar:**
+      1. **Salin Berkas Manifes Dependensi Terlebih Dahulu**: Salin berkas manifes dependensi (misal: `requirements.txt`, `package.json`, `go.mod` dan `go.sum`, atau `Gemfile`) secara terpisah sebelum menyalin kode sumber program.
+      2. **Jalankan Instalasi Dependensi Terlebih Dahulu**: Jalankan perintah instalasi dependensi (misal: `pip install`, `npm install`, atau `go mod download`). Layer ini akan di-cache oleh Docker dan tidak akan dibangun ulang selama berkas manifes dependensi tidak berubah.
+      3. **Salin Kode Sumber Program**: Salin sisa kode program (source code) setelah tahap instalasi dependensi selesai. Perubahan kode program kecil hanya akan membatalkan cache dari langkah penyalinan kode sumber ini ke bawah, sehingga proses build tetap sangat cepat.
+      4. **Gunakan Multi-Stage Build**: Selalu gunakan multi-stage build untuk memisahkan lingkungan build (SDK penuh) dengan lingkungan runtime minimal agar ukuran akhir image seminimal mungkin.
+      5. **Gunakan Cache Mounts**: Jika didukung oleh Docker builder/runner, gunakan cache mount (misal: `type=cache` untuk pip cache, npm cache, atau go build cache) untuk mempercepat instalasi dependensi.
+    - **Contoh Struktur Dockerfile (Python/ML Service):**
+      ```dockerfile
+      FROM python:3.10-slim AS builder
+      WORKDIR /app
+      # 1. Salin manifes dependensi terpisah
+      COPY requirements.txt .
+      # 2. Install dependensi (layer ini akan dicache)
+      RUN --mount=type=cache,target=/root/.cache/pip \
+          pip install -r requirements.txt
+      # 3. Salin sisa kode program
+      COPY . .
+      ```
 
 ---
 

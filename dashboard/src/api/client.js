@@ -13,6 +13,30 @@ export const API_BASE =
 export const getToken = () => sessionStorage.getItem('token');
 export const getRefreshToken = () => sessionStorage.getItem('refresh_token');
 
+// Build an absolute, token-authenticated URL for <img>/<video> sources.
+// The dashboard loads stored snapshots/detections via the stream service's
+// /storage proxy, which requires a JWT. Browsers cannot attach an
+// Authorization header to media elements, so we pass the token as a query
+// arg (?token=) — the backend accepts it (same pattern as the WS gateway).
+// A relative /storage/... path is resolved against API_BASE; already-absolute
+// URLs are normalized to API_BASE and the token is (re)attached.
+export function withToken(url) {
+  if (!url) return '';
+  let path = url;
+  if (url.startsWith('http')) {
+    try {
+      const u = new URL(url);
+      path = u.pathname + u.search;
+    } catch {
+      path = url;
+    }
+  }
+  const base = API_BASE || 'http://localhost:8000';
+  const sep = path.includes('?') ? '&' : '?';
+  const token = getToken();
+  return `${base}${path}${token ? `${sep}token=${encodeURIComponent(token)}` : ''}`;
+}
+
 export function setSession({ access_token, refresh_token, user }) {
   if (access_token) sessionStorage.setItem('token', access_token);
   if (refresh_token) sessionStorage.setItem('refresh_token', refresh_token);

@@ -309,10 +309,58 @@ func (c *Client) ffmpegFrame(ctx context.Context, src string) ([]byte, error) {
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		msg := bytes.TrimSpace(stderr.Bytes())
+		// ffmpeg may emit decode warnings (e.g. "Could not find ref with
+		// POC ..." / missing reference frames) for H.264/H.265 streams even
+		// when a valid frame was still written to stdout. Treat such
+		// non-fatal warnings as success as long as we got a real frame.
+		if out.Len() >= minSnapshotBytes && !isFatalFFmpegError(msg) {
+			log.Printf("[mediamtx] ffmpeg snapshot %q warning (frame still captured): %s", src, msg)
+			return out.Bytes(), nil
+		}
 		log.Printf("[mediamtx] ffmpeg snapshot %q failed: %v: %s", src, err, msg)
 		return nil, fmt.Errorf("ffmpeg snapshot failed (stream may not be live): %s", msg)
 	}
 	return out.Bytes(), nil
+}
+
+// isFatalFFmpegError reports whether an ffmpeg stderr message is fatal (as
+// opposed to a recoverable decode warning). Decode warnings like "Could not
+// find ref with POC" or "Missing reference" still yield a usable frame, so
+// callers should not abort the snapshot on them.
+func isFatalFFmpegError(msg []byte) bool {
+	s := string(msg)
+	if s == "" {
+		return true
+	}
+	nonFatal := []string{
+		"Could not find ref with POC",
+		"Missing reference picture",
+		"error while decoding MB",
+		"concealing",
+		"number of reference frames",
+		"decode_slice_header error",
+	}
+	for _, nf := range nonFatal {
+		if strings.Contains(s, nf) {
+			return false
+		}
+	}
+	// Hard failures (no input, cannot open, timeout, no frames produced).
+	fatal := []string{
+		"Invalid data found",
+		"Cannot open",
+		"No such file",
+		"Connection refused",
+		"Immediate exit requested",
+		"Operation timed out",
+	}
+	for _, f := range fatal {
+		if strings.Contains(s, f) {
+			return true
+		}
+	}
+	// Default: treat any other error as fatal to be safe.
+	return true
 }
 
 // isBlankFrame reports whether the JPEG is effectively a uniform gray/color

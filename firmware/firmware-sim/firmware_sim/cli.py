@@ -2,9 +2,9 @@
 
 Usage:
   python -m firmware_sim list
-  python -m firmware_sim clone --node-id node-07 --mqtt-server tcp://192.168.1.103:1884
+  python -m firmware_sim clone --node-id node-07 --mqtt-server tcp://mosquitto:1883
   python -m firmware_sim run   --node-id node-07
-  python -m firmware_sim spawn --count 3 --mqtt-server tcp://192.168.1.103:1884
+  python -m firmware_sim spawn --count 3 --mqtt-server tcp://mosquitto:1883
   python -m firmware_sim delete --node-id node-07
   python -m firmware_sim discover --node-id node-07
   python -m firmware_sim info  --node-id node-07

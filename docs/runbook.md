@@ -10,7 +10,7 @@
 
 **Alur data yang harus utuh:**
 ```
-ESP → broker MQTT remote (MQTT_URL, default tcp://192.168.1.103:1884)
+ESP → broker MQTT internal (tcp://mosquitto:1883, auth enabled)
     → Module Service (subscribe smartfarm/#)
     → PublishLive() publish ke NATS subject "mqtt.{node_id}"
     → WS-Gateway (subscribe mqtt.{node_id}) → WebSocket → Dashboard

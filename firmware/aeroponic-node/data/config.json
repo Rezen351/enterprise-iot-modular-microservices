@@ -18,10 +18,10 @@
     },
     "mqtt": {
       "server": "192.168.1.103",
-      "port": 1884,
+      "port": 1883,
       "topic_prefix": "smartfarm",
-      "user": "",
-      "pass": "",
+      "user": "esp32",
+      "pass": "esp32pass",
       "use_tls": false,
       "telemetry_interval_ms": 5000
     }

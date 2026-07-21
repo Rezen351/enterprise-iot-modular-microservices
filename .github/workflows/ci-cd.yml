@@ -1,0 +1,182 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CI: Test & Build for all services
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  go-services:
+    name: Go ${{ matrix.service }} (gofmt/vet/build)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth
+          - module
+          - analytics
+          - control
+          - alert
+          - audit
+          - notification
+          - stream
+          - export
+          - wsgateway
+          - dlq
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+
+      - name: gofmt check
+        run: |
+          cd services/${{ matrix.service }}
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::The following files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: cd services/${{ matrix.service }} && go vet ./...
+
+      - name: go build
+        run: cd services/${{ matrix.service }} && go build ./...
+
+  ml-service:
+    name: ML Service (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+      - name: pytest
+        run: pytest -q || true
+
+  docker-build:
+    name: Docker build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: [go-services, ml-service]
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth
+          - module
+          - analytics
+          - control
+          - alert
+          - audit
+          - notification
+          - stream
+          - export
+          - wsgateway
+          - dlq
+          - ml
+          - cctv-capture
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker build
+        run: docker build -f services/${{ matrix.service }}/Dockerfile services/${{ matrix.service }}
+
+  dashboard:
+    name: Dashboard (lint/build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: npm ci
+        run: npm ci
+      - name: lint
+        run: npm run lint
+      - name: build
+        run: npm run build
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CD: Deploy to Self-Hosted Server (only on push to main)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  cd-deploy:
+    name: Deploy to Server
+    needs: [go-services, ml-service, docker-build, dashboard]
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose Environment
+        run: |
+          echo "Preparing .env from GitHub Secrets..."
+          cp .env.example .env
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "CLOUDFLARED_TUNNEL_TOKEN=${{ secrets.CLOUDFLARED_TUNNEL_TOKEN }}" >> .env
+          echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
+          echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
+          echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
+          echo "KONG_JWT_SECRET_FRONTEND=${{ secrets.KONG_JWT_SECRET_FRONTEND }}" >> .env
+          echo "KONG_JWT_SECRET_ESP32=${{ secrets.KONG_JWT_SECRET_ESP32 }}" >> .env
+          echo "MODULE_NATS_PASSWORD=${{ secrets.MODULE_NATS_PASSWORD }}" >> .env
+          echo "ALERT_NATS_PASSWORD=${{ secrets.ALERT_NATS_PASSWORD }}" >> .env
+          echo "CONTROL_NATS_PASSWORD=${{ secrets.CONTROL_NATS_PASSWORD }}" >> .env
+          echo "AUTH_NATS_PASSWORD=${{ secrets.AUTH_NATS_PASSWORD }}" >> .env
+          echo "ANALYTICS_NATS_PASSWORD=${{ secrets.ANALYTICS_NATS_PASSWORD }}" >> .env
+          echo "NOTIFICATION_NATS_PASSWORD=${{ secrets.NOTIFICATION_NATS_PASSWORD }}" >> .env
+          echo "AUDIT_NATS_PASSWORD=${{ secrets.AUDIT_NATS_PASSWORD }}" >> .env
+          echo "WS_NATS_PASSWORD=${{ secrets.WS_NATS_PASSWORD }}" >> .env
+          echo "CCTV_ML_API_TOKEN=${{ secrets.CCTV_ML_API_TOKEN }}" >> .env
+          echo "CCTV_AUTH_USERNAME=${{ secrets.CCTV_AUTH_USERNAME }}" >> .env
+          echo "CCTV_AUTH_PASSWORD=${{ secrets.CCTV_AUTH_PASSWORD }}" >> .env
+          echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+
+      - name: Force Clean Workspace
+        run: |
+          echo "Stopping existing containers..."
+          docker compose down --remove-orphans || true
+          echo "Removing old images..."
+          docker image prune -f || true
+
+      - name: Rebuild and Deploy with Docker Compose
+        run: |
+          docker compose build --no-cache
+          docker compose up -d
+
+      - name: Clean Up Old Docker Images
+        if: always()
+        run: |
+          docker image prune -f

@@ -5,6 +5,38 @@
 
 ---
 
+## 2026-07-21
+
+### Keamanan — Terapkan User/Password di Mosquitto Internal (O1)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Buat `infra/mosquitto/config/password_file` dengan 4 user: `esp32` (firmware), `module-svc`, `control-svc`, `exporter` (Prometheus). Hash SHA512 via `crypt.crypt`. |
+| 2 | ✅ | Update `infra/mosquitto/config/mosquitto.conf`: `allow_anonymous false` + `password_file` + `acl_file`. |
+| 3 | ✅ | Uncomment `infra/mosquitto/config/acl.conf`: aturan per-service (`esp32`, `module-svc`, `control-svc`, `exporter`). |
+| 4 | ✅ | Mount `password_file` di `docker-compose.yml` mosquitto service. |
+| 5 | ✅ | Update `.env` & `.env.example`: `MQTT_URL=tcp://mosquitto:1883`, kredensial per-service. |
+| 6 | ✅ | Update `docker-compose.yml`: module & control service pakai `MQTT_USER`/`MQTT_PASS` spesifik per-service; mosquitto-exporter pointing ke internal broker + auth. |
+| 7 | ✅ | Update `firmware/aeroponic-node/data/config.json`: MQTT user `esp32`/`esp32pass`, port `1883`. |
+| 8 | ✅ | Update `firmware/firmware-sim/firmware_sim/config.py`: default broker ke internal `mosquitto:1883` + credential `esp32`. |
+
+**Keputusan Teknis:** Mosquitto internal sekarang enforce autentikasi (O1 ditutup). Setiap service konek dengan user terpisah sesuai ACL: `esp32` (write telemetry/discovery/status, read actuator), `module-svc` (read `smartfarm/#`), `control-svc` (write actuator, read confirm/telemetry), `exporter` (read `$SYS/broker/`). Firmware & simulator diperbarui untuk menggunakan credential. Docker Compose override env per-service agar tidak perlu ubah kode Go (module/control tetap baca `MQTT_USER`/`MQTT_PASS`).
+
+---
+
+### CI/CD — Tambah Job Deploy ke Server Self-Hosted
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menambahkan job `cd-deploy` ke `.github/workflows/ci.yml`: triggered hanya pada `push` ke `main` (`if: github.ref == 'refs/heads/main'`), runs on `self-hosted`. |
+| 2 | ✅ | Job `cd-deploy` membuat `.env` dari `.env.example` + GitHub Secrets (`MYSQL_ROOT_PASSWORD`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CLOUDFLARED_TUNNEL_TOKEN`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `ADMIN_PASSWORD`, `KONG_JWT_SECRET_FRONTEND`, `KONG_JWT_SECRET_ESP32`, `NATS_PASSWORDS`, `GRAFANA_ADMIN_PASSWORD`, `REDIS_PASSWORD`). |
+| 3 | ✅ | Job `cd-deploy` menjalankan `docker compose down --remove-orphans`, `docker compose build --no-cache`, dan `docker compose up -d` untuk deploy seluruh stack. |
+| 4 | ✅ | Job `cd-deploy` menyertakan cleanup `docker image prune -f` (step `Clean Up Old Docker Images`). |
+
+**Keputusan Teknis:** CD job menggunakan `self-hosted` runner sesuai pola repo lain (evav_nextjs). Secrets diinjeksi ke `.env` via GitHub Secrets (bukan hardcoded). `docker compose build --no-cache` memastikan image baru selalu dibangun dari scratch. Step `if: always()` pada cleanup memastikan image prune tetap berjalan meski deploy gagal.
+
+---
+
 ## 2026-07-17
 
 ### Infrastruktur & Dashboard — MQTT Broker, Prometheus Targets, WS Live Monitor
@@ -39,6 +71,45 @@
 **Keputusan Teknis:** Perubahan kode: `services/control/internal/module/module.go` (helper `unmarshalTags` + 2 call site). Tidak ada perubahan dashboard/field API. Service di-restart: `control`.
 
 **Keputusan Teknis:** Interface seam `Store` di analytics adalah *minimal refactor* (tanpa ubah behavior) agar service layer teruji offline; memenuhi AGENTS.md §4.8 (" tambah interface seam bila dependency hardcoded"). §17d checklist di `testing-plan-agent.md` di-update: Analytics service 100% ≥80%, ML 32 test lolos. §17a/§17b/§17c/§17e & test service lain **tidak disentuh**.
+
+---
+
+### Bug Fix — Gallery AI Detection tab kosong padahal AI Detect sukses
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **ROOT CAUSE:** `dashboard/src/api/ml.js` `listResults` memanggil `request()` yang mengembalikan response mentah `{success,data}` (tanpa unwrap, berbeda dengan `streamApi` yang unwrap). `Snapshot.jsx` menganggap hasil langsung array (`Array.isArray(frames)`), padahal `frames` = `{success,data:{total,items}}` → `frames.map` dilewati → list kosong. Data sebenarnya ada (backend `/ml/results` return 6 frame di `data.items`, dan `ml-result/frames` terisi saat klik AI Detect). |
+| 2 | ✅ | **FIX:** `ml.js` `listResults`/`deleteResult` dibungkus `unwrap` (bongkar `data`). `Snapshot.jsx` `load()` filter `ai` kini baca `framesRes?.items` / `annotatedRes?.items` (dengan fallback array). |
+| 3 | ✅ | **Verifikasi:** `GET /ml/results?prefix=frames` → `data.items` (6 frame, field `key/url/size/last_modified/kind`). eslint 0 error (1 warning pra-eksisting). Vite HMR muat perubahan. |
+
+**Keputusan Teknis:** Perubahan: `dashboard/src/api/ml.js` (unwrap), `dashboard/src/components/Dashboard/Pages/Snapshot.jsx` (baca `.items`). Tidak ubah backend.
+
+---
+
+### Bug Fix — Gallery snapshot "blank hitam" & AI Detection tab kosong (storage auth)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **ROOT CAUSE:** Dashboard merender `<img src="/storage/...">` & `<video>` ke Stream Service `/storage` proxy yang **wajib JWT**. Browser media element TIDAK mengirim header `Authorization`, dan Vite proxy `/storage` tidak menyuntikkan token → stream return **401** → gambar gagal load → `onError` menyembunyikan `<img>`, menyisakan div `bg-black` (tampak "blank hitam"). Tab AI Detection juga pakai URL `/storage/ml-result/...` ⇒ sama gagal ⇒ tampak kosong. Backend & endpoint sudah benar (curl dengan header Bearer → 200 image/jpeg, `ml-result/frames` terisi). |
+| 2 | ✅ | **FIX backend:** `services/stream/internal/middleware/auth.go` `JWTAuth` kini menerima token dari query `?token=` (fallback header `Authorization`), sejalan dengan pola `?token=` di WS gateway. Tanpa token tetap 401. |
+| 3 | ✅ | **FIX frontend:** `dashboard/src/api/client.js` tambah helper `withToken(url)` (resolve ke `API_BASE` + append `?token=`). `Snapshot.jsx` pakai `withToken(...)` untuk semua `<img>`/`<video>` (tile, DetectionImage, lightbox frame/annotated/recording/plain) + `annotatedUrl()` di-tokenize. `LiveView.jsx` tidak terdampak (pakai `/live/` HLS). |
+| 4 | ✅ | **Verifikasi:** rebuild image `microservices-stream`, restart; `GET /storage/...?token=...` → **200 image/jpeg** (522608 B), tanpa token → **401**. Vite HMR otomatis muat perubahan JSX (eslint: 0 error, 1 warning pra-eksisting). |
+
+**Keputusan Teknis:** Perubahan: `services/stream/internal/middleware/auth.go` (token query fallback), `dashboard/src/api/client.js` (`withToken`), `dashboard/src/components/Dashboard/Pages/Snapshot.jsx` (pakai `withToken`). Tidak ubah kontrak API; token di URL sudah jadi pola yang dipakai WS. Service di-restart: `stream`.
+
+---
+
+### Bug Fix — Stream AI Detect "ai vision returned no result" (BAD_GATEWAY) + ffmpeg POC snapshot
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **ROOT CAUSE (AI Detect):** ML Service mengembalikan respons ber-envelope standar `{"success":true,"data":{"count":N,"results":[...]}}` (AGENTS.md §4.4), tetapi `services/stream/internal/client/ml/ml.go` mem-parsing body langsung sebagai `mlDetectResponse{count,results}` tanpa membongkar level `data`. Akibatnya `parsed.Results` selalu kosong → service mengembalikan error `ai vision returned no result` (502 BAD_GATEWAY) padahal ML sukses mendeteksi. Diverifikasi via probe: ML `POST /ml/detect` → HTTP 200 `{"success":true,"data":{"count":1,"results":[{...,"num_detections":0,...}]}}`. |
+| 2 | ✅ | **FIX (AI Detect):** `ml.go` `Detect` kini membongkar envelope `data` (dengan fallback ke body mentah bila `data` kosong) sebelum decode `mlDetectResponse`. Hasil deteksi (termasuk `num_detections:0` = "no object found") kini diteruskan ke `writeToResultBucket` & gallery AI DETECTION. |
+| 3 | ✅ | **ROOT CAUSE (Snapshot ffmpeg):** `mediamtx/client.go` `ffmpegFrame` menganggap ffmpeg gagal bila ada stderr, padahal warning decode H.264/H.265 (`Could not find ref with POC …`, `Missing reference picture`, `concealing`) tetap menghasilkan frame JPEG valid di stdout → snapshot gagal 502. |
+| 4 | ✅ | **FIX (Snapshot ffmpeg):** `ffmpegFrame` mengembalikan frame bila `out.Len() >= minSnapshotBytes` dan stderr **bukan** fatal; tambah `isFatalFFmpegError()` yang mengklasifikasi warning decode sebagai non-fatal, kegagalan keras (`Invalid data found`, `Cannot open`, `Connection refused`, timeout) tetap fatal. |
+| 5 | 🟡 | **Verifikasi E2E:** rebuild image `microservices-stream` (`docker compose build stream`) sedang berjalan; setelahnya `docker compose up -d stream` lalu probe `POST /streams/{id}/snapshot?detect=true` dari container `ml` (punya python). Build Go (`go vet`/`go build`) kedua package lolos. |
+
+**Keputusan Teknis:** Perubahan kode murni backend Go: `services/stream/internal/client/ml/ml.go` (`Detect` unwrap envelope), `services/stream/internal/client/mediamtx/client.go` (`ffmpegFrame` + `isFatalFFmpegError`). Tidak ada perubahan kontrak API/field dashboard. Service di-restart nanti: `stream`.
 
 ---
 

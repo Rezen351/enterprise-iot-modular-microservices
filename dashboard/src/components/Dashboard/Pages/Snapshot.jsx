@@ -16,6 +16,7 @@ import {
 import PageHeader from './PageHeader';
 import streamApi from '../../../api/stream';
 import mlApi from '../../../api/ml';
+import { withToken } from '../../../api/client';
 import { useModule } from '../../../context/ModuleContext';
 
 function canManage() {
@@ -67,7 +68,7 @@ function DetectionImage({ item, onClick, className = '' }) {
       onClick={onClick}
     >
       <img
-        src={item.url}
+        src={withToken(item.url)}
         alt={item.stream_name}
         loading="lazy"
         onLoad={(e) => {
@@ -138,7 +139,7 @@ function resultJsonUrl(frameUrl) {
   return frameUrl.replace('/frames/', '/results/').replace(/\.jpg$/i, '.json');
 }
 function annotatedUrl(frameUrl) {
-  return frameUrl.replace('/frames/', '/annotated/');
+  return withToken(frameUrl.replace('/frames/', '/annotated/'));
 }
 // Normalize an ml-result object into the same shape used by the gallery grid.
 function normalizeCapture(raw) {
@@ -232,12 +233,12 @@ export default function Snapshot() {
         // AI Detection: every ML result (cron routine captures + live "Capture
         // Detect AI" captures) lives in the shared ml-result bucket. Show both
         // the raw frames and the annotated (boxed) images together.
-        const [frames, annotated] = await Promise.all([
-          mlApi.listResults('frames').catch(() => null),
-          mlApi.listResults('annotated').catch(() => null),
-        ]);
-        const a = Array.isArray(frames) ? frames.map(normalizeCapture) : [];
-        const b = Array.isArray(annotated) ? annotated.map(normalizeCapture) : [];
+        const framesRes = await mlApi.listResults('frames').catch(() => null);
+        const annotatedRes = await mlApi.listResults('annotated').catch(() => null);
+        const frames = framesRes?.items || (Array.isArray(framesRes) ? framesRes : []);
+        const annotated = annotatedRes?.items || (Array.isArray(annotatedRes) ? annotatedRes : []);
+        const a = frames.map(normalizeCapture);
+        const b = annotated.map(normalizeCapture);
         let list = [...a, ...b];
         // Scope to the selected module: keep only frames whose stream belongs to
         // a stream bound to the active module.
@@ -462,7 +463,7 @@ export default function Snapshot() {
                   <DetectionImage item={s} onClick={() => !selectMode && openPreview(s)} />
                 ) : isRecording ? (
                   <video
-                    src={s.url}
+                    src={withToken(s.url)}
                     controls
                     preload="metadata"
                     className="w-full h-full object-contain bg-black"
@@ -472,7 +473,7 @@ export default function Snapshot() {
                   />
                 ) : (
                   <img
-                    src={s.url}
+                    src={withToken(s.url)}
                     alt={s.stream_name}
                     loading="lazy"
                     onClick={() => selectMode ? toggleSelect(s.id) : openPreview(s)}
@@ -588,11 +589,11 @@ export default function Snapshot() {
               <>
                 {preview.captureType === 'frame' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                    <img src={preview.url} alt="frame" className="max-h-[70vh] w-full object-contain border border-sky-500/20" />
-                    <img src={annotatedUrl(preview.url)} alt="annotated" className="max-h-[70vh] w-full object-contain border border-sky-500/20" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <img src={withToken(preview.url)} alt="frame" className="max-h-[70vh] w-full object-contain border border-sky-500/20" />
+                    <img src={withToken(annotatedUrl(preview.url))} alt="annotated" className="max-h-[70vh] w-full object-contain border border-sky-500/20" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   </div>
                 ) : (
-                  <img src={preview.url} alt="annotated" className="max-h-[80vh] w-auto object-contain border border-sky-500/20" />
+                  <img src={withToken(preview.url)} alt="annotated" className="max-h-[80vh] w-auto object-contain border border-sky-500/20" />
                 )}
                 {captureDetail?.detection && (
                   <div className="w-full border border-sky-500/20 bg-[#030705]/90 p-4 text-xs font-black uppercase tracking-widest text-slate-200 space-y-1">
@@ -609,13 +610,13 @@ export default function Snapshot() {
               </div>
             ) : preview.kind === 'recording' ? (
               <video
-                src={preview.url}
+                src={withToken(preview.url)}
                 controls
                 className="max-h-[80vh] w-auto max-w-full bg-black border border-red-500/20"
               />
             ) : (
               <img
-                src={preview.url}
+                src={withToken(preview.url)}
                 alt={preview.stream_name}
                 className="max-h-[80vh] w-auto object-contain border border-emerald-500/20"
               />

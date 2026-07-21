@@ -136,8 +136,26 @@ func (c *Client) Detect(ctx context.Context, imageBytes []byte, filename string)
 		return nil, fmt.Errorf("ml detect failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(data)))
 	}
 
+	// The ML Service returns the standardized wrapper
+	// {"success":true,"data":{...}}. Unwrap the "data" envelope; if the
+	// envelope is absent, fall back to parsing the body directly so the
+	// client keeps working against older/raw responses.
+	var envelope struct {
+		Success bool            `json:"success"`
+		Data    json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, fmt.Errorf("ml decode: %w", err)
+	}
+	payload := data
+	if len(envelope.Data) > 0 {
+		payload = envelope.Data
+	} else if !envelope.Success && payload == nil {
+		return nil, fmt.Errorf("ml detect failed: %s", strings.TrimSpace(string(data)))
+	}
+
 	var parsed mlDetectResponse
-	if err := json.Unmarshal(data, &parsed); err != nil {
+	if err := json.Unmarshal(payload, &parsed); err != nil {
 		return nil, fmt.Errorf("ml decode: %w", err)
 	}
 	if len(parsed.Results) == 0 {

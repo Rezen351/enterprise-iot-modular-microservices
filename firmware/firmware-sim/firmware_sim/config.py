@@ -23,7 +23,7 @@ from typing import Any
 TOPIC_PREFIX = "smartfarm"
 DEFAULT_FW_VERSION = "1.0.0"
 DEFAULT_PUBLISH_INTERVAL = 5  # seconds
-DEFAULT_MQTT = {"server": "tcp://192.168.1.103:1884", "port": 1884, "user": "", "pass": "", "use_tls": False}
+DEFAULT_MQTT = {"server": "tcp://mosquitto:1883", "port": 1883, "user": "esp32", "pass": "esp32pass", "use_tls": False}
 
 # Default virtual pin layout — mirrors the real node ECE334219870 so a clone
 # publishes an *identical* payload structure (digital inputs/outputs + cwt modbus).

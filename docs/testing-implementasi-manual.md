@@ -28,7 +28,7 @@
 ### Environment
 - Stack dijalankan via `docker compose up -d` (semua container `healthy`).
 - Base URL eksternal (melalui Kong): `http://localhost:8000` (env `KONG_PUBLIC_URL`).
-- MQTT broker (device): `MQTT_URL` (default remote `tcp://192.168.1.103:1884` — BUKAN container `mosquitto` lokal).
+- MQTT broker (device): `tcp://mosquitto:1883` (container internal, auth enabled).
 - Prometheus: `http://localhost:9090`. NATS monitor: `http://<nats>:8222`.
 - MinIO console: `http://localhost:9001` (bucket `stream`, `ml-vision`, `ota`).
 

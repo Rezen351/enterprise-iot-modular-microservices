@@ -36,11 +36,22 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 				return
 			}
 			header := r.Header.Get("Authorization")
-			if !strings.HasPrefix(header, "Bearer ") {
+			tokenStr := ""
+			if strings.HasPrefix(header, "Bearer ") {
+				tokenStr = strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+			}
+			// Fallback: token supplied as a query arg (?token=). Used by the
+			// dashboard when loading <img>/<video> sources, which cannot send
+			// an Authorization header. Same pattern as the WS gateway token.
+			if tokenStr == "" {
+				if q := r.URL.Query().Get("token"); q != "" {
+					tokenStr = q
+				}
+			}
+			if tokenStr == "" {
 				unauthorized(w, "missing or invalid Authorization header")
 				return
 			}
-			tokenStr := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
 			claims := &Claims{}
 			_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

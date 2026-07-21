@@ -31,7 +31,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> Uses the project broker from `.env`: `MQTT_URL=tcp://192.168.1.103:1884`.
+> Uses the project broker from `.env`: `MQTT_URL=tcp://mosquitto:1883`.
 > Override per instance with `--mqtt-server`.
 
 ## Quick start
@@ -46,7 +46,7 @@ python -m firmware_sim clone --node-id node-07
 python -m firmware_sim run --node-id node-07
 
 # 3. in another terminal, watch it on the broker
-mosquitto_sub -h 192.168.1.103 -p 1884 -t 'smartfarm/#' -v
+mosquitto_sub -h mosquitto -p 1883 -t 'smartfarm/#' -v
 ```
 
 ## Cloning many devices (fixed but different IDs)
@@ -79,7 +79,7 @@ Service sees them as separate nodes and you can pair each independently.
   and re-announces it on reconnect.
 - **Output (actuator):** publish a command, the sim executes it and ACKs:
   ```bash
-  mosquitto_pub -h 192.168.1.103 -p 1884 -t smartfarm/actuator/node-07 \
+  mosquitto_pub -h mosquitto -p 1883 -t smartfarm/actuator/node-07 \
     -m '{"action":"set_output","target":"relay_pump","value":1,"req_id":"abc"}'
   # device replies on smartfarm/node-07/confirm
   ```
@@ -87,7 +87,7 @@ Service sees them as separate nodes and you can pair each independently.
   or via sim hook `smartfarm/node-07/sim` `{"action":"emergency"}`.
  - **Force an input (for threshold testing):**
    ```bash
-   mosquitto_pub -h 192.168.1.103 -p 1884 -t smartfarm/node-07/sim \
+   mosquitto_pub -h mosquitto -p 1883 -t smartfarm/node-07/sim \
      -m '{"action":"set_input","target":"s_atas_temp","value":40}'
    ```
    Values are **engineering units** (e.g. `40` = 40 °C). The local-control rule

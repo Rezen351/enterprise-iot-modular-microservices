@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_AUTH}
+      MYSQL_DATABASE: auth_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -36,13 +36,13 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/${MYSQL_DATABASE_AUTH}?parseTime=true"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/auth_db?parseTime=true"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
-      JWT_EXPIRY: "${JWT_EXPIRY:-15m}"
-      REFRESH_EXPIRY: "${REFRESH_EXPIRY:-168h}"
-      ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
-      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@smartfarm.local}"
+      JWT_EXPIRY: "12h"
+      REFRESH_EXPIRY: "168h"
+      ADMIN_USERNAME: admin
+      ADMIN_EMAIL: admin@smartfarm.local
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin1234}"
       PORT: "8080"
     depends_on:
@@ -91,7 +91,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/${MYSQL_DATABASE_ALERT}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/alert_db?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
       REDIS_ADDR: "redis-shared:6379"
@@ -139,6 +139,7 @@ services:
     volumes:
       - ./infra/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./infra/mosquitto/config/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./infra/mosquitto/config/password_file:/mosquitto/config/password_file:ro
       - ./volumes/mosquitto:/mosquitto/data
     ports:
       - "1883:1883"
@@ -153,7 +154,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_CONTROL}
+      MYSQL_DATABASE: control_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -177,7 +178,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_AUDIT}
+      MYSQL_DATABASE: audit_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -201,7 +202,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_ALERT}
+      MYSQL_DATABASE: alert_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -225,7 +226,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_NOTIFICATION}
+      MYSQL_DATABASE: notification_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -268,7 +269,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${TIMESCALE_DATABASE_MODULE}
+      POSTGRES_DB: module_ts
     volumes:
       - ./volumes/timescaledb-module:/var/lib/postgresql/data
       - ./infra/timescaledb/module/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -289,7 +290,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_MODULE}
+      MYSQL_DATABASE: module_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -314,7 +315,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${TIMESCALE_ANALYTICS_DB}
+      POSTGRES_DB: analytics_ts
     volumes:
       - ./volumes/timescaledb-analytics:/var/lib/postgresql/data
       - ./infra/timescaledb/analytics/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -337,13 +338,13 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-module:3306)/${MYSQL_DATABASE_MODULE}?parseTime=true&charset=utf8mb4"
-      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-module:3306)/module_db?parseTime=true&charset=utf8mb4"
+      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/module_ts?sslmode=disable"
       REDIS_ADDR: "redis-shared:6379"
       NATS_URL: "nats://nats:4222"
-      MQTT_URL: "${MQTT_URL}"
-      MQTT_USER: "${MQTT_USER}"
-      MQTT_PASS: "${MQTT_PASS}"
+      MQTT_URL: "tcp://mosquitto:1883"
+      MQTT_USER: "module-svc"
+      MQTT_PASS: "moduleSvcPass123"
       MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
       JWT_SECRET: "${JWT_SECRET}"
     depends_on:
@@ -375,7 +376,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
+      TIMESCALE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/analytics_ts?sslmode=disable"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
     depends_on:
@@ -398,16 +399,16 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-control:3306)/${MYSQL_DATABASE_CONTROL}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-control:3306)/control_db?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
-      MQTT_URL: "${MQTT_URL}"
-      MQTT_USER: "${MQTT_USER}"
-      MQTT_PASS: "${MQTT_PASS}"
+      MQTT_URL: "tcp://mosquitto:1883"
+      MQTT_USER: "control-svc"
+      MQTT_PASS: "controlSvcPass123"
       MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
       JWT_SECRET: "${JWT_SECRET}"
       MODULE_URL: "http://module:8080"
-      ACK_TIMEOUT_SECONDS: "${ACK_TIMEOUT_SECONDS:-8}"
-      TIMEZONE: "${TIMEZONE:-Asia/Jakarta}"
+      ACK_TIMEOUT_SECONDS: "8"
+      TIMEZONE: "Asia/Jakarta"
     depends_on:
       mariadb-control:
         condition: service_healthy
@@ -430,7 +431,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/${MYSQL_DATABASE_AUDIT}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/audit_db?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
     depends_on:
@@ -457,7 +458,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/${MYSQL_DATABASE_AUDIT}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-audit:3306)/audit_db?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
       JWT_SECRET: "${JWT_SECRET}"
       DLQ_MAX_AGE_HOURS: "720"
@@ -569,14 +570,14 @@ services:
     image: grafana/grafana:11.3.0
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: ""
       # URL publik (via Cloudflare Tunnel) agar link, redirect, dan cookie
       # Grafana benar saat diakses lewat hostname HTTPS.
-      GF_SERVER_ROOT_URL: "${GRAFANA_PUBLIC_URL}"
-      GF_SERVER_DOMAIN: "${GRAFANA_DOMAIN}"
+      GF_SERVER_ROOT_URL: "https://grafana.smartfarm.example"
+      GF_SERVER_DOMAIN: "grafana.smartfarm.example"
       GF_SESSION_COOKIE_SECURE: "true"
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -663,8 +664,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      POSTGRES_DSN_1: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
-      POSTGRES_DSN_2: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/${TIMESCALE_ANALYTICS_DB}?sslmode=disable"
+      POSTGRES_DSN_1: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/module_ts?sslmode=disable"
+      POSTGRES_DSN_2: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-analytics:5432/analytics_ts?sslmode=disable"
     depends_on:
       timescaledb-module:
         condition: service_healthy
@@ -678,7 +679,9 @@ services:
     image: sapcc/mosquitto-exporter:latest
     restart: unless-stopped
     command:
-      - "--endpoint=tcp://192.168.1.103:1884"
+      - "--endpoint=tcp://mosquitto:1883"
+      - "--user=exporter"
+      - "--password=exporterPass123"
       - "--bind-address=:9234"
     depends_on:
       - mosquitto
@@ -752,7 +755,7 @@ services:
     environment:
       # URL API untuk browser. Lewat Cloudflare Tunnel, pakai hostname publik
       # API (HTTPS) agar browser remote bisa menjangkau Kong.
-      VITE_API_URL: "${VITE_API_URL:-http://172.31.225.221:8000}"
+      VITE_API_URL: https://api.smartfarm.example
     ports:
       - "5173:5173"
     volumes:
@@ -771,7 +774,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_STREAM}
+      MYSQL_DATABASE: stream_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -795,7 +798,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_ML}
+      MYSQL_DATABASE: ml_db
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
@@ -890,36 +893,29 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      CAPTURE_INTERVAL_HOURS: "${CCTV_CAPTURE_INTERVAL_HOURS}"
-      CAPTURE_CRON: "${CCTV_CAPTURE_CRON}"
-      CAPTURE_STREAMS: "${CCTV_CAPTURE_STREAMS}"
-      PUMP_PATHS: "${CCTV_PUMP_PATHS}"
-      LOAD_PATHS: "${CCTV_LOAD_PATHS}"
-      NODE_IDS: "${CCTV_NODE_IDS}"
-      CONDITION_MODE: "${CCTV_CONDITION_MODE}"
-      SKIP_WHEN_TELEMETRY_MISSING: "${CCTV_SKIP_WHEN_TELEMETRY_MISSING}"
-      ML_BASE_URL: "${CCTV_ML_BASE_URL}"
+      CAPTURE_INTERVAL_HOURS: "8"
+      CAPTURE_CRON: ""
+      CAPTURE_STREAMS: ""
+      PUMP_PATHS: ""
+      LOAD_PATHS: ""
+      NODE_IDS: ""
+      CONDITION_MODE: ""
+      SKIP_WHEN_TELEMETRY_MISSING: ""
+      ML_BASE_URL: http://ml:8080
       ML_API_TOKEN: "${CCTV_ML_API_TOKEN}"
-      AUTH_BASE_URL: "${CCTV_AUTH_BASE_URL}"
+      AUTH_BASE_URL: http://auth:8080
       AUTH_USERNAME: "${CCTV_AUTH_USERNAME}"
       AUTH_PASSWORD: "${CCTV_AUTH_PASSWORD}"
-      MODEL_ID: "${CCTV_MODEL_ID}"
-      MINIO_RESULT_BUCKET: "${CCTV_MINIO_RESULT_BUCKET}"
-      MINIO_STREAM_BUCKET: "${CCTV_MINIO_STREAM_BUCKET:-stream}"
-      MIRROR_ANNOTATED: "${CCTV_MIRROR_ANNOTATED}"
-      REDIS_ADDR: "redis-shared:6379"
-      REDIS_PASSWORD: ""
-      REDIS_DB: "0"
-      MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
-      MEDIAMTX_API_URL: "http://mediamtx:9997"
-      STREAM_BASE_URL: "http://stream:8080"
-      CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
-      MINIO_ENDPOINT: "minio:9000"
+      MODEL_ID: ""
+      MINIO_RESULT_BUCKET: ml-result
+      MINIO_STREAM_BUCKET: stream
+      MIRROR_ANNOTATED: ""
+      MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
       MINIO_USE_SSL: "false"
-      MINIO_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}/minio"
-      LOG_LEVEL: "INFO"
+      MINIO_PUBLIC_URL: http://localhost:8000/minio
+      LOG_LEVEL: INFO
     depends_on:
       minio:
         condition: service_healthy
@@ -942,19 +938,18 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-stream:3306)/${MYSQL_DATABASE_STREAM}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-stream:3306)/stream_db?parseTime=true&charset=utf8mb4"
       MEDIAMTX_API_URL: "http://mediamtx:9997"
       MEDIAMTX_HTTP_URL: "http://mediamtx:8888"
       MEDIAMTX_RTSP_URL: "rtsp://mediamtx:8554"
-      CCTV_RTSP_URL: "${CCTV_RTSP_URL}"
-      KONG_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}"
+      KONG_PUBLIC_URL: http://localhost:8000
       JWT_SECRET: "${JWT_SECRET}"
       MINIO_ENDPOINT: "minio:9000"
       MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
       MINIO_USE_SSL: "false"
-      MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
-      MINIO_RESULT_BUCKET: "${MINIO_RESULT_BUCKET:-ml-result}"
+      MINIO_STREAM_BUCKET: stream
+      MINIO_RESULT_BUCKET: ml-result
       ML_BASE_URL: "http://ml:8080"
       ML_VISION_MODEL_ID: ""
     depends_on:
@@ -984,15 +979,15 @@ services:
     restart: unless-stopped
     environment:
       PORT: "8080"
-      DATABASE_URL: "mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb-ml:3306/${MYSQL_DATABASE_ML}?charset=utf8mb4"
+      DATABASE_URL: "mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb-ml:3306/ml_db?charset=utf8mb4"
       JWT_SECRET: "${JWT_SECRET}"
       MINIO_ENDPOINT: "minio:9000"
       MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
       MINIO_USE_SSL: "false"
-      MINIO_ML_BUCKET: "${MINIO_ML_BUCKET}"
-      MINIO_STREAM_BUCKET: "${MINIO_STREAM_BUCKET}"
-      MINIO_PUBLIC_URL: "${KONG_PUBLIC_URL:-http://localhost:8000}/minio"
+      MINIO_ML_BUCKET: ml
+      MINIO_STREAM_BUCKET: stream
+      MINIO_PUBLIC_URL: http://localhost:8000/minio
       NATS_URL: "nats://nats:4222"
       NATS_SUBJECT_DETECTION: "detection.result"
     volumes:
@@ -1025,7 +1020,7 @@ services:
     environment:
       PORT: "8080"
       JWT_SECRET: "${JWT_SECRET}"
-      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-notification:3306)/${MYSQL_DATABASE_NOTIFICATION}?parseTime=true&charset=utf8mb4"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-notification:3306)/notification_db?parseTime=true&charset=utf8mb4"
       REDIS_ADDR: "redis-shared:6379"
       REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
       REDIS_DB: "2"
@@ -1057,7 +1052,7 @@ services:
     environment:
       PORT: "8080"
       JWT_SECRET: "${JWT_SECRET}"
-      TIMESCALEDB_MODULE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/${TIMESCALE_DATABASE_MODULE}?sslmode=disable"
+      TIMESCALEDB_MODULE_DSN: "postgres://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/module_ts?sslmode=disable"
       REDIS_ADDR: "redis-shared:6379"
       REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
       REDIS_DB: "3"

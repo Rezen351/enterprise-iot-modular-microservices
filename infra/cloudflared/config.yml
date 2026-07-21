@@ -2,31 +2,17 @@
 # Cloudflare Tunnel — OPTIONAL local ingress config (cloudflared)
 # =====================================================================
 # The docker-compose `cloudflared` service runs in token-only mode and pulls
-# its ingress from the Cloudflare Zero Trust dashboard (public hostname →
-# http://kong:8000). This file is ONLY needed if you want to define ingress
-# locally instead of in the dashboard.
-#
-# To use local ingress, re-mount this file and pass --config in
-# docker-compose.yml:
-#     volumes:
-#       - ./infra/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
-#     command: ["--config","/etc/cloudflared/config.yml","tunnel","run","--token","${CLOUDFLARED_TUNNEL_TOKEN}"]
-#
-# Then set CLOUDFLARED_HOSTNAME in .env (e.g. api.smartfarm.example).
+# its ingress from the Cloudflare Zero Trust dashboard. This file is NOT
+# mounted by default. Uncomment and edit below only if you want to manage
+# ingress locally instead of in the dashboard.
 # =====================================================================
 
 ingress:
   # ── API + dashboard gateway (Kong) ─────────────────────────────────
-  - hostname: ${CLOUDFLARED_HOSTNAME}
-    service: http://kong:8000
-    originRequest:
-      noTLSVerify: true
-
-  # ── Optional: dedicated WebSocket bridge subdomain ─────────────────
-  # - hostname: ws.${CLOUDFLARED_HOSTNAME}
-  #   service: http://wsgateway:8090
+  # - hostname: api.example.com
+  #   service: http://kong:8000
   #   originRequest:
   #     noTLSVerify: true
 
-  # ── Catch-all: reject anything that does not match a hostname above ─
+  # ── Catch-all: reject anything that does not match a rule above ─────
   - service: http_status:404

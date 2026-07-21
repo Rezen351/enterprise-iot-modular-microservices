@@ -1,0 +1,30 @@
+# Git & Metadata
+.git
+.github
+.agents
+docs/
+*.md
+AGENTS.md
+logs.md
+
+# Persistent Data & Local Volumes
+volumes/
+*.log
+
+# Node.js / Dashboard
+**/node_modules
+dashboard/dist
+dashboard/dist-ssr
+
+# Python / ML
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.venv
+**/*.pt
+
+# Compiled Go Binaries
+**/stream-svc
+**/auth-svc
+**/*-svc

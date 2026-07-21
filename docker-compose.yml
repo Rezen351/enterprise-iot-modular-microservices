@@ -576,6 +576,7 @@ services:
   # ────────────────────────────────────
   grafana:
     image: grafana/grafana:11.3.0
+    user: "0"
     restart: unless-stopped
     environment:
        GF_SECURITY_ADMIN_USER: admin

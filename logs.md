@@ -19,7 +19,13 @@
 | 6 | ✅ | Buat berkas [.dockerignore](file:///home/almuzky/TA/Microservices/.dockerignore) di root repositori untuk mengecualikan `.git`, `node_modules`, `volumes`, log, dan cache agar build context Docker lebih cepat & meminimalkan layer cache miss. |
 | 7 | ✅ | Integrasikan Docker Buildx GitHub Actions Layer Cache (`--cache-from type=gha`, `--cache-to type=gha,mode=max`) pada job `docker-build` & `dashboard-docker-build` di [.github/workflows/ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml) agar proses kompilasi image Docker di CI 3-5x lebih cepat. |
 
-**Keputusan Teknis:** `actions/checkout@v4` dieksekusi oleh runner Node.js sebelum langkah lain jika ditaruh di awal. Jika direktori `$GITHUB_WORKSPACE` mengandung file/folder `root:root` (seperti `dashboard/node_modules`), `actions/checkout` akan gagal me-rmdir file tersebut sebelum step `sudo chown` sempat berjalan. Menaruh step `Pre-checkout Fix Permissions` (menggunakan `sudo`) **sebelum** `actions/checkout@v4` memastikan kepemilikan file dikembalikan ke user `aeroponik` & `node_modules` dibersihkan terlebih dahulu sebelum `actions/checkout@v4` dipanggil.
+### Infrastruktur — Perbaikan Permission Denied pada Grafana Volume (`mkdir /var/lib/grafana/plugins`)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Tambahkan `user: "0"` pada service `grafana` di [docker-compose.yml](file:///home/almuzky/TA/Microservices/docker-compose.yml#L578) agar Grafana memiliki izin membuat folder internal (`plugins`, `png`, `csv`) di dalam volume mount `./volumes/grafana` tanpa terhalang izin folder host. |
+
+**Keputusan Teknis:** Secara default kontainer `grafana:11.3.0` berjalan sebagai non-root (UID `472`). Ketika volume host `./volumes/grafana` dimiliki oleh `root` atau user host lain, Grafana gagal membuat direktori `/var/lib/grafana/plugins` dengan error `EACCES`. Menambahkan `user: "0"` memastikan Grafana berjalan dengan hak akses root di dalam kontainer sehingga inisialisasi folder volume selalu berhasil di environment mana pun.
 
 ---
 

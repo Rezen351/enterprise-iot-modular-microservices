@@ -260,13 +260,13 @@ Tracks consumed message IDs for consumer-side idempotency.
 ### 8.1 Health Check
 
 ```bash
-curl -s http://localhost:8080/health | jq
+curl -s http://localhost:8000/v1/health | jq
 ```
 
 ### 8.2 Query All Audit Logs (default page)
 
 ```bash
-curl -s "http://localhost:8080/audit/logs" \
+curl -s "http://localhost:8000/v1/audit/logs" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" | jq
 ```
 
@@ -275,28 +275,28 @@ curl -s "http://localhost:8080/audit/logs" \
 Filter by event prefix:
 
 ```bash
-curl -s "http://localhost:8080/audit/logs?event=auth.login" \
+curl -s "http://localhost:8000/v1/audit/logs?event=auth.login" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" | jq
 ```
 
 Free-text search in payload:
 
 ```bash
-curl -s "http://localhost:8080/audit/logs?search=10.0.0.1" \
+curl -s "http://localhost:8000/v1/audit/logs?search=10.0.0.1" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" | jq
 ```
 
 Time window (RFC3339):
 
 ```bash
-curl -s "http://localhost:8080/audit/logs?from=2026-07-01T00:00:00Z&to=2026-07-21T23:59:59Z&limit=100" \
+curl -s "http://localhost:8000/v1/audit/logs?from=2026-07-01T00:00:00Z&to=2026-07-21T23:59:59Z&limit=100" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" | jq
 ```
 
 Combined filters:
 
 ```bash
-curl -s "http://localhost:8080/audit/logs?event=sensor&search=node_42&from=2026-07-01T00:00:00Z&limit=20&offset=40" \
+curl -s "http://localhost:8000/v1/audit/logs?event=sensor&search=node_42&from=2026-07-01T00:00:00Z&limit=20&offset=40" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" | jq
 ```
 

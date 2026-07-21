@@ -1186,6 +1186,7 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 
 | 6 | ✅ | `infra/kong/kong.yml`: Menambahkan rute `-v1` dengan plugin `request-transformer` untuk secara otomatis mengupas (strip) prefix `/v1` dan membelokkan request ke backend upstream tanpa perlu mengubah kode microservices Go/Python. |
 | 7 | ✅ | `dashboard/src/api/client.js`: Fungsi `request()` dan `withToken()` otomatis memformat path dengan prefix `/v1`. |
+| 8 | ✅ | `docs/integration-guides/` & `docs/planning.md`: Memperbarui seluruh dokumentasi integrasi per-service (`alert.md`, `audit.md`, `ml.md`, `wsgateway.md`, `planning.md`) agar mencantumkan URL dan endpoint resmi berversi `/v1`. |
 
 **Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Bila diakses dari peranti lain dalam jaringan lokal atau internet (mis. `http://192.168.1.50:5173/v1/auth/login`), request API & WebSocket secara otomatis diproses oleh Kong Gateway via reverse proxy.
 

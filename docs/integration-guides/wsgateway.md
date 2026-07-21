@@ -191,8 +191,8 @@ nats_client.publish("alert.triggered", json.dumps(payload).encode())
 The Dashboard (React) opens a WebSocket connection via Kong:
 
 ```
-ws://<kong-host>/ws/nodes/<node_id>/live?token=<jwt>
-ws://<kong-host>/ws/system-status?token=<jwt>
+ws://<kong-host>/v1/ws/nodes/<node_id>/live?token=<jwt>
+ws://<kong-host>/v1/ws/system-status?token=<jwt>
 ```
 
 No changes to WS-Gateway are required if you reuse existing subjects. If you introduce new subjects, you must add a new handler or extend an existing subscription list in `internal/handler/handler.go`.

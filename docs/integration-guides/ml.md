@@ -317,8 +317,8 @@ Two tables are maintained in `mariadb-ml`:
 
 ### 5.1 Calling the ML Service from Another Microservice
 
-1. **Route through Kong:** Always call `http://kong:8000/ml/...` (or the external host). Do not call the ML Service container directly.
-2. **Obtain a JWT:** Use the shared `JWT_SECRET` to request a token from the Auth Service (`POST /auth/login`). The token must contain `roles` claims that include the required role (`admin` or `operator` for writes; `admin`, `operator`, or `viewer` for reads).
+1. **Route through Kong:** Always call `http://kong:8000/v1/ml/...` (or the external host). Do not call the ML Service container directly.
+2. **Obtain a JWT:** Use the shared `JWT_SECRET` to request a token from the Auth Service (`POST /v1/auth/login`). The token must contain `roles` claims that include the required role (`admin` or `operator` for writes; `admin`, `operator`, or `viewer` for reads).
 3. **Set the Authorization header:** `Authorization: Bearer <token>`
 4. **Send the request:** Use the standard JSON envelope for responses.
 
@@ -333,7 +333,7 @@ headers = {"Authorization": f"Bearer {TOKEN}"}
 
 # Trigger inference on a stream frame
 resp = httpx.post(
-    f"{KONG_URL}/ml/detect/from-stream",
+    f"{KONG_URL}/v1/ml/detect/from-stream",
     json={
         "object_key": "cctv-front/2026-07-21_120000_abc123_frame.jpg",
         "model_id": "vision-aeroponik",

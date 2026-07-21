@@ -210,7 +210,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `nats/` — Konfigurasi NATS dengan JetStream dan ACL per-service ✅
   - `mosquitto/` — Konfigurasi MQTT broker dan ACL per-topik ✅
   - `mediamtx/` — Konfigurasi MediaMTX untuk streaming video
-  - `kong/` — Konfigurasi routing, JWT validation, rate-limiting, CORS ✅
+  - `kong/` — Konfigurasi routing, /v1 API versioning reverse proxying, JWT validation, rate-limiting, CORS ✅
   - `prometheus/` — Konfigurasi Prometheus untuk aggregasi metrik ✅
   - `cloudflared/` — Konfigurasi tunnel Cloudflare
 - **`services/`** — Kode sumber microservices:

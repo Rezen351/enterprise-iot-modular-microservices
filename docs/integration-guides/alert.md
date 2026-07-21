@@ -572,35 +572,35 @@ active  →  acked     (operator acknowledges)
 
 ```bash
 # Health check (public)
-curl -s http://localhost:8080/health
+curl -s http://localhost:8000/v1/health
 
 # List alerts (requires JWT)
 curl -s -H "Authorization: Bearer $JWT_TOKEN" \
-  "http://localhost:8080/alerts?node_id=node-1&status=active&limit=10"
+  "http://localhost:8000/v1/alerts?node_id=node-1&status=active&limit=10"
 
 # Acknowledge alert (requires admin or operator role)
 curl -s -X PUT -H "Authorization: Bearer $JWT_TOKEN" \
-  "http://localhost:8080/alerts/alert-uuid/ack"
+  "http://localhost:8000/v1/alerts/alert-uuid/ack"
 
 # List thresholds
 curl -s -H "Authorization: Bearer $JWT_TOKEN" \
-  "http://localhost:8080/thresholds?node_id=node-1"
+  "http://localhost:8000/v1/thresholds?node_id=node-1"
 
 # Create threshold
 curl -s -X POST -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"node_id":"node-1","metric":"temperature","min":18,"max":40,"severity":"warning"}' \
-  "http://localhost:8080/thresholds"
+  "http://localhost:8000/v1/thresholds"
 
 # Update threshold
 curl -s -X PUT -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"max":45,"severity":"critical"}' \
-  "http://localhost:8080/thresholds/threshold-uuid"
+  "http://localhost:8000/v1/thresholds/threshold-uuid"
 
 # Delete threshold
 curl -s -X DELETE -H "Authorization: Bearer $JWT_TOKEN" \
-  "http://localhost:8080/thresholds/threshold-uuid"
+  "http://localhost:8000/v1/thresholds/threshold-uuid"
 
 # Publish telemetry (simulate Module Service publishing to telemetry.ingest)
 nats pub telemetry.ingest '{"node_id":"node-1","metric":"temperature","value":42.5,"ts":1690000000000}'

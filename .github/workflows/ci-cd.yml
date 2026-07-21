@@ -264,9 +264,10 @@ jobs:
           sudo chown -R 999:999 ./volumes/mariadb-* 2>/dev/null || true
           # TimescaleDB/PostgreSQL directories
           sudo chown -R 70:70 ./volumes/timescaledb-* 2>/dev/null || true
-          # Prometheus runs as UID 65534 (nobody:nogroup) inside container
-          sudo chown -R 65534:65534 ./volumes/prometheus 2>/dev/null || true
+          # Prometheus now runs as root in container; ensure volume is writable
           sudo chmod -R 777 ./volumes/prometheus 2>/dev/null || true
+          # Clean stale Prometheus mmap/query log files from prior crash
+          sudo rm -f ./volumes/prometheus/queries.active 2>/dev/null || true
           # Redis, cAdvisor, node-exporter
           sudo chown -R $(whoami):$(whoami) ./volumes/redis-shared ./volumes/cadvisor ./volumes/node-exporter 2>/dev/null || true
           echo "Volume permissions fixed."

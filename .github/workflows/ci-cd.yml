@@ -185,17 +185,17 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Pre-checkout Fix Permissions
+        run: |
+          echo "Fixing workspace ownership before checkout..."
+          sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE 2>/dev/null || true
+          sudo rm -rf $GITHUB_WORKSPACE/dashboard/node_modules 2>/dev/null || true
+          echo "Workspace permissions fixed."
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           clean: false
-
-      - name: Fix Workspace Permissions
-        run: |
-          echo "Fixing workspace ownership..."
-          sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE || true
-          sudo rm -rf dashboard/node_modules 2>/dev/null || true
-          echo "Workspace permissions fixed."
 
       - name: Configure Runner Network Retries
         run: |

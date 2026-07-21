@@ -11,11 +11,11 @@
 
 | # | Status | Aktivitas |
 |---|---|---|
-| 1 | ✅ | Tambahkan `with: clean: false` pada `actions/checkout@v4` di job `cd-deploy` ([ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml)) agar runner tidak gagal menghapus direktori berizin root sebelum checkout. |
-| 2 | ✅ | Pindahkan step `Fix Workspace Permissions` (`sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE`) agar dieksekusi langsung setelah checkout, serta tambahkan `sudo rm -rf dashboard/node_modules` untuk membersihkan sisa file root. |
+| 1 | ✅ | Pindahkan step `Pre-checkout Fix Permissions` (`sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE` & `sudo rm -rf $GITHUB_WORKSPACE/dashboard/node_modules`) menjadi **step paling awal SEBELUM `actions/checkout@v4`** di job `cd-deploy` ([ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml)). |
+| 2 | ✅ | Tambahkan `with: clean: false` pada `actions/checkout@v4` untuk mencegah `actions/checkout` menghapus untracked directory sebelum fetch. |
 | 3 | ✅ | Tambahkan `node_modules/` dan `**/node_modules/` ke [.gitignore](file:///home/almuzky/TA/Microservices/.gitignore). |
 
-**Keputusan Teknis:** `actions/checkout@v4` secara default mencoba menghapus file untracked sebelum fetch (clean phase via Node.js `fs.rm`). Ketika `dashboard/node_modules` atau file hasil build Docker terbuat dengan owner `root:root`, runner (`aeroponik`) gagal menghapusnya sebelum langkah user (`sudo chown`) berjalan. Menggunakan `clean: false` mencegah `actions/checkout` gagal di awal, sehingga step `sudo chown` dapat memperbaiki permission secara otomatis.
+**Keputusan Teknis:** `actions/checkout@v4` dieksekusi oleh runner Node.js sebelum langkah lain jika ditaruh di awal. Jika direktori `$GITHUB_WORKSPACE` mengandung file/folder `root:root` (seperti `dashboard/node_modules`), `actions/checkout` akan gagal me-rmdir file tersebut sebelum step `sudo chown` sempat berjalan. Menaruh step `Pre-checkout Fix Permissions` (menggunakan `sudo`) **sebelum** `actions/checkout@v4` memastikan kepemilikan file dikembalikan ke user `aeroponik` & `node_modules` dibersihkan terlebih dahulu sebelum `actions/checkout@v4` dipanggil.
 
 ---
 

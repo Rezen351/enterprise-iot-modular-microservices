@@ -1,79 +1,74 @@
-# Microservices Unit & Feature Test Suite
+# Enterprise IoT Microservices Testing Suite
 
-Suite pengujian unit dan fungsionalitas otomatis (*unit & feature integration tests*) untuk seluruh 12 microservices pada arsitektur Enterprise IoT.
+Toolkit pengujian fungsionalitas (*Unit & Feature Integration Tests*) dan beban trafik (*Industry-Standard Stress Tests*) untuk seluruh arsitektur Enterprise IoT Modular Microservices.
 
-Trafik pengujian berjalan melalui **Kong API Gateway** (`/v1`) untuk memverifikasi autentikasi JWT, role-based access control, response wrapper JSON, dan fungsionalitas seluruh endpoint API & WebSocket.
+Seluruh trafik pengujian masuk melalui **Kong API Gateway** (`/v1`) untuk memverifikasi autentikasi JWT, role-based access control, rate limiting, latensi, dan throughput sistem di bawah berbagai kondisi beban.
 
 ---
 
-## 📂 Struktur Folder
+## 📂 Struktur Folder `test/`
 
 ```
 test/
-├── unit_test.py        # Suite unit test utama (41 test case)
+├── unit_test.py        # Suite Unit & Feature Test (41 test cases - 100% microservices)
+├── stress_test.py      # Engine Stress Testing (Load, Spike, Soak, Breakpoint, WS)
 ├── config.py           # Konfigurasi target URL & kredensial
 ├── requirements.txt    # Dependensi Python pip
-└── README.md           # Panduan pengujian
+└── README.md           # Dokumen panduan pengujian
 ```
 
 ---
 
-## 🚀 Cara Menjalankan Unit Test
+## 🚀 Cara Menjalankan Unit & Stress Test
 
-### 1. Install Dependensi
+### 1. Persiapan Dependensi
 ```bash
 cd test
 pip install -r requirements.txt
 ```
 
-### 2. Jalankan Suite Unit Test
+---
+
+### 2. Suite Unit Test (41 Test Cases — 100% Microservices)
+
+Menguji seluruh fungsionalitas 12 microservices, endpoint REST API, dan WebSocket handshake.
+
 ```bash
 python3 unit_test.py
 ```
 
 ---
 
-## 🧪 Cakupan Unit Test (41 Test Cases — 100% Microservices)
+### 3. Suite Stress Test (Industry-Standard Traffic Performance)
 
-| # | Test Class | Target Endpoint / Feature | Deskripsi & Verifikasi |
-|---|---|---|---|
-| 1 | `TestSystemHealth` | `GET /v1/health` | Verifikasi gateway health check & response format |
-| 2 | `TestAuthService` | `POST /v1/auth/login` | Penerbitan JWT access & refresh token |
-| 3 | `TestAuthService` | `GET /v1/auth/me` | Verifikasi pengambilan profil pengguna terautentikasi |
-| 4 | `TestAuthService` | `GET /v1/auth/sessions` | Verifikasi daftar sesi pengguna aktif |
-| 5 | `TestAuthService` | `GET /v1/auth/users` | Verifikasi admin list users |
-| 6 | `TestAuthService` | `GET /v1/auth/roles` | Verifikasi admin list roles |
-| 7 | `TestModuleService` | `GET /v1/modules` | Verifikasi daftar modul IoT terdaftar |
-| 8 | `TestModuleService` | `POST /v1/modules` | Verifikasi pembuatan modul IoT baru |
-| 9 | `TestModuleService` | `GET /v1/modules/{id}` | Verifikasi pengambilan detail modul berdasarkan ID |
-| 10 | `TestModuleService` | `GET /v1/nodes` | Verifikasi daftar sensor node |
-| 11 | `TestModuleService` | `GET /v1/nodes/discovered` | Verifikasi penemuan node MQTT otomatis |
-| 12 | `TestAnalyticsService` | `GET /v1/analytics/nodes` | Verifikasi daftar node pada service analitik |
-| 13 | `TestAnalyticsService` | `GET /v1/analytics/metrics` | Verifikasi query time-series rollups |
-| 14 | `TestAnalyticsService` | `GET /v1/analytics/summary` | Verifikasi ringkasan data time-series |
-| 15 | `TestAnalyticsService` | `GET /v1/analytics/export` | Verifikasi ekspor CSV data rollups |
-| 16 | `TestControlService` | `GET /v1/control/commands` | Verifikasi riwayat perintah kontrol aktuator |
-| 17 | `TestControlService` | `GET /v1/control/modes/{id}` | Verifikasi status mode kontrol |
-| 18 | `TestControlService` | `GET /v1/control/targets` | Verifikasi target setpoints |
-| 19 | `TestControlService` | `GET /v1/control/outputs` | Verifikasi status output aktuator |
-| 20 | `TestControlService` | `POST /v1/control/command` | Verifikasi pengiriman perintah manual |
-| 21 | `TestControlService` | `POST /v1/control/modes/{id}/resume` | Verifikasi resume mode otomatis |
-| 22 | `TestAlertService` | `GET /v1/alerts` | Verifikasi riwayat peringatan threshold |
-| 23 | `TestAlertService` | `GET /v1/thresholds` | Verifikasi daftar aturan threshold |
-| 24 | `TestAlertService` | `POST /v1/thresholds` | Verifikasi pembuatan aturan threshold |
-| 25 | `TestAlertService` | `DELETE /v1/thresholds/{id}` | Verifikasi penghapusan aturan threshold |
-| 26 | `TestAuditService` | `GET /v1/audit/logs` | Verifikasi query audit log sistem |
-| 27 | `TestAuditService` | `GET /v1/audit/logs?event=...` | Verifikasi filter audit log berdasarkan event |
-| 28 | `TestNotificationService` | `GET /v1/notifications/logs` | Verifikasi log pengiriman notifikasi |
-| 29 | `TestNotificationService` | `GET /v1/notifications/settings` | Verifikasi pengaturan saluran notifikasi |
-| 30 | `TestNotificationService` | `POST /v1/notifications/test` | Verifikasi pengiriman notifikasi uji |
-| 31 | `TestStreamService` | `GET /v1/streams` | Verifikasi pendaftaran kamera CCTV |
-| 32 | `TestStreamService` | `GET /v1/snapshots` | Verifikasi gambar snapshot kamera |
-| 33 | `TestStreamService` | `POST /v1/streams` | Verifikasi registrasi stream kamera baru |
-| 34 | `TestMLService` | `GET /v1/ml/models` | Verifikasi model YOLO vision terdaftar |
-| 35 | `TestMLService` | `POST /v1/ml/detect/from-stream` | Verifikasi permintaan inferensi frame YOLO |
-| 36 | `TestExportService` | `GET /v1/export/v1/nodes` | Verifikasi endpoint ekspor node |
-| 37 | `TestExportService` | `GET /v1/export/v1/meta` | Verifikasi metrik metadata ekspor |
-| 38 | `TestExportService` | `GET /v1/export/v1/openapi` | Verifikasi OpenAPI spec ekspor telemetri |
-| 39 | `TestWSGateway` | `ws://.../v1/ws/system-status` | Verifikasi handshake WebSocket system status |
-| 40 | `TestWSGateway` | `ws://.../v1/ws/nodes/{id}/live` | Verifikasi handshake WebSocket live telemetry node |
+Engine `stress_test.py` mendukung 5 mode pengujian standar industri:
+
+#### **A. Baseline Load Test (HTTP Concurrency & Throughput)**
+```bash
+python3 stress_test.py load --users 10 --rps 50 --duration 15
+```
+- **Fungsi:** Menguji latensi (P50/P95/P99) dan throughput rata-rata di bawah beban normal.
+
+#### **B. Spike Test (Traffic Surge & Recovery)**
+```bash
+python3 stress_test.py spike --users 10 --rps 50 --spike-rps 250
+```
+- **Fungsi:** Mensimulasikan lonjakan trafik mendadak (50 RPS → 250 RPS) dan menguji kecepatan pemulihan sistem.
+
+#### **C. Soak / Endurance Test (Long-Duration Stability)**
+```bash
+python3 stress_test.py soak --users 20 --rps 100 --duration 120
+```
+- **Fungsi:** Menjalankan beban tinggi dalam durasi panjang untuk mendeteksi *memory leak* atau *connection leak*.
+
+#### **D. Breakpoint Capacity Test (Mencari Batas Maksimum / Knee Point)**
+```bash
+python3 stress_test.py breakpoint
+```
+- **Fungsi:** Menaikkan beban secara bertahap (10 → 50 → 100 → 250 → 500 RPS) untuk menemukan batas kapasitas throughput maksimum dan titik jenuh cluster.
+
+#### **E. WebSocket Stress Test (Connection Holding)**
+```bash
+python3 stress_test.py ws --users 50 --duration 30
+```
+- **Fungsi:** Membuka puluhan/ratusan koneksi WebSocket simultan ke gateway dan menahan status koneksi.

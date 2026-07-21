@@ -29,7 +29,7 @@ MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC_PREFIX = os.getenv("MQTT_TOPIC_PREFIX", "smartfarm")
 
-WS_PATH = "/ws"
+WS_PATH = "/v1/ws/system-status"
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
@@ -37,31 +37,15 @@ ENDPOINTS = [
     {
         "name": "health-check",
         "method": "GET",
-        "path": "/health",
+        "path": "/v1/health",
         "auth": False,
         "weight": 15,
         "body": None,
     },
     {
-        "name": "auth-login",
-        "method": "POST",
-        "path": "/auth/login",
-        "auth": False,
-        "weight": 10,
-        "body": {"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD},
-    },
-    {
-        "name": "auth-refresh",
-        "method": "POST",
-        "path": "/auth/refresh",
-        "auth": False,
-        "weight": 3,
-        "body": {"refresh_token": "{{refresh_token}}"},
-    },
-    {
         "name": "auth-me",
         "method": "GET",
-        "path": "/auth/me",
+        "path": "/v1/auth/me",
         "auth": True,
         "weight": 12,
         "body": None,
@@ -69,7 +53,7 @@ ENDPOINTS = [
     {
         "name": "modules-list",
         "method": "GET",
-        "path": "/modules",
+        "path": "/v1/modules",
         "auth": True,
         "weight": 12,
         "body": None,
@@ -77,23 +61,23 @@ ENDPOINTS = [
     {
         "name": "nodes-list",
         "method": "GET",
-        "path": "/nodes",
+        "path": "/v1/nodes",
         "auth": True,
         "weight": 8,
         "body": None,
     },
     {
-        "name": "analytics-query",
+        "name": "analytics-nodes",
         "method": "GET",
-        "path": "/analytics?range=1h",
+        "path": "/v1/analytics/nodes",
         "auth": True,
         "weight": 8,
         "body": None,
     },
     {
-        "name": "control-list",
+        "name": "control-commands",
         "method": "GET",
-        "path": "/control",
+        "path": "/v1/control/commands?node_id=node-1",
         "auth": True,
         "weight": 6,
         "body": None,
@@ -101,15 +85,23 @@ ENDPOINTS = [
     {
         "name": "streams-list",
         "method": "GET",
-        "path": "/streams",
+        "path": "/v1/streams",
         "auth": True,
         "weight": 6,
         "body": None,
     },
     {
-        "name": "ml-list",
+        "name": "ml-models",
         "method": "GET",
-        "path": "/ml/models",
+        "path": "/v1/ml/models",
+        "auth": True,
+        "weight": 4,
+        "body": None,
+    },
+    {
+        "name": "export-nodes",
+        "method": "GET",
+        "path": "/v1/export/v1/nodes",
         "auth": True,
         "weight": 4,
         "body": None,
@@ -117,29 +109,11 @@ ENDPOINTS = [
     {
         "name": "hls-probe",
         "method": "GET",
-        "path": "/hls/nonexistent/index.m3u8",
+        "path": "/v1/hls/nonexistent/index.m3u8",
         "auth": False,
         "weight": 4,
         "body": None,
     },
-]
-
-PENTEST_TARGETS = [
-    "/auth/me",
-    "/auth/logout",
-    "/auth/account",
-    "/auth/users",
-    "/auth/roles",
-    "/auth/permissions",
-    "/auth/sessions",
-    "/modules",
-    "/nodes",
-    "/analytics",
-    "/control",
-    "/control/commands",
-    "/streams",
-    "/snapshots",
-    "/ml/models",
 ]
 
 

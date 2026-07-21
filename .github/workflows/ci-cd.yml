@@ -115,7 +115,14 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/${{ matrix.service }}
-          docker build -f services/${{ matrix.service }}/Dockerfile services/${{ matrix.service }} \
+          if [[ "${{ matrix.service }}" == "mysqld-exporter-all" || "${{ matrix.service }}" == "postgres-exporter-all" ]]; then
+            CONTEXT=infra/${{ matrix.service }}
+            DOCKERFILE=infra/${{ matrix.service }}/Dockerfile
+          else
+            CONTEXT=services/${{ matrix.service }}
+            DOCKERFILE=services/${{ matrix.service }}/Dockerfile
+          fi
+          docker build -f "$DOCKERFILE" "$CONTEXT" \
             --tag $IMAGE:latest \
             --tag $IMAGE:${{ github.sha }}
           docker push $IMAGE:latest

@@ -617,6 +617,7 @@ services:
     build:
       context: ./infra/mysqld-exporter-all
       dockerfile: Dockerfile
+    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/mysqld-exporter-all:latest
     restart: unless-stopped
     environment:
       MYSQL_DSN_1: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/"
@@ -668,6 +669,7 @@ services:
     build:
       context: ./infra/postgres-exporter-all
       dockerfile: Dockerfile
+    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/postgres-exporter-all:latest
     restart: unless-stopped
     environment:
       POSTGRES_DSN_1: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/module_ts?sslmode=disable"

@@ -1187,6 +1187,7 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 6 | ✅ | `infra/kong/kong.yml`: Menambahkan rute `-v1` dengan plugin `request-transformer` untuk secara otomatis mengupas (strip) prefix `/v1` dan membelokkan request ke backend upstream tanpa perlu mengubah kode microservices Go/Python. |
 | 7 | ✅ | `dashboard/src/api/client.js`: Fungsi `request()` dan `withToken()` otomatis memformat path dengan prefix `/v1`. |
 | 8 | ✅ | `docs/integration-guides/` & `docs/planning.md`: Memperbarui seluruh dokumentasi integrasi per-service (`alert.md`, `audit.md`, `ml.md`, `wsgateway.md`, `planning.md`) agar mencantumkan URL dan endpoint resmi berversi `/v1`. |
+| 9 | ✅ | `docker-compose.yml` & `docs/grafana-service-health.md`: Audit & perbaikan akses Grafana via IP Publik/LAN port 3000 (`0.0.0.0:3000:3000`), mengubah `GF_SESSION_COOKIE_SECURE=false` dan `GF_SERVER_ROOT_URL` agar responsif terhadap IP/domain pengakses tanpa terhalang cookie browser HTTP. |
 
-**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Bila diakses dari peranti lain dalam jaringan lokal atau internet (mis. `http://192.168.1.50:5173/v1/auth/login`), request API & WebSocket secara otomatis diproses oleh Kong Gateway via reverse proxy.
+**Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Grafana (port 3000) dan Kong (port 8000) kini sepenuhnya responsif terhadap akses IP Publik, IP LAN, maupun domain eksternal. Sesi login HTTP pada port 3000 berjalan lancar tanpa tertahan flag secure cookie.
 

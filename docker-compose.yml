@@ -840,12 +840,8 @@ services:
       - "8889:8889"   # WebRTC (signaling + UDP media, host-direct)
       - "8554:8554"   # RTSP (debug)
       # API (9997) intentionally NOT published — internal iot-net only.
-    # aeroponik-docker_iot-net is the external network shared with the
-    # standalone RTSP dummy stack (TA/rtsp/rtsp-dummy-stream) so this
-    # MediaMTX can pull its streams (e.g. rtsp://admin:admin123@mediamtx-dummy:8554/live1).
     networks:
       - iot-net
-      - aeroponik-docker_iot-net
 
   # ──────────────────────────────────────
   # MinIO — object storage (shared infra; Stream Service does not use in Fase 5)
@@ -1008,7 +1004,7 @@ services:
     build:
       context: ./services/export
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/export-service:latest
+    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/export:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -1037,6 +1033,3 @@ services:
 networks:
   iot-net:
     driver: bridge
-  aeroponik-docker_iot-net:
-    external: true
-    name: aeroponik-docker_iot-net

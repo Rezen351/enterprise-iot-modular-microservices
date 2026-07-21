@@ -41,7 +41,7 @@ Built with a **database-per-service pattern**, it ingests telemetry from IoT sen
 
 - ⚡ **Database-per-Service Isolation**: Complete schema and storage autonomy across all services (MariaDB, TimescaleDB, Redis).
 - 🔄 **Event-Driven Messaging**: High-throughput pub/sub and state streaming powered by **NATS JetStream** and **Mosquitto MQTT**.
-- 🛡️ **Centralized API Gateway**: **Kong 3.6** handles JWT validation, RBAC, Rate Limiting, and CORS policies as the single entry point.
+- 🛡️ **Centralized API Gateway**: **Kong 3.6** handles `/v1` API Versioning (transparent reverse proxying), JWT validation, RBAC, Rate Limiting, and CORS policies as the single entry point.
 - 📊 **Real-Time Dashboard**: React (Vite + Tailwind) frontend with a **NATS-to-WebSocket bridge** for live telemetry streaming and manual actuator control.
 - 📈 **Time-Series Analytics**: Aggregated rollup metrics and time-series history powered by **TimescaleDB**.
 - 👁️ **Computer Vision & ML Pipeline**: Real-time object detection via MediaMTX RTSP/HLS and YOLO inference engine.
@@ -168,7 +168,7 @@ cp .env.example .env
 docker compose up -d
 
 # Verify Gateway Health
-curl http://localhost:8000/auth/health
+curl http://localhost:8000/v1/health
 ```
 
 ### 3. Local Dashboard Development

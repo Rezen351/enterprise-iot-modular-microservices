@@ -185,3 +185,27 @@ Alert/Analytics/Notification) kehilangan data tanpa jejak.
 
 **Yang TIDAK diubah:** `database/sql` raw (module/control) & `*gorm.DB` (alert) tetap dipakai;
 schema bisnis existing tidak diubah; hanya tabel `outbox` baru + relay worker.
+
+---
+
+## 7. ADR-007: Transparent `/v1` API Versioning via Kong Gateway Reverse Proxy
+
+**Tanggal:** 2026-07-21  
+**Status:** Approved  
+**Konteks:** Sistem membutuhkan pengenalan *API Versioning* standar (`/v1`) untuk seluruh panggilan API publik dari frontend dashboard dan klien eksternal guna mempermudah evolusi API dan evolusi kontrak di masa mendatang. Namun, memodifikasi struktur rute di 10+ microservices backend (Go & Python) secara manual berisiko merusak kompatibilitas internal dan menambah *code churn*.
+
+**Keputusan:** Terapkan **Gateway-Level Reverse Proxy Versioning (`/v1`)** di Kong API Gateway.
+1. **Konfigurasi Rute Regex Kong:** Setiap rute didaftarkan di Kong dengan pattern regex `~/v1(?<rel_uri>/<path>.*)`.
+2. **Plugin Request-Transformer:** Dipasang plugin `request-transformer` pada rute `-v1` dengan aturan `replace.uri: $(uri_captures['rel_uri'])` untuk secara otomatis mengupas (strip) prefix `/v1` sebelum request diteruskan ke upstream container backend.
+3. **Frontend Dashboard Integration:** `dashboard/src/api/client.js` secara otomatis menambahkan prefix `/v1` pada semua panggilan REST API.
+4. **Backward Compatibility:** Endpoint lama tanpa `/v1` (mis. `/auth/login`) tetap dipertahankan di Kong sebagai rute fallback untuk klien legacy/firmware.
+
+**Alasan:**
+- **Zero Code Churn pada Backend:** Tidak ada satu pun baris kode microservice backend (Go/Python) yang perlu diubah.
+- **Satu Pintu Pengaturan:** Evolusi versi API di masa mendatang (`/v2`, `/v3`) cukup dikonfigurasi di Kong Gatewaytanpa menduplikasi router internal microservice.
+- **Performa Tinggi:** Overhead latency Kong untuk URL rewrite < 1ms (`X-Kong-Proxy-Latency: ~0-1ms`).
+
+**Verifikasi:**
+- `curl -i http://localhost:8000/v1/health` → `200 OK` (ter-forward ke Auth Service)
+- `curl -i http://localhost:8000/v1/modules` → `401 Unauthorized` (ter-forward ke Module Service)
+- `curl -i -X POST http://localhost:8000/v1/auth/login` → `401 Unauthorized` / `200 OK` (ter-forward ke Auth Service)

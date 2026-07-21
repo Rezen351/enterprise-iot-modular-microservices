@@ -264,8 +264,11 @@ jobs:
           sudo chown -R 999:999 ./volumes/mariadb-* 2>/dev/null || true
           # TimescaleDB/PostgreSQL directories
           sudo chown -R 70:70 ./volumes/timescaledb-* 2>/dev/null || true
-          # Redis, Prometheus, cAdvisor, node-exporter (no specific UID requirement)
-          sudo chown -R $(whoami):$(whoami) ./volumes/redis-shared ./volumes/prometheus ./volumes/cadvisor ./volumes/node-exporter 2>/dev/null || true
+          # Prometheus runs as UID 65534 (nobody:nogroup) inside container
+          sudo chown -R 65534:65534 ./volumes/prometheus 2>/dev/null || true
+          sudo chmod -R 777 ./volumes/prometheus 2>/dev/null || true
+          # Redis, cAdvisor, node-exporter
+          sudo chown -R $(whoami):$(whoami) ./volumes/redis-shared ./volumes/cadvisor ./volumes/node-exporter 2>/dev/null || true
           echo "Volume permissions fixed."
 
       - name: Force Clean Workspace

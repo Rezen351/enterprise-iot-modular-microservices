@@ -232,6 +232,21 @@ jobs:
           sudo chown -R $(whoami):$(whoami) $GITHUB_WORKSPACE || true
           echo "Workspace permissions fixed."
 
+      - name: Fix Volume Permissions
+        run: |
+          echo "Fixing Docker volume permissions..."
+          # Grafana runs as UID 472 inside container
+          sudo chown -R 472:472 ./volumes/grafana 2>/dev/null || true
+          # MinIO runs as UID 1000 inside container
+          sudo chown -R 1000:1000 ./volumes/minio 2>/dev/null || true
+          # MariaDB/MySQL directories
+          sudo chown -R 999:999 ./volumes/mariadb-* 2>/dev/null || true
+          # TimescaleDB/PostgreSQL directories
+          sudo chown -R 70:70 ./volumes/timescaledb-* 2>/dev/null || true
+          # Redis, Prometheus, cAdvisor, node-exporter (no specific UID requirement)
+          sudo chown -R $(whoami):$(whoami) ./volumes/redis-shared ./volumes/prometheus ./volumes/cadvisor ./volumes/node-exporter 2>/dev/null || true
+          echo "Volume permissions fixed."
+
       - name: Force Clean Workspace
         run: |
           echo "Stopping existing containers..."

@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN for i in 1 2 3 4 5; do go mod download && break || { echo "go mod download failed, retrying..."; sleep 5; }; done
 
 COPY . .
 

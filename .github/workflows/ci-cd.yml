@@ -236,8 +236,13 @@ jobs:
 
       - name: Pull and Deploy with Docker Compose
         run: |
-          docker compose pull || echo "Pull failed, falling back to local build"
-          docker compose up -d --build
+          if docker compose pull --quiet-pull; then
+            echo "Pull succeeded, deploying without rebuild"
+            docker compose up -d --no-build --remove-orphans
+          else
+            echo "Pull failed, falling back to local build for missing images"
+            docker compose up -d --build --remove-orphans
+          fi
 
       - name: Clean Up Old Docker Images
         if: always()

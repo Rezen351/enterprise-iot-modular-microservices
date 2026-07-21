@@ -10,6 +10,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Kong](https://img.shields.io/badge/Kong-3.6-FF6B35?style=for-the-badge&logo=kong&logoColor=white)](https://konghq.com/)
 [![NATS](https://img.shields.io/badge/NATS-JetStream-2C4B7B?style=for-the-badge&logo=nats&logoColor=white)](https://nats.io/)
+[![Mermaid](https://img.shields.io/badge/Mermaid-v10.9.0-FF69B4?style=for-the-badge&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](./LICENSE)
 
 ---

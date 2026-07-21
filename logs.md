@@ -1158,3 +1158,15 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 ---
 
 - `go build`+`vet`+`gofmt` BERSIH (module/control/alert/audit). Container verification di-stop setelah sesi (`docker compose stop`). Tidak ada orphan container.
+
+---
+
+### CI/CD — Fix Deploy to Server sparse checkout failure (2026-07-21)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Investigasi GitHub Actions job `Deploy to Server` (run `29833732204`, job `88646808437`) menunjukkan kegagalan di step checkout: `fatal: 'docker-compose.yml' is not a directory` saat `git sparse-checkout set ...` dieksekusi dengan cone mode default. |
+| 2 | ✅ | Perbaikan minimal pada [ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml): tambah `sparse-checkout-cone-mode: false` di step checkout `cd-deploy`, sehingga daftar sparse checkout dapat memuat file (`docker-compose.yml`, `.env.example`) + direktori (`infra`) secara valid. |
+| 3 | ✅ | Verifikasi lokal: parsing YAML workflow sukses (`python + yaml.safe_load`) dan perubahan hanya menyentuh konfigurasi checkout deploy tanpa mengubah job CI/CD lain. |
+
+**Keputusan Teknis:** Root cause murni konfigurasi `actions/checkout` sparse checkout cone mode. Solusi dipilih paling kecil (1 properti) tanpa mengubah daftar path atau alur deploy.

@@ -238,12 +238,10 @@ jobs:
           docker compose down --remove-orphans || true
           echo "Removing old images..."
           docker image prune -f || true
-          echo "Cleaning workspace..."
-          rm -rf $GITHUB_WORKSPACE/* $GITHUB_WORKSPACE/.??* || true
 
       - name: Pull and Deploy with Docker Compose
         run: |
-          if docker compose pull --quiet-pull; then
+          if docker compose pull; then
             echo "Pull succeeded, deploying without rebuild"
             docker compose up -d --no-build --remove-orphans
           else

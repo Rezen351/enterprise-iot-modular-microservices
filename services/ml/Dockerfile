@@ -19,7 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python dependencies first for better layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip config set global.timeout 120 \
+    && pip config set global.retries 5 \
+    && pip install --no-cache-dir -r requirements.txt
 
 # PyJWT is required by app/security.py but kept as a separate layer so the
 # (large) torch/ultralytics cache layer above is not invalidated on edits.

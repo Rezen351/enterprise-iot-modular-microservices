@@ -12,7 +12,11 @@ WORKDIR /app
 # Install dependencies dulu (layer cache) — node_modules tetap di dalam
 # image agar tidak bentrok dengan node_modules host (glibc) saat di-mount.
 COPY package.json package-lock.json ./
-RUN npm install --no-audit --no-fund
+
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm ci --no-audit --no-fund
 
 # Copy seluruh source
 COPY . .

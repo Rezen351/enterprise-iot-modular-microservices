@@ -226,8 +226,8 @@ jobs:
 
       - name: Pull and Deploy with Docker Compose
         run: |
-          docker compose pull
-          docker compose up -d
+          docker compose pull || echo "Pull failed, falling back to local build"
+          docker compose up -d --build
 
       - name: Clean Up Old Docker Images
         if: always()

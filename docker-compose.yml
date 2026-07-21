@@ -347,8 +347,8 @@ services:
       REDIS_ADDR: "redis-shared:6379"
       NATS_URL: "nats://nats:4222"
       MQTT_URL: "tcp://mosquitto:1883"
-      MQTT_USER: "module-svc"
-      MQTT_PASS: "moduleSvcPass123"
+      MQTT_USER: "${MQTT_USER}"
+      MQTT_PASS: "${MQTT_PASS}"
       MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
       JWT_SECRET: "${JWT_SECRET}"
     depends_on:
@@ -408,8 +408,8 @@ services:
       DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-control:3306)/control_db?parseTime=true&charset=utf8mb4"
       NATS_URL: "nats://nats:4222"
       MQTT_URL: "tcp://mosquitto:1883"
-      MQTT_USER: "control-svc"
-      MQTT_PASS: "controlSvcPass123"
+      MQTT_USER: "${CONTROL_MQTT_USER}"
+      MQTT_PASS: "${CONTROL_MQTT_PASS}"
       MQTT_TOPIC_PREFIX: "${MQTT_TOPIC_PREFIX}"
       JWT_SECRET: "${JWT_SECRET}"
       MODULE_URL: "http://module:8080"
@@ -896,8 +896,8 @@ services:
       KONG_PUBLIC_URL: http://localhost:8000
       JWT_SECRET: "${JWT_SECRET}"
       MINIO_ENDPOINT: "minio:9000"
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
-      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_ACCESS_KEY: "${MINIO_STREAM_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_STREAM_SECRET_KEY}"
       MINIO_USE_SSL: "false"
       MINIO_STREAM_BUCKET: stream
       MINIO_RESULT_BUCKET: ml-result
@@ -936,8 +936,8 @@ services:
       DATABASE_URL: "mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb-ml:3306/ml_db?charset=utf8mb4"
       JWT_SECRET: "${JWT_SECRET}"
       MINIO_ENDPOINT: "minio:9000"
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
-      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_ACCESS_KEY: "${MINIO_ML_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_ML_SECRET_KEY}"
       MINIO_USE_SSL: "false"
       MINIO_ML_BUCKET: ml
       MINIO_STREAM_BUCKET: stream

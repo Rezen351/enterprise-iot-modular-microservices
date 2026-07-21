@@ -578,15 +578,13 @@ services:
     image: grafana/grafana:11.3.0
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_INSTALL_PLUGINS: ""
-      # URL publik (via Cloudflare Tunnel) agar link, redirect, dan cookie
-      # Grafana benar saat diakses lewat hostname HTTPS.
-      GF_SERVER_ROOT_URL: "https://grafana.smartfarm.example"
-      GF_SERVER_DOMAIN: "grafana.smartfarm.example"
-      GF_SESSION_COOKIE_SECURE: "true"
+       GF_SECURITY_ADMIN_USER: admin
+       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+       GF_USERS_ALLOW_SIGN_UP: "false"
+       GF_INSTALL_PLUGINS: ""
+       GF_SERVER_ROOT_URL: "${GRAFANA_PUBLIC_URL}"
+       GF_SERVER_DOMAIN: "${GRAFANA_DOMAIN}"
+       GF_SESSION_COOKIE_SECURE: "true"
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -764,7 +762,7 @@ services:
     environment:
       # URL API untuk browser. Lewat Cloudflare Tunnel, pakai hostname publik
       # API (HTTPS) agar browser remote bisa menjangkau Kong.
-      VITE_API_URL: https://api.smartfarm.example
+      VITE_API_URL: "${VITE_API_URL}"
     ports:
       - "5173:5173"
     volumes:
@@ -875,9 +873,9 @@ services:
         condition: service_healthy
     entrypoint: >
       sh -c "mc alias set m http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
-             mc mb -p m/stream; mc mb -p m/mlbucket; mc mb -p m/ota; mc mb -p m/ml-result &&
-             mc anonymous set private m/stream; mc anonymous set private m/mlbucket;
-             mc anonymous set private m/ota; mc anonymous set private m/ml-result"
+             mc mb -p m/stream; mc mb -p m/ml; mc mb -p m/ml-result &&
+             mc anonymous set private m/stream; mc anonymous set private m/ml;
+             mc anonymous set private m/ml-result"
     networks:
       - iot-net
 
@@ -911,6 +909,8 @@ services:
         condition: service_healthy
       mediamtx:
         condition: service_started
+      minio:
+        condition: service_healthy
       ml:
         condition: service_started
     healthcheck:

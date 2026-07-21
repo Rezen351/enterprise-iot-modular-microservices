@@ -1,26 +1,37 @@
 # =====================================================================
-# Dashboard — Vite dev server (hot reload via volume mount)
-# Base node:20-alpine sama dengan yang dipakai compose lainnya.
-# `npm run dev -- --host` agar dapat diakses dari luar container
-# (browser di host). Source di-mount lewat volume di docker-compose
-# sehingga tiap perubahan file langsung ter-reload (HMR).
+# Dashboard — Production build with nginx
+# Multi-stage build: builder (Node.js) + runtime (nginx:alpine)
 # =====================================================================
-FROM node:20-alpine
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies dulu (layer cache) — node_modules tetap di dalam
-# image agar tidak bentrok dengan node_modules host (glibc) saat di-mount.
+# Install dependencies
 COPY package.json package-lock.json ./
-
 RUN npm config set fetch-retries 5 \
     && npm config set fetch-retry-mintimeout 20000 \
     && npm config set fetch-retry-maxtimeout 120000 \
     && npm ci --no-audit --no-fund
 
-# Copy seluruh source
+# Build application
 COPY . .
+ARG VITE_API_URL=http://localhost:8000
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
 
+# Stage 2: Runtime with nginx
+FROM nginx:alpine
+
+# Copy built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

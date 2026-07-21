@@ -762,14 +762,9 @@ services:
     image: ghcr.io/rezen351/enterprise-iot-modular-microservices/dashboard:latest
     restart: unless-stopped
     environment:
-      # URL API untuk browser. Lewat Cloudflare Tunnel, pakai hostname publik
-      # API (HTTPS) agar browser remote bisa menjangkau Kong.
       VITE_API_URL: "${VITE_API_URL}"
     ports:
       - "5173:5173"
-    volumes:
-      - ./dashboard:/app
-      - /app/node_modules   # jaga node_modules image (musl) agar tidak tertimpa host
     depends_on:
       - kong
     networks:

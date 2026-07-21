@@ -1,25 +1,58 @@
-# Enterprise IoT Modular Microservices
+# Enterprise IoT Modular Microservices — Environment Monitoring System
 
-> **Aeroponic monitoring and control system** built on a microservice architecture with database-per-service isolation, event-driven communication via NATS JetStream, and a centralized API Gateway via Kong.
+![Architecture](https://img.shields.io/badge/architecture-microservice-blue?logo=cloudbees&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-compose-ready-brightgreen?logo=docker&logoColor=white)
+![Go](https://img.shields.io/badge/services-Go_%2B_Python-orange?logo=go&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![MQTT](https://img.shields.io/badge/iot-MQTT-green?logo=eclipse&logoColor=white)
+![Kong](https://img.shields.io/badge/gateway-Kong_3.6-FF6B35?logo=kong&logoColor=white)
+![NATS](https://img.shields.io/badge/event_bus-NATS_JetStream-2C4B7B?logo=nats&logoColor=white)
 
-[![Architecture](https://img.shields.io/badge/architecture-microservice-blue)]()
-[![Docker](https://img.shields.io/badge/docker-compose-ready-brightgreen)]()
-[![Go](https://img.shields.io/badge/services-Go_%2B_Python-orange)]()
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
+> **General-purpose environment monitoring and control system** built on a microservice architecture with database-per-service isolation, event-driven communication via NATS JetStream, and a centralized API Gateway via Kong. This end-to-end IoT solution ingests telemetry from ESP32-based sensor nodes via MQTT, processes alerts, stores time-series data, and exposes a React dashboard for real-time visualization and manual control.
+
+**Keywords:** Environment Monitoring System, IoT Microservices, Enterprise IoT Architecture, Docker Compose, Go Microservices, Python ML Service, NATS JetStream, Kong API Gateway, Time-Series Database, MQTT IoT, ESP32 Telemetry, Real-Time Dashboard, React Vite, Prometheus Grafana, Cloudflare Tunnel, MediaMTX RTSP, YOLO Inference, MariaDB, TimescaleDB, Redis, MinIO S3, Event-Driven Architecture, Observability, JWT Authentication, RBAC, CORS, Rate Limiting, DevOps, CI/CD, GitHub Actions, Self-Hosted, Open Source, Sensor Monitoring, Smart Environment, Industrial IoT
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Microservices](#microservices)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [CI/CD](#cicd)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
 ## Overview
 
-This project implements an end-to-end IoT system for **aeroponic plant monitoring and control**. It ingests telemetry from ESP32-based nodes via MQTT, processes alerts, stores time-series data, and exposes a React dashboard for real-time visualization and manual control.
+This project implements an **end-to-end IoT system for general environment monitoring and control**. It ingests telemetry from ESP32-based sensor nodes via MQTT, processes alerts using rule-based threshold evaluation, stores time-series data efficiently, and exposes a React dashboard for real-time visualization and manual actuator control.
 
-Key characteristics:
+### Key Characteristics
+
 - **Database-per-Service**: each microservice owns its schema (MariaDB / TimescaleDB / Redis logical DB)
 - **Event-driven**: NATS JetStream for async pub/sub and durable streams
 - **API Gateway**: Kong handles JWT, rate-limiting, CORS, and routing
 - **Observability**: Prometheus + Grafana + exporters (mysqld, postgres, redis, nats, node, cadvisor)
 - **Secure ingress**: Cloudflare Tunnel (outbound-only, no exposed ports)
 - **ML/Vision**: YOLO inference via MediaMTX RTSP/HLS pipeline
+- **Real-time**: NATS-to-WebSocket bridge for live dashboard updates
+- **Scalable**: Docker Compose orchestration with health checks and restart policies
+
+### Use Cases
+
+- General environment and sensor monitoring
+- IoT sensor data logging and analytics
+- Real-time alerting and multi-channel notifications
+- Computer vision for object detection and analysis
+- Time-series data analytics and CSV export
+- Multi-tenant device management with role-based access control
+- Smart building and industrial monitoring systems
 
 ---
 
@@ -27,30 +60,30 @@ Key characteristics:
 
 ```
 Browser (HTTPS via Cloudflare Tunnel)
-         │
-         ▼
-    ┌─────────┐
-    │  Kong    │  API Gateway :8000/:8443
-    │  :8000   │  - JWT validation
-    └────┬────┘  - Rate limiting
-         │        - CORS
-         ▼
-    ┌─────────────────────────────────────────┐
-    │         Microservices (Docker)          │
-    │                                         │
-    │  auth → module → analytics → wsgateway  │
-    │     ↘     ↓      ↓         ↓            │
-    │      control ← alert ← notification     │
-    │         ↓      ↓                        │
-    │       audit   export                    │
-    │                                         │
-    │  stream → ml → cctv-capture             │
-    │                                         │
-    │  Infrastructure:                        │
-    │  nats, mosquitto, redis-shared,         │
-    │  timescaledb, mariadb, minio,           │
-    │  mediamtx, prometheus, grafana          │
-    └─────────────────────────────────────────┘
+          │
+          ▼
+     ┌─────────┐
+     │  Kong    │  API Gateway :8000/:8443
+     │  :8000   │  - JWT validation
+     └────┬────┘  - Rate limiting
+          │        - CORS
+          ▼
+     ┌─────────────────────────────────────────┐
+     │         Microservices (Docker)          │
+     │                                         │
+     │  auth → module → analytics → wsgateway  │
+     │     ↘     ↓      ↓         ↓            │
+     │      control ← alert ← notification     │
+     │         ↓      ↓                        │
+     │       audit   export                    │
+     │                                         │
+     │  stream → ml → cctv-capture             │
+     │                                         │
+     │  Infrastructure:                        │
+     │  nats, mosquitto, redis-shared,         │
+     │  timescaledb, mariadb, minio,           │
+     │  mediamtx, prometheus, grafana          │
+     └─────────────────────────────────────────┘
 ```
 
 See [docs/planning.md](./docs/planning.md) for the full architecture, bounded contexts, and design rationale.
@@ -71,6 +104,26 @@ See [docs/planning.md](./docs/planning.md) for the full architecture, bounded co
 | **Streaming** | MediaMTX (RTSP / HLS / WebRTC) |
 | **Monitoring** | Prometheus + Grafana + exporters |
 | **Deployment** | Docker Compose + Cloudflare Tunnel |
+
+---
+
+## Microservices
+
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| `auth` | 8080 | Authentication, RBAC, JWT issuance, refresh tokens |
+| `module` | 8080 | Device registry, MQTT discovery, telemetry ingest |
+| `analytics` | 8080 | Time-series aggregation, rollups, export |
+| `control` | 8080 | Manual/scheduled actuator commands, mode arbitration |
+| `alert` | 8080 | Threshold evaluation, alert history |
+| `audit` | 8080 | Append-only audit log API |
+| `notification` | 8080 | Multi-channel alerts (Telegram, Email, Push) |
+| `stream` | 8080 | Stream metadata, MediaMTX path registry, snapshot/recording |
+| `ml` | 8080 | YOLO model registry and inference |
+| `export-service` | 8080 | Telemetry/data export (CSV) |
+| `wsgateway` | 8090 | NATS-to-WebSocket bridge (realtime dashboard) |
+| `dlq` | 8080 | Dead Letter Queue saga worker |
+| `cctv-capture` | — | External cron job for CCTV frame capture and ML inference |
 
 ---
 
@@ -157,26 +210,6 @@ Project documentation is organized as follows:
 | [docs/system-update.md](./docs/system-update.md) | System sync notes and infrastructure gap tracking |
 | [docs/integration-guides/](./docs/integration-guides/) | Per-service integration guides — API contracts, NATS/MQTT topics, database schema, curl examples, and error codes for each microservice |
 | [AGENTS.md](./AGENTS.md) | Project rules, coding guidelines, and AI agent workflow |
-
----
-
-## Microservices Overview
-
-| Service | Port | Responsibility |
-|---------|------|----------------|
-| `auth` | 8080 | Authentication, RBAC, JWT issuance, refresh tokens |
-| `module` | 8080 | Device registry, MQTT discovery, telemetry ingest |
-| `analytics` | 8080 | Time-series aggregation, rollups, export |
-| `control` | 8080 | Manual/scheduled actuator commands, mode arbitration |
-| `alert` | 8080 | Threshold evaluation, alert history |
-| `audit` | 8080 | Append-only audit log API |
-| `notification` | 8080 | Multi-channel alerts (Telegram, Email, Push) |
-| `stream` | 8080 | Stream metadata, MediaMTX path registry, snapshot/recording |
-| `ml` | 8080 | YOLO model registry and inference |
-| `export-service` | 8080 | Telemetry/data export (CSV) |
-| `wsgateway` | 8090 | NATS-to-WebSocket bridge (realtime dashboard) |
-| `dlq` | 8080 | Dead Letter Queue saga worker |
-| `cctv-capture` | — | External cron job for CCTV frame capture and ML inference |
 
 ---
 

@@ -402,8 +402,8 @@ If your service produces frames that should be analyzed by ML:
 | `ALLOWED_IMAGE_EXTENSIONS` | `jpg,jpeg,png,bmp,webp` | Accepted image formats |
 | `INFERENCE_TIMEOUT_SECONDS` | `30` | Wall-clock timeout per inference call |
 | `MINIO_ENDPOINT` | `minio:9000` | MinIO host:port |
-| `MINIO_ACCESS_KEY` | — | MinIO access key |
-| `MINIO_SECRET_KEY` | — | MinIO secret key |
+| `MINIO_ACCESS_KEY` | `${MINIO_ML_ACCESS_KEY}` | MinIO access key (scoped for ML service) |
+| `MINIO_SECRET_KEY` | `${MINIO_ML_SECRET_KEY}` | MinIO secret key (scoped for ML service) |
 | `MINIO_USE_SSL` | `false` | Use TLS for MinIO connection |
 | `MINIO_ML_BUCKET` | `ml` | Bucket for ML-originated images |
 | `MINIO_STREAM_BUCKET` | `stream` | Bucket for stream source frames (read) |

@@ -1,8 +1,8 @@
 # 📋 Planning — IOT-Modular-Microservice
 
 > **Versi Dokumen:** 2.17.0  
-> **Tanggal:** 2026-07-21  
-> **Status:** 🟢 Fase 1-5 + Monitor + DLQ + CI/CD + UnitTest 80% + Outbox + MinIO Scoped Keys (O2) Selesai 
+> **Tanggal:** 2026-07-22  
+> **Status:** 🟢 Fase 1-5 + Monitor + DLQ + CI/CD + UnitTest 80% + Outbox + MinIO Scoped Keys (O2) + Webhook Service Selesai 
 > **Penulis:** Alif Muhammad Rizky
 > **Dokumen Terkait:** [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) · [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) · [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) · [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md) · [logs.md](file:///home/almuzky/TA/Microservices/logs.md) · [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) · [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md)
 

@@ -409,7 +409,29 @@ breaking change. Pengiriman riil ke Telegram/SMTP/Push butuh kredensial env (lih
 
 ---
 
-## 8. Stream Service (`stream:8080`, Go, MinIO + MediaMTX + ML client)
+## 8. Webhook Service (`webhook:8080`, Go, MariaDB + Redis queue + NATS)
+**Fitur:** webhook receiver + dispatcher Telegram/Email/generic HTTP; settings, logs, test dispatch; JetStream durable consumer untuk `webhook.retry`.
+
+### Checklist Fitur
+- [x] `GET/PUT /webhook/settings` (admin-only write). GET: 200 all roles; PUT: 200 admin, 403 non-admin. ✅ *(2026-07-22)*.
+- [x] `GET /webhook/logs` (pagination, filter channel/status). ✅ *(2026-07-22)*.
+- [x] `POST /webhook/test` enqueue dummy notification per enabled channel → 202. ✅ *(2026-07-22)*.
+- [x] `POST /webhook/receive/{telegram,email,generic}` inbound webhook endpoints → 202 + enqueue ke `webhook:queue`. ✅ *(2026-07-22)*.
+- [x] Channel delivery: Telegram (`sendMessage`), Email (SMTP), Generic HTTP POST. DevMode simulate sukses bila transport belum terkonfigurasi. ✅ *(2026-07-22)*.
+- [x] Retry + backoff via Redis queue (`webhook:queue`) + `WEBHOOK_RETRY_DELAY_MS`. ✅ *(2026-07-22)*.
+- [x] NATS `webhook.delivery` (core) + `webhook.retry` (JetStream durable consumer `webhook-retry-processor`, queue group `webhook-retry-workers`). ✅ *(2026-07-22)*.
+
+### Checklist Keamanan
+- [x] JWT admin-only pada `settings`/`logs`/`test`/`receive/*`. ✅ *(2026-07-22)*.
+- [x] AES-GCM secret encryption (`WEBHOOK_SECRET`/fallback `JWT_SECRET`) — never logged or returned by API. ✅ *(2026-07-22)*.
+- [x] Validasi `target` format per channel (email regex, telegram chat id numeric). ✅ *(2026-07-22)*.
+
+### Catatan & Next Step
+Delivery riil butuh kredensial eksternal (`SMTP_HOST/USER`, Telegram bot token). Unit tests Go: `repository_test.go` (6 tests) + `service_test.go` (2 tests) via `testdriver` fake DB. Integration tests Python: `TestWebhookService` (3 tests) via Kong :8000.
+
+---
+
+## 9. Stream Service (`stream:8080`, Go, MinIO + MediaMTX + ML client)
 **Fitur:** streams CRUD, snapshot capture (+detect), record start/stop, snapshots list/get/delete,
 HLS playback proxy ke MediaMTX.
 

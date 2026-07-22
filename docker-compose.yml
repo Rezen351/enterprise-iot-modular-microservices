@@ -591,8 +591,10 @@ services:
     restart: unless-stopped
     user: "0"
     command:
-      - "service"
-      - "install"
+      - "tunnel"
+      - "--no-autoupdate"
+      - "run"
+      - "--token"
       - "${CLOUDFLARED_TUNNEL_TOKEN}"
     environment:
       CLOUDFLARED_TUNNEL_TOKEN: "${CLOUDFLARED_TUNNEL_TOKEN}"

@@ -48,6 +48,19 @@
 
 ---
 
+### CI/CD — Fix Deploy to Server Failure (missing webhook image)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Investigasi GitHub Actions run `29891132986` job `Deploy to Server` (`88832649781`) menemukan `docker compose pull` gagal `manifest unknown` pada image `webhook`. |
+| 2 | ✅ | Identifikasi akar masalah: job `docker-build` di `.github/workflows/ci-cd.yml` belum memasukkan service `webhook` dalam matrix build/push ke GHCR. |
+| 3 | ✅ | Perbaikan minimal: tambah `webhook` ke matrix `docker-build` agar image `ghcr.io/rezen351/enterprise-iot-modular-microservices/webhook:latest` dipublish sebelum tahap deploy. |
+| 4 | ✅ | Verifikasi lokal perubahan workflow: parse YAML `.github/workflows/ci-cd.yml` berhasil tanpa error (`ruby -e \"require 'yaml'; YAML.load_file(...)\"`). |
+
+**Keputusan Teknis:** Fokus perbaikan ditempatkan pada akar masalah image registry (bukan menambah scope sparse checkout) agar perubahan tetap minimal dan perilaku deploy existing tidak berubah.
+
+---
+
 ## 2026-07-21
 ### Server — Remove OTA Feature (Fase 10)
 
@@ -1289,4 +1302,3 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 7 | ✅ | Verifikasi API succesfully mengirim Telegram ke chat `1020639196` dan Email ke `albalislavio1@gmail.com` via Brevo SMTP relay — logs menunjukkan status `sent` (1 attempt) untuk kedua channel. |
 
 **Keputusan Teknis:** Email sebelumnya gagal secara berulang (`smtp auth failed` → `smtp tls upgrade failed`) karena 2 akar masalah: (1) env SMTP/Telegram tidak diinjeksi ke container notification service, sehingga service berjalan tanpa kredensial eksternal; (2) `smtp.PlainAuth` dipanggil tanpa `StartTLS` dulu, yang menyebabkan auth ditolak oleh server Brevo. Kedua akar masalah diperbaiki secara lokal dan verified end-to-end via `POST /v1/notifications/test`.
-

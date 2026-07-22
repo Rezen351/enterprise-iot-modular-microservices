@@ -40,7 +40,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cctv-capture")
 
-KNOWN_BUCKETS = ["ml", "stream", "ml-result", "ota"]
+KNOWN_BUCKETS = ["ml", "stream", "ml-result"]
 
 
 def env(key: str, default: str = "") -> str:

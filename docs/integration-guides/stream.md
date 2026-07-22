@@ -363,7 +363,7 @@ Delete the snapshot row and remove the object from MinIO.
 ### 2.5 Object Storage Proxy (`/storage/*`)
 
 #### `GET /storage/{bucket}/{key...}`
-Stream a private MinIO object through the Stream Service using its scoped credentials. The bucket must be one of: `stream`, `ml-result`, `mlbucket`, `ml`, `ota`.
+Stream a private MinIO object through the Stream Service using its scoped credentials. The bucket must be one of: `stream`, `ml-result`, `mlbucket`, `ml`.
 
 **Headers:**
 | Header | Value |
@@ -492,8 +492,8 @@ If you need to call the Stream Service from another backend service (e.g., a cro
 | `KONG_PUBLIC_URL` | `http://localhost:8000` | Public Kong URL; used to build `hls_url` |
 | `JWT_SECRET` | `""` | Shared HMAC secret for JWT validation. Empty disables enforcement (dev only). |
 | `MINIO_ENDPOINT` | `minio:9000` | MinIO server endpoint |
-| `MINIO_ACCESS_KEY` | `minioadmin` | MinIO access key |
-| `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key |
+| `MINIO_ACCESS_KEY` | `${MINIO_STREAM_ACCESS_KEY}` | MinIO access key (scoped for stream service; falls back to `MINIO_ACCESS_KEY`) |
+| `MINIO_SECRET_KEY` | `${MINIO_STREAM_SECRET_KEY}` | MinIO secret key (scoped for stream service; falls back to `MINIO_SECRET_KEY`) |
 | `MINIO_USE_SSL` | `false` | Enable HTTPS for MinIO |
 | `MINIO_STREAM_BUCKET` | `stream` | Bucket for snapshots and recordings |
 | `MINIO_RESULT_BUCKET` | `ml-result` | Shared bucket for AI detection results |

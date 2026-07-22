@@ -5,7 +5,61 @@
 
 ---
 
+---
+
+## 2026-07-22
+
+### Service — Webhook Service untuk Telegram & Email
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Membuat service `webhook` baru di `services/webhook/` dengan struktur Go microservice standar (config, model, handler, service, repository, channels, crypto, queue, middleware, migrate.go, Dockerfile). |
+| 2 | ✅ | Implementasi channel delivery: Telegram (Bot API `sendMessage`), Email (SMTP plain-text), Generic Webhook (HTTP POST). |
+| 3 | ✅ | Implementasi NATS ingestion: subscribe ke `webhook.delivery` dan `webhook.retry` (sesuai planning.md). |
+| 4 | ✅ | Database `mariadb-webhook` (AUTO-MIGRATE `webhook_settings` + `webhook_logs`) + Redis logical DB4 untuk queue (`webhook:queue`). |
+| 5 | ✅ | Inbound webhook receiver endpoints: `POST /webhook/receive/telegram`, `POST /webhook/receive/email`, `POST /webhook/receive/generic`. |
+| 6 | ✅ | Config API: `GET/PUT /webhook/settings`, `GET /webhook/logs`, `POST /webhook/test`. |
+| 7 | ✅ | Integrasi ke `docker-compose.yml` (service `webhook` + `mariadb-webhook` + update `mysqld-exporter-all` port 9112 + depends_on). |
+| 8 | ✅ | Update `infra/prometheus/prometheus.yml` — scrape jobs `webhook-service` dan `mariadb-webhook` (target `mysqld-exporter-all:9112`). |
+| 9 | ✅ | Update `.env.example` — tambah `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FROM`, `SMTP_PASSWORD`, `WEBHOOK_SECRET`. |
+| 10 | ✅ | Dokumentasi: `docs/integration-guides/webhook.md` (NATS contracts, REST API, DB schema, env vars, curl examples). |
+| 11 | ❌ | Verifikasi `go build ./...` di `services/webhook` → build OK (dilakukan via `/usr/local/go/bin/go build`). |
+| 12 | 📝 | `go mod tidy` di `services/webhook` menghasilkan `go.sum` baru; tidak mengubah modul lain. |
+
+**Keputusan Teknis:** Webhook Service memakai Redis logical DB4 (baru) untuk queue, bukan memakai DB yang telah ada (mis notification DB2 agar aman dari collision). NATS subjects `webhook.delivery` dan `webhook.retry` diaktifkan untuk integrasi event-driven; generic webhook HTTP inbound endpoint memungkinkan eksternal sistem mengirim HTTP POST tanpa perlu mempublikasi ke NATS.
+
+---
+
+## 2026-07-22
+
+### Docs Sync — Roadmap & Planning Completed Items (DLQ/CI/Test/Outbox)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Update `docs/roadmap.md`: tandai DLQ Saga, CI/CD, Unit Test 80%, dan Transactional Outbox sebagai ✅ Selesai di tabel Ringkasan Semua Service dan catatan "Yang belum dikerjakan". |
+| 2 | ✅ | Update `docs/roadmap.md`: hapus DLQ/CI/Test/Outbox dari tabel "Yang belum dikerjakan" dan "Rekomendasi Eksekusi TA-Scale" (tandai sebagai sudah selesai). |
+| 3 | ✅ | Update `docs/roadmap.md`: tandai risiko CI/CD, unit test, dan DLQ sebagai ✅ Selesai di Risk & Mitigasi table. |
+| 4 | ✅ | Update `docs/planning.md` versi → 2.17.0, tanggal → 2026-07-22, status → sync dengan roadmap. |
+| 5 | ✅ | Update `docs/planning.md` Keamanan table: MQTT ACL → ✅ (O1 selesai 2026-07-21), MinIO scoped key → 🟡 (O2 in progress). |
+
+**Keputusan Teknis:** Roadmap dan planning kini akurat menyatakan bahwa seluruh item cross-cutting TA-Scale (DLQ, CI/CD, UnitTest, Outbox) telah selesai. Sisa prioritas adalah O2 (MinIO scoped keys) dan Future P4 (OTA, Prometheus Metrics, Cloudflare, Webhook).
+
+---
+
 ## 2026-07-21
+### Server — Remove OTA Feature (Fase 10)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Hapus permission `perm-ota-write` dan assignment-nya di `services/auth/migrate.go` (seed permissions + role_permissions untuk admin & operator). |
+| 2 | ✅ | Hapus bucket `ota` dari `KNOWN_BUCKETS` di `services/cctv-capture/cron_capture.py`. |
+| 3 | ✅ | Hapus bucket `ota` dari `tmp-minio-test/minio-test3.go`. |
+| 4 | ✅ | Hapus bucket `ota` dari `ValidObjectPath` allowlist di `services/stream/internal/client/minio/minio.go` dan `knownBuckets` di `services/stream/internal/service/service.go`. |
+| 5 | ✅ | Update dokumentasi: `docs/integration-guides/auth.md`, `docs/integration-guides/stream.md`, `docs/planning.md`, `docs/roadmap.md`, `docs/security-audit.md`, `docs/adr.md`, `docker-compose.yml`, `docs/testing-plan-agent.md`, `docs/testing-implementasi-manual.md`. |
+
+**Keputusan Teknis:** Fitur OTA dihapus dari server karena sudah ada di sisi firmware (ESP32 `/api/ota`). Tidak ada service OTA backend yang di-build; bucket MinIO `ota` dan permission RBAC `ota:write` dihapus dari seluruh kode dan dokumentasi server. Firmware tetap memiliki endpoint `/api/ota` tetapi tidak ada server yang mengelola push firmware — OTA sepenuhnya menjadi tanggung jawab firmware.
+
+---
 
 ### CI/CD — Perbaikan Permission Denied pada Workspace Cleanup (EACCES node_modules)
 
@@ -19,7 +73,22 @@
 | 6 | ✅ | Buat berkas [.dockerignore](file:///home/almuzky/TA/Microservices/.dockerignore) di root repositori untuk mengecualikan `.git`, `node_modules`, `volumes`, log, dan cache agar build context Docker lebih cepat & meminimalkan layer cache miss. |
 | 7 | ✅ | Integrasikan Docker Buildx GitHub Actions Layer Cache (`--cache-from type=gha`, `--cache-to type=gha,mode=max`) pada job `docker-build` & `dashboard-docker-build` di [.github/workflows/ci-cd.yml](file:///home/almuzky/TA/Microservices/.github/workflows/ci-cd.yml) agar proses kompilasi image Docker di CI 3-5x lebih cepat. |
 
-### Infrastruktur — Perbaikan Permission Denied pada Grafana Volume (`mkdir /var/lib/grafana/plugins`)
+### Keamanan — O2 Remediation: MinIO Scoped Access Keys
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Buat 3 user MinIO ter-scope: `stream-svc` (rw `stream`+`ml-result`, ro `mlbucket`), `ml-svc` (rw `mlbucket`+`ml-result`, ro `stream`), `ota-svc` (rw `ota`). |
+| 2 | ✅ | Buat 3 policy IAM MinIO: `stream-svc-policy-v2`, `ml-svc-policy`, `ota-svc-policy` dengan aksi S3 + bucket ARN sesuai kebutuhan tiap service. |
+| 3 | ✅ | Update `.env` & `.env.example`: tambah `MINIO_STREAM_ACCESS_KEY`/`SECRET_KEY`, `MINIO_ML_ACCESS_KEY`/`SECRET_KEY`, `MINIO_OTA_ACCESS_KEY`/`SECRET_KEY`. |
+| 4 | ✅ | Update `docker-compose.yml`: stream service pakai `${MINIO_STREAM_ACCESS_KEY}`/`${MINIO_STREAM_SECRET_KEY}`; ml service pakai `${MINIO_ML_ACCESS_KEY}`/`${MINIO_ML_SECRET_KEY}`. |
+| 5 | ✅ | Update `services/stream/internal/config/config.go`: fallback `MINIO_STREAM_ACCESS_KEY` → `MINIO_ACCESS_KEY` (tanpa ubah behavior service lain). |
+| 6 | ✅ | Update `services/ml/app/config.py`: ganti default hardcoded `minioadmin` dengan `Field(..., validation_alias="MINIO_ML_ACCESS_KEY")`. |
+| 7 | ✅ | Fix `docker-compose.yml`: hapus referensi `mariadb-webhook` yang tidak ada dari `mysqld-exporter-all` depends_on. |
+| 8 | ✅ | Verifikasi E2E: stream & ml service startup tanpa minio error setelah recreate container dengan scoped key. |
+
+**Keputusan Teknis:** O2 remediation selesai. Stream & ML kini berjalan dengan scoped MinIO key. Policy `stream-svc-policy-v2` menambahkan `s3:GetBucketLocation` dan `s3:HeadBucket` eksplisit karena minio-go v7 `BucketExists` membutuhkan keduanya. Root credential `minioadmin` tetap di `.env` untuk admin/bootstrap.
+
+### Infrastruktur — Perbaiki Permission Denied pada Grafana Volume (`mkdir /var/lib/grafana/plugins`)
 
 | # | Status | Aktivitas |
 |---|---|---|

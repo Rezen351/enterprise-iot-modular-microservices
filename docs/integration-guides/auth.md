@@ -635,10 +635,9 @@ The service seeds the following reference data on every startup (idempotent, `IN
 - `perm-alert-ack` → `alert:ack`
 - `perm-user-admin` → `users:admin`
 - `perm-stream-read` → `stream:read`
-- `perm-ota-write` → `ota:write`
 
 **Role-Permission Mappings:**
-- `admin` → all 9 permissions
+- `admin` → all 8 permissions
 - `operator` → all except `user:admin`
 - `viewer` → read-only (`telemetry:read`, `control:read`, `alert:read`, `stream:read`)
 

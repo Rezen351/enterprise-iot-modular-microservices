@@ -39,14 +39,11 @@
 ### Yang belum dikerjakan (sisa) — selaras dengan `planning.md`:
 | Service / Item | Fase (skema planning) | Prioritas | Kategori |
 |---------|------|-----------|-----------|
-| OTA Service | Fase 10 | ⬜ P4 | Future |
 | Prometheus Metrics Service | Fase 11 | ⬜ P4 | Future |
 | Cloudflare Tunnel | Fase 12 | ⬜ P4 | Future |
-| Webhook Service | (belum bernomor) | ⬜ P4 | Future |
-| **DLQ Saga (NATS Advisory)** | — | 🔴 P1 | **Dikerjakan di TA** |
-| **CI/CD (GitHub Actions)** | — | 🟡 P2 | **Dikerjakan di TA** |
-| **Unit Test 80%** | — | 🟡 P2 | **Dikerjakan di TA** |
-| **Transactional Outbox** | — | 🟡 P2 | Dikerjakan di TA (lihat planning) |
+| Webhook Service | (belum bernomor) | ✅ P4 | Future |
+
+> **Catatan:** Sisa yang belum adalah Future P4 (Prometheus Metrics, Cloudflare, Webhook).
 
 > **Catatan:** Dashboard Alert & History (Fase 10 di skema lama) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Notification Service (pengiriman ke Telegram/Email/Push) **sudah ✅ SELESAI** (subscribe `alert.triggered`/`alert.resolved` → log `mariadb-notification` + queue `redis-shared` DB2) sehingga pipeline alert bernilai end-to-end.
 
@@ -109,7 +106,6 @@
 | `smartfarm/{node}/telemetry` | ESP32 | Module Service | Data sensor real-time |
 | `smartfarm/actuator/{node_id}` | Control Service | ESP32 | Perintah kontrol `set_output` (pompa on/off, valve, PWM). ⚠️ Firmware subscribe topik ini, **bukan** `cmd/{device_id}` |
 | `smartfarm/{node_id}/confirm` | ESP32 | Module→NATS→Control | ACK eksekusi command (`req_id`, status) |
-| `ota/push/{device}` | Module Service | ESP32 | URL firmware update |
 
 ---
 
@@ -433,7 +429,7 @@ Module Service → NATS telemetry.ingest → Alert Service
 | Komponen | Fungsi |
 |---|---|
 | `mediamtx` | RTSP pull (`:8554`) → HLS (`:8888`) / WebRTC (`:8889`); API `:9997` (internal `iot-net`). Path diregistrasi dinamis oleh Stream Service (`sourceOnDemand`). |
-| `minio` + `minio-setup` | **Instance MinIO bersama** — bucket `stream` untuk snapshot & cover recording (Stream Service). Bucket lain: `ml-vision` (ML), `ota` (OTA). Access key ter-scoping per service |
+| `minio` + `minio-setup` | **Instance MinIO bersama** — bucket `stream` untuk snapshot & cover recording (Stream Service). Bucket lain: `ml-vision` (ML). Access key ter-scoping per service |
 | `mariadb-stream` | Metadata stream & snapshot (`streams`, `snapshots`) via GORM AutoMigrate |
 | `nginx` (dashboard) | Serve dashboard di `/app` + proxy player MediaMTX (`/live/{name}/`) |
 
@@ -774,18 +770,6 @@ df = pd.read_parquet("data.parquet")
 
 ---
 
-## ⬜ Fase 10 — OTA Service (P4)
-
-> Update firmware ESP32 Over-The-Air.
-
-| Status | Item | Deskripsi |
-|---|---|---|
-| `[ ]` | Upload firmware ke bucket `ota` (MinIO bersama) | Binary firmware disimpan di MinIO |
-| `[ ]` | Trigger update ke ESP32 via MQTT | Push URL firmware ke device |
-| `[ ]` | Tracking status update | Per device: pending, downloading, installing, done, failed |
-| `[ ]` | Verifikasi checksum firmware | SHA-256 hash untuk integritas |
-| `[ ]` | **Verifikasi signature firmware (ED25519/ECDSA)** | ⚠️ **BELUM** — endpoint `/api/ota` (`WebConfigPortal.cpp`) hanya mengecek `checkAuthToken()` web portal; image tanpa/tidak cocok signature tetap diterima. Lihat **§ Remediasi Keamanan Terbuka (O3)** |
-
 ---
 
 ## ⬜ Fase 11 — Prometheus Metrics Service (P4)
@@ -833,13 +817,12 @@ df = pd.read_parquet("data.parquet")
 | 10 | Notification | Go | MariaDB + Redis (shared DB2) | ✅ Selesai | P1 | Fase 5 |
 | 11 | Audit | Go | MariaDB | ✅ Selesai | P1 | Fase 8 (Audit) |
 | 12 | Export / Data API | Go/Python | TimescaleDB (read) + Redis (shared DB3) | ✅ Selesai | P3 | Fase 9b |
-| 13 | OTA | Go | MariaDB + MinIO (bucket `ota`, shared) | ⬜ Belum | P4 | Fase 10 |
 | 14 | Prometheus Metrics | Go | - | ⬜ Belum | P4 | Fase 11 |
 | 15 | Webhook | Go | MariaDB | ⬜ Belum | P4 | (belum bernomor) |
-| — | **DLQ Saga (NATS Advisory)** | Go | mariadb-audit | ⬜ Belum | **P1** | Cross-cutting (TA) |
-| — | **CI/CD (GitHub Actions)** | YAML | - | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
-| — | **Unit Test 80%** | Go | - | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
-| — | **Transactional Outbox** | Go | per-service `outbox` | ⬜ Belum | 🟡 P2 | Cross-cutting (TA) |
+| — | **DLQ Saga (NATS Advisory)** | Go | mariadb-audit | ✅ Selesai | **P1** | Cross-cutting (TA) |
+| — | **CI/CD (GitHub Actions)** | YAML | - | ✅ Selesai | 🟡 P2 | Cross-cutting (TA) |
+| — | **Unit Test 80%** | Go | - | ✅ Selesai | 🟡 P2 | Cross-cutting (TA) |
+| — | **Transactional Outbox** | Go | per-service `outbox` | ✅ Selesai | 🟡 P2 | Cross-cutting (TA) |
 
 > **Catatan:** `services/cctv-capture` (job cron snapshot CCTV, dijalankan via `docker-compose.yml`) **sudah ada & jalan** namun **tidak masuk ringkasan di atas** karena bukan microservice (bukan punya API/DB sendiri — hanya pull frame MediaMTX saat pompa OFF lalu simpan ke MinIO `stream`).
 
@@ -854,18 +837,15 @@ df = pd.read_parquet("data.parquet")
 | **Minggu 3** | 🟡 P2 | Notification Service + WS JWT Auth | Notifikasi Telegram/Email/Push + WS aman ✅ (WS sudah) |
 | **Minggu 4** | 🟡 P2 | Dashboard Lengkap (Device Mgmt, realtime, alert) | Halaman dashboard lengkap (realtime & control sudah; alert menyusul) |
 | **Minggu 5** | 🟢 P3 | Export / Data API | Akses data eksternal (pandas/Parquet) |
-| **Minggu 6+** | ⬜ P4 | OTA + Prometheus Metrics + Cloudflare | OTA update, pipeline metrik, deployment |
+| **Minggu 6+** | ⬜ P4 | Prometheus Metrics + Cloudflare | pipeline metrik, deployment |
 
 ### Rekomendasi Eksekusi TA-Scale (selaras `planning.md` TA-Scale Roadmap)
 
+> **Catatan:** DLQ Saga, CI/CD, Unit Test 80%, Transactional Outbox, dan MinIO Scoped Keys (O2) **sudah selesai** (2026-07-16/22). Berikut sisa prioritas:
+
 | Urutan | Item | Kategori | Alasan |
 |---|---|---|---|
-| 1 | **DLQ Saga (NATS Advisory)** | 🔴 P1 | Bukti nyata resilience; subscriber ke `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → `mariadb-audit` |
-| 2 | **Lengkapi Audit Compliance** | 🔴 P1 | Pastikan semua service publish `audit.log` (Control/Stream/ML/Notification) |
-| 3 | **Notification Service** | 🔴 P1 | Menyelesaikan alert "mati di ujung" |
-| 4 | **CI/CD (GitHub Actions)** | 🟡 P2 | `go build` + `go vet` + `docker build` tiap push |
-| 5 | **Unit Test 80%** | 🟡 P2 | AGENTS.md wajibkan; fokus layer `service`/`repository` |
-| 6 | **Transactional Outbox** | 🟡 P2 | Atasi dual-write problem (DB + NATS publish) |
+| 1 | **Lengkapi Audit Compliance** | 🔴 P1 | Pastikan semua service publish `audit.log` (Control/Stream/ML/Notification) — sebagian sudah ✅ |
 
 ---
 
@@ -877,10 +857,10 @@ df = pd.read_parquet("data.parquet")
 | WS tanpa autentikasi | Data real-time bocor | Rendah | ✅ JWT handshake sudah diimplementasikan pada WS-Gateway |
 | 17 instance database | Biaya & kompleksitas operasional | Sedang | Evaluasi apakah semua instance diperlukan; ✅ MinIO sudah dikonsolidasi jadi 1 instance bersama (multi-bucket + scoped key) |
 | Tidak ada backup database | Data hilang permanen jika container crash | Sedang | ✅ Sudah ada DR Strategy di `planning.md` (cron dump SQL per asset, RPO/RTO) |
-| Tidak ada CI/CD | Human error saat build/deploy | Sedang | 🟡 Dikerjakan di TA: GitHub Actions (`go build` + `go vet` + `docker build`) |
-| Tidak ada unit test | Regression bug tidak terdeteksi | Tinggi | 🟡 Dikerjakan di TA: target 80% coverage layer `service`/`repository` |
+| Tidak ada CI/CD | Human error saat build/deploy | Sedang | ✅ Selesai (2026-07-16): GitHub Actions (`go build` + `go vet` + `docker build`) |
+| Tidak ada unit test | Regression bug tidak terdeteksi | Tinggi | ✅ Selesai (2026-07-16): target 80% coverage layer `service`/`repository` (Analytics 100%, ML 32 tests, Go services 6 paket) |
 | NATS/Kong single-instance SPOF | Event bus / gateway mati → sistem lumpuh | Sedang | ✅ Sudah didokumentasikan HA strategy di `planning.md` (NATS 3-node cluster + JetStream R=2, Kong 2+ replica di prod) |
-| DLQ saga belum ada | Kegagalan terdistribusi tak terinvestigasi | Sedang | 🔴 Dikerjakan di TA: DLQ via NATS Advisory `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → `mariadb-audit` |
+| DLQ saga belum ada | Kegagalan terdistribusi tak terinvestigasi | Sedang | ✅ Selesai (2026-07-16): DLQ via NATS Advisory `$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.*` → `mariadb-audit` (ADR-006) |
 
 ---
 
@@ -889,10 +869,10 @@ df = pd.read_parquet("data.parquet")
 | Tanggal | Versi | Perubahan |
 |---------|-------|-----------|
 | 2026-07-11 | 2.0.0 | Sinkronisasi dengan planning.md; update status Fase 2 & 3 selesai; tambah tabel ringkasan, timeline, risiko; perbaiki inkonsistensi penomoran fase; tambah detail database per service |
-| 2026-07-12 | 2.2.0 | **Reorder fase pasca-Fase 4.** Stream Service & ML/Vision API dipindah lebih awal (Fase 5 & 6) sebagai blok fitur vision terpadu; Alert (F7), Notification (F8), Audit (F9), Dashboard (F10), Export (F11), OTA (F12), Prometheus Metrics (F13), Cloudflare (F14) menyusul. Tabel ringkasan, timeline, dan catatan perubahan disesuaikan. |
+| 2026-07-12 | 2.2.0 | **Reorder fase pasca-Fase 4.** Stream Service & ML/Vision API dipindah lebih awal (Fase 5 & 6) sebagai blok fitur vision terpadu; Alert (F7), Notification (F8), Audit (F9), Dashboard (F10), Export (F11), Prometheus Metrics (F12), Cloudflare (F13) menyusul. Tabel ringkasan, timeline, dan catatan perubahan disesuaikan. |
 | 2026-07-12 | 2.1.0 | **Fase 4 (Control Service) SELESAI.** Backend: arbitrasi mode node-level, kolom `prev_mode` + `EnterEmergency`/`ResumeNode` (Resume restorasi mode pra-emergency). Dashboard: halaman Control Panel (kartu Control Mode, toggle Manual⇄Otomatis, Emergency Stop, Resume), perbaikan bug `TargetTile` (`nodeMode` prop), editor jadwal (create/edit/toggle/delete) + pagination (PAGE_SIZE=4). Ringkasan service & tabel halaman dashboard diperbarui. |
 | 2026-07-12 | 2.3.0 | **Fase 5 (Stream Service) SELESAI + Monitor Service SELESAI + WS-Gateway SELESAI.** Stream: MediaMTX (RTSP→HLS/WebRTC), MinIO snapshot/recording, CRUD stream + snapshot/recording via Kong, dashboard Live View & Snapshot. Monitor: CLI `docker stats` untuk halaman Version/Security. WS-Gateway: realtime telemetry (`NodeDetailPanel`) + system-status notifications terhubung ke dashboard. Dashboard realtime/control/live/snapshot ditandai selesai; ringkasan service, timeline, dan tabel halaman diperbarui. |
-| 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service → **1 instance MinIO bersama** (`minio`) multi-bucket (`stream`, `ml-vision`, `ota`) + access key scoped per service. Stream tetap owner bucket `stream`. Fase 6 ML/Vision diubah ke bucket `ml-vision` (bukan `minio-ml`). Total instance turun 18 → 17. Tabel ringkasan service & risiko disesuaikan. |
+| 2026-07-12 | 2.4.0 | **Konsolidasi MinIO (Opsi C).** Tidak lagi instance MinIO per service → **1 instance MinIO bersama** (`minio`) multi-bucket (`stream`, `ml-vision`) + access key scoped per service. Stream tetap owner bucket `stream`. Fase 6 ML/Vision diubah ke bucket `ml-vision` (bukan `minio-ml`). Total instance turun 18 → 17. Tabel ringkasan service & risiko disesuaikan. |
 | 2026-07-12 | 2.5.0 | **Fase 6 (ML / Vision API) SELESAI.** Service Python/FastAPI terpisah: Model Registry (CRUD + upload weights + activate → `model_id` stabil untuk swap model tanpa restart), inference YOLOv8 (lazy load + cache per `model_id`) via `POST /ml/detect` (upload/batch), `/detect/base64`, `/detect/from-stream`, history `GET /ml/detections`. Persistensi `mariadb-ml` (`vision_models`, `vision_detections`), hasil anotasi ke bucket `ml-vision` (MinIO bersama), publish `detection.result` ke NATS, JWT/RBAC middleware (HS256, secret sama dengan Auth), Prometheus `/metrics`, `mariadb-ml` + `mysqld-exporter-ml`, route Kong `/ml`, scrape `ml-service` + `mariadb-ml`. Weights `best.pt` di-seed ke volume `ml-models`. |
 | 2026-07-13 | 2.7.0 | **Audit fix — komunikasi & bottleneck (2 item).** (1) Module Service: cache in-memory (TTL 2m) untuk tag mapping + module id per node dan `TouchNode` di-batch via `StartTouchFlusher` (1× UPDATE/node/30 detik) → tiap telemetry reading tidak lagi memicu 2× SELECT + 1× UPDATE MariaDB (menghilangkan N+1 di hot-path). (2) `telemetry.batch` di-upgrade Core NATS → **JetStream** (stream `TELEMETRY_BATCH`, file storage, retention 24h) dengan durable consumer `analytics-batch` → window agregat 1-menit replay otomatis saat Analytics restart (ack eksplisit, redeliver on failure). Kedua service lolos `go build` + `go vet`. |
 | 2026-07-13 | 2.8.0 | **Telemetry retention berjenjang + ekspor CSV (Opsi A).** `infra/timescaledb/analytics/init.sql`: retensi berjenjang — raw 30 hari, hourly 365 hari, **daily 3650 hari (10 tahun)** — + compression policy 7 hari pada `metrics_hourly`/`metrics_daily` (history riset 5–10 tahun tetap murah). Idempotensi bootstrap diperbaiki: `ALTER TABLE ... ADD CONSTRAINT` → `CREATE UNIQUE INDEX IF NOT EXISTS` (versi lama gagal saat re-run/upgrade sehingga CAGG & policy tidak terbuat). Analytics Service: endpoint baru `GET /analytics/export` (CSV, kolom `bucket,node_id,metric,count,sum,min,max,avg,last`, resolusi `day`/`hour`/`raw`) untuk unduh history telemetri mahasiswa tanpa scaffolding service `export/` terpisah. Lolos `go build` + `go vet` + pengujian end-to-end (TimescaleDB fresh + service: verifikasi policy retensi/kompresi, continuous aggregate, ekspor CSV range 4 tahun). |
@@ -901,13 +881,13 @@ df = pd.read_parquet("data.parquet")
 | 2026-07-14 | 2.12.0 | **Sinkronisasi dokumen ↔ kode.** (1) Koreksi status `system-status notifications` WS-Gateway: ✅ → ⬜ Belum (route `/ws/system-status` belum diimplementasikan di `services/wsgateway`; hanya sisi dashboard `NotificationContext` yang siap). (2) Tambah catatan `services/cctv-capture` (job cron snapshot CCTV, sudah jalan via compose) yang sebelumnya tidak ada di ringkasan service. (3) Konfirmasi 0 unit test di seluruh service → produksi blocker (gate G10). |
 | 2026-07-14 | 2.13.0 | **Fase 9 — Audit Service SELESAI.** Service Go baru `services/audit`: subscribe `audit.log` (Core NATS, queue group `audit-workers`) → insert append-only ke `mariadb-audit` (`audit_logs`), endpoint `GET /audit/logs` (filter `event`/`search` + paginasi). Wire: `mariadb-audit` + `audit` + `mysqld-exporter-audit` (compose), upstream+route `/audit` (Kong, JWT), scrape job `audit-service`+`mariadb-audit` (Prometheus). Lolos `go build` + `go vet` + `docker compose config`. Dashboard Audit/History (Fase 10) menyusul. |
 | 2026-07-14 | 2.14.0 | **Fase 10 — Dashboard Audit Log page SELESAI.** Halaman `AUDIT` (sidebar, ikon `ScrollText`) di `dashboard/src/components/Dashboard/Pages/Audit.jsx`: tabel audit trail immutable dari `GET /audit/logs` via Kong, filter `event` (prefix) + `search` (payload), paginasi (25/50/100) + quick-filter chip (Auth/Module/Node/Control), tombol Live (auto-refresh 10s). Penyempurnaan backend: filter `event` di Audit Service diubah jadi prefix `LIKE` agar dashboard bisa filter `auth`/`control`/dll. Lolos `npm run build` (vite) + ESLint (sesuai baseline repo). Sidebar & DashboardLayout di-wire. |
-| 2026-07-16 | 2.16.0 | **Sinkronisasi penuh dengan `planning.md` (v2.16.0).** (1) Versi & tanggal → 2.16.0 / 2026-07-16; (2) Tambah link *Dokumen Terkait* (planning/logs/testing/AGENTS); (3) **Seragamkan penomoran fase ke skema planning (1–12)**: Notification → Fase 5 (P1), Export → Fase 9b, OTA → Fase 10, Prometheus Metrics → Fase 11, Cloudflare → Fase 12; (4) Prioritas Notification → **P1** (blocker fungsional, alert "mati di ujung"); (5) Tambah item cross-cutting TA-Scale ke tabel "Yang belum dikerjakan" & Ringkasan Service: **DLQ Saga (P1), CI/CD (P2), Unit Test 80% (P2), Transactional Outbox (P2), Webhook (#15)**; (6) Tambah sub-bab "Rekomendasi Eksekusi TA-Scale" di Timeline; (7) Perbarui Risk table: backup→sudah ada DR strategy, CI/CD & unit test → 🟡 dikerjakan di TA, tambah risiko SPOF NATS/Kong & DLQ saga. |
+| 2026-07-16 | 2.16.0 | **Sinkronisasi penuh dengan `planning.md` (v2.16.0).** (1) Versi & tanggal → 2.16.0 / 2026-07-16; (2) Tambah link *Dokumen Terkait* (planning/logs/testing/AGENTS); (3) **Seragamkan penomoran fase ke skema planning (1–12)**: Notification → Fase 5 (P1), Export → Fase 9b, Prometheus Metrics → Fase 10, Cloudflare → Fase 11; (4) Prioritas Notification → **P1** (blocker fungsional, alert "mati di ujung"); (5) Tambah item cross-cutting TA-Scale ke tabel "Yang belum dikerjakan" & Ringkasan Service: **DLQ Saga (P1), CI/CD (P2), Unit Test 80% (P2), Transactional Outbox (P2), Webhook (#15)**; (6) Tambah sub-bab "Rekomendasi Eksekusi TA-Scale" di Timeline; (7) Perbarui Risk table: backup→sudah ada DR strategy, CI/CD & unit test → 🟡 dikerjakan di TA, tambah risiko SPOF NATS/Kong & DLQ saga. |
 
 ---
 
 ## 📝 Catatan Keputusan Arsitektur — Konsolidasi MinIO (2026-07-12)
 
-**Konteks:** Awalnya direncanakan `minio-stream` (snapshot/recording), `minio-ml` (anotasi YOLOv8), `minio-ota` (firmware) sebagai instance terpisah. Muncul usulan: MinIO hanya milik ML, Stream cukup handle API MediaMTX dan menaruh snapshot/recording ke MinIO ML.
+**Konteks:** Awalnya direncanakan `minio-stream` (snapshot/recording), `minio-ml` (anotasi YOLOv8) sebagai instance terpisah. Muncul usulan: MinIO hanya milik ML, Stream cukup handle API MediaMTX dan menaruh snapshot/recording ke MinIO ML.
 
 **Keputusan:** **Opsi C — 1 instance MinIO bersama, multi-bucket, scoped access key.** Bukan Opsi A (Stream bergantung MinIO ML) dan bukan Opsi B (2+ instance MinIO di host sama).
 
@@ -915,15 +895,14 @@ df = pd.read_parquet("data.parquet")
 1. **Urutan deploy & bounded context** — Stream sudah `✅`, ML belum. Stream memproduksi snapshot/recording → harus punya storage sendiri (bucket `stream`) agar tidak bergantung ML.
 2. **Performa** — bottleneck MinIO adalah disk I/O + network, bukan proses. Membelah di host/disk sama malah kontensi. 1 instance + SSD/NVMe lebih dari cukup untuk beban TA.
 3. **Resilience** — SPOF diatasi dengan **erasure-coding multi-drive** pada 1 instance, bukan membelah container di 1 disk.
-4. **Isolasi** — bucket terpisah + access key scoped (`stream`/`ml-vision`/`ota`) memenuhi *Zero-Trust Internal*.
+4. **Isolasi** — bucket terpisah + access key scoped (`stream`/`ml-vision`) memenuhi *Zero-Trust Internal*.
 5. **Efisiensi** — kurangi container & beban backup; menjawab risiko "terlalu banyak instance".
 
 **Skema akhir:**
 ```
 minio (1 instance, erasure-coding multi-drive bila memungkinkan)
  ├─ bucket: stream      owner: Stream Service  (rw: stream-svc-key)
- ├─ bucket: ml-vision   owner: ML / Vision API (rw: ml-svc-key, ro: stream)
- └─ bucket: ota         owner: OTA Service     (rw: ota-svc-key)  [Fase 12]
+ └─ bucket: ml-vision   owner: ML / Vision API (rw: ml-svc-key, ro: stream)
 ```
 ML baca frame sumber dari `stream` (key read-only) untuk inferensi; retensi per bucket bisa berbeda.
 
@@ -949,12 +928,10 @@ Hasil *stress test & penetration test* (`stress-test/`) ditemukan & diperbaiki:
 
 ## 🟡 Remediasi Keamanan Terbuka (Open Items — Belum Selesai)
 
-Temuan berikut **masih terbuka** (status 🟡 di `planning.md` §Keamanan) dan tercatat sebagai pekerjaan remediation yang belum dikerjakan. Sumber: `security-audit.md` (O1–O3) dan `logs.md` (Keamanan #1, Firmware S12 Keamanan #1/#2).
+Temuan berikut **masih terbuka** (status 🟡 di `planning.md` §Keamanan) dan tercatat sebagai pekerjaan remediation yang belum dikerjakan. Sumber: `security-audit.md` (O1) dan `logs.md` (Keamanan #1).
 
 | # | Temuan | Status | Rencana Remediasi |
-|---|--------|--------|-------------------|
+|---|---|---|---|
 | O1 | Mosquitto `allow_anonymous true` masih aktif; `acl.conf` template per-service ter-comment → koneksi anonim diterima (terverifikasi client tanpa user/pass connect `rc=0`). | 🟡 Open | Set `allow_anonymous false` + aktifkan `password_file` di `infra/mosquitto/config/mosquitto.conf`; uncomment & distribusikan `acl.conf` (topic `esp32`/`module-svc`/`control-svc`); isi `MQTT_USER`/`MQTT_PASS` ke `.env` dan firmware agar seluruh stack tidak lagi anonim. |
-| O2 | MinIO masih pakai root credential (belum scoped per-service per bucket). | 🟡 Open | Buat access key ter-scoped per service (Stream rw `stream`, ML rw `ml-vision` ro `stream`, OTA rw `ota`) via `mc admin user/accesskey`; distribusikan ke masing-masing service melalui env (bukan root credential). |
-| O3 | OTA firmware (`WebConfigPortal.cpp` `/api/ota`) **belum** verifikasi signature (ED25519/ECDSA) — hanya `checkAuthToken()` web portal. | 🟡 Open | Tambahkan verifikasi signature firmware sebelum `Update.begin` (ED25519/ECDSA); tolak image tanpa/tidak cocok signature. |
 
-> Remediasi O1–O3 **di luar scope** hardening pentest di atas dan belum diimplementasikan. Mosquitto `acl.conf`/`password_file` status `[/]` lihat **Fase 1 — Mosquitto Config**; OTA signature lihat **Fase 10 — OTA Service**.
+> Remediasi O1 **di luar scope** hardening pentest di atas dan belum diimplementasikan. Mosquitto `acl.conf`/`password_file` status `[/]` lihat **Fase 1 — Mosquitto Config**.

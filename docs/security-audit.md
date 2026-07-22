@@ -28,8 +28,6 @@ Temuan berikut **masih terbuka** (status 🟡 di `planning.md` §Keamanan) dan t
 | # | Temuan | Status | Rencana Remediasi |
 |---|--------|--------|-------------------|
 | O1 | Mosquitto `allow_anonymous true` masih aktif; `acl.conf` template per-service ter-comment → koneksi anonim diterima (terverifikasi client tanpa user/pass connect `rc=0`). | 🟡 Open | Set `allow_anonymous false` + aktifkan `password_file` di `infra/mosquitto/config/mosquitto.conf`; uncomment & distribusikan `acl.conf` (topic `esp32`/`module-svc`/`control-svc`); isi `MQTT_USER`/`MQTT_PASS` ke `.env` dan firmware agar seluruh stack tidak lagi anonim. |
-| O2 | MinIO masih pakai root credential (belum scoped per-service per bucket). | 🟡 Open | Buat access key ter-scoped per service (Stream rw `stream`, ML rw `ml-vision` ro `stream`, OTA rw `ota`) via `mc admin user/accesskey`; distribusikan ke masing-masing service melalui env (bukan root credential). |
-| O3 | OTA firmware (`WebConfigPortal.cpp` `/api/ota`) **belum** verifikasi signature (ED25519/ECDSA) — hanya `checkAuthToken()` web portal. | 🟡 Open | Tambahkan verifikasi signature firmware sebelum `Update.begin` (ED25519/ECDSA); tolak image tanpa/tidak cocok signature. |
 
-> Sumber: `logs.md` (2026-07-16, Keamanan #1 & Firmware S12 Keamanan #1/#2). Remediasi O1–O3 **di luar scope** hardening pentest di atas dan belum diimplementasikan.
+> Sumber: `logs.md` (2026-07-16, Keamanan #1). Remediasi O1 **di luar scope** hardening pentest di atas dan belum diimplementasikan.
 

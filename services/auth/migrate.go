@@ -201,9 +201,8 @@ func seedAll(db *gorm.DB) error {
 		  ('perm-ctrl-write',  'control',   'write',  'Send control commands to devices',   NOW()),
 		  ('perm-alert-read',  'alert',     'read',   'View alerts',                        NOW()),
 		  ('perm-alert-ack',   'alert',     'ack',    'Acknowledge alerts',                 NOW()),
-		  ('perm-user-admin',  'users',     'admin',  'Manage users roles permissions',     NOW()),
-		  ('perm-stream-read', 'stream',    'read',   'View camera streams',                NOW()),
-		  ('perm-ota-write',   'ota',       'write',  'Push OTA firmware updates',          NOW())
+  ('perm-user-admin',  'users',     'admin',  'Manage users roles permissions',     NOW()),
+  ('perm-stream-read', 'stream',    'read',   'View camera streams',                NOW())
 	`).Error; err != nil {
 		return err
 	}
@@ -220,7 +219,6 @@ func seedAll(db *gorm.DB) error {
 		  ('role-admin-001', 'perm-alert-ack'),
 		  ('role-admin-001', 'perm-user-admin'),
 		  ('role-admin-001', 'perm-stream-read'),
-		  ('role-admin-001', 'perm-ota-write'),
 		  -- operator
 		  ('role-operator-001', 'perm-tel-read'),
 		  ('role-operator-001', 'perm-tel-write'),
@@ -229,7 +227,6 @@ func seedAll(db *gorm.DB) error {
 		  ('role-operator-001', 'perm-alert-read'),
 		  ('role-operator-001', 'perm-alert-ack'),
 		  ('role-operator-001', 'perm-stream-read'),
-		  ('role-operator-001', 'perm-ota-write'),
 		  -- viewer: read-only
 		  ('role-viewer-001', 'perm-tel-read'),
 		  ('role-viewer-001', 'perm-ctrl-read'),

@@ -30,7 +30,7 @@
 - Base URL eksternal (melalui Kong): `http://localhost:8000` (env `KONG_PUBLIC_URL`).
 - MQTT broker (device): `tcp://mosquitto:1883` (container internal, auth enabled).
 - Prometheus: `http://localhost:9090`. NATS monitor: `http://<nats>:8222`.
-- MinIO console: `http://localhost:9001` (bucket `stream`, `ml-vision`, `ota`).
+- MinIO console: `http://localhost:9001` (bucket `stream`, `ml-vision`).
 
 ### Auth Token (wajib untuk route terlindungi)
 ```bash
@@ -315,14 +315,13 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 | MSG3 | ESP telemetry | `smartfarm/{node}/telemetry` | Module ingest | [ ] | M1 |
 | MSG4 | Control command | `smartfarm/actuator/{node_id}` | ESP eksekusi `set_output` | [ ] | M2 |
 | MSG5 | ESP ACK | `smartfarm/{node_id}/confirm` | Control korelasi req_id | [ ] | M2 |
-| MSG6 | OTA push | `ota/push/{device}` | (belum diimplementasikan) | [ ] | ➖ — |
 | MSG7 | NATS `telemetry.ingest` | Core NATS | live fan-out WS | [ ] | M1 |
 | MSG8 | NATS `telemetry.batch` | **JetStream** `TELEMETRY_BATCH` | persistent + replay | [ ] | M2 |
 | MSG9 | NATS `audit.log` | Core NATS | dipublish Auth/Module/Control/Stream & di-consume Audit Service | [ ] | M2 |
 | MSG10 | NATS `detection.result` | Pub/Sub | dipublish ML | [ ] | M3 |
 | MSG11 | `alert.triggered`/`alert.resolved` | Pub/Sub | dipublish Alert Service → Notification/WS | [ ] | M2 |
 
-> **Catatan backend:** MSG1–MSG5, MSG7–MSG11 lulus API/NATS test. MSG6 = ➖ (OTA Service belum diimplementasikan, roadmap Future P4). Checklist manual tetap `[ ]` menunggu validasi User. MQTT broker `allow_anonymous` masih true (lihat SEC5).
+> **Catatan backend:** MSG1–MSG5, MSG7–MSG11 lulus API/NATS test. MQTT broker `allow_anonymous` masih true (lihat SEC5).
 
 ---
 
@@ -381,7 +380,6 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 
 | Service | Fase | Prioritas | Checklist impl. |
 |---------|------|-----------|-----------------|
-| OTA Service | 12 | ⬜ P4 | upload MinIO `ota`, trigger MQTT, tracking status, checksum SHA-256 |
 | Prometheus Metrics Svc | 13 | ⬜ P4 | sub `metrics.health`, aggregasi, `/metrics` |
 | Cloudflare Tunnel | 14 | ⬜ P4 | `cloudflared tunnel` → Kong, TLS, domain |
 | Webhook Service | — | ⬜ P4 | eksternal webhook + retry + `webhook.delivery` log |
@@ -543,7 +541,7 @@ Daftar kekurangan tersisa: ___________________________________
 Ditandatangani (tester): __________________
 ```
 
-> **Catatan:** Service yang **belum diimplementasikan** (bagian 14.0: OTA, Prometheus Metrics, Cloudflare Tunnel, Webhook) bukan bagian dari gate produksi fitur inti, tetapi harus dicatat sebagai *known limitations* saat deklarasi produksi. Alert, Notification, Audit, dan Export **SUDAH diimplementasikan** dan backend-nya lulus API test; checklist manual di-reset `[ ]` menunggu validasi UI User.
+> **Catatan:** Service yang **belum diimplementasikan** (bagian 14.0: Prometheus Metrics, Cloudflare Tunnel, Webhook) bukan bagian dari gate produksi fitur inti, tetapi harus dicatat sebagai *known limitations* saat deklarasi produksi. Alert, Notification, Audit, dan Export **SUDAH diimplementasikan** dan backend-nya lulus API test; checklist manual di-reset `[ ]` menunggu validasi UI User.
 
 ---
 
@@ -558,6 +556,5 @@ Ditandatangani (tester): __________________
 | 5 | ✅ Resolved | **Notification & Export SUDAH ada di `docker-compose.yml`** & `Up (healthy)`. | Tidak ada perubahan konfigurasi service yang sedang jalan. |
 | 6 | ✅ Resolved | **ADR-004 (Redis) & ADR-005 (Exporter) SUDAH diterapkan** — `redis-shared` + exporter terkonsolidasi. | Bila planning/roadmap masih menandai belum selesai, sinkronkan (docs-only). |
 | 7 | 🟡 Open | **Mosquitto `allow_anonymous true`** masih aktif. | Enforcement ditunda butuh kredensial ke seluruh stack + firmware. |
-| 8 | 🟡 Open | **MinIO masih pakai root credential** — belum scoped per-service. | Perlu access key terpisah per service. |
-| 9 | 🟡 Open | **OTA firmware belum verifikasi signature** — hanya cek `checkAuthToken()`. | Tambah verifikasi ED25519/ECDSA sebelum `Update.begin`. |
-| 10 | ✅ Fixed | **Emergency stop "jalan/resume sendiri"** — kolom `mode`/`prev_mode` terlalu sempit (`varchar(8)` vs `"EMERGENCY"` 9 char). | Fix: perlebar ke `varchar(16)` + guard scheduler. Terverifikasi E2E: mode jadi EMERGENCY, pompa tetap OFF. |
+| 8 | ✅ Resolved | **MinIO scoped access keys** — `stream-svc`, `ml-svc`, `ota-svc` dengan policy ter-scope per bucket. | O2 selesai; service tidak lagi pakai root credential. |
+| 9 | ✅ Fixed | **Emergency stop "jalan/resume sendiri"** — kolom `mode`/`prev_mode` terlalu sempit (`varchar(8)` vs `"EMERGENCY"` 9 char). | Fix: perlebar ke `varchar(16)` + guard scheduler. Terverifikasi E2E: mode jadi EMERGENCY, pompa tetap OFF. |

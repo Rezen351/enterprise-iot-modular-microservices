@@ -614,7 +614,7 @@ services:
   # MariaDB consolidated exporter (ADR-005, OPTION 1) — one container running
   # one mysqld_exporter process per target DB on a dedicated port.
   # Port mapping: 9104 auth, 9105 control, 9106 module, 9107 stream,
-  # 9108 audit, 9109 alert, 9110 notification, 9111 ml.
+  # 9108 audit, 9109 alert, 9110 notification, 9111 ml, 9112 webhook.
   mysqld-exporter-all:
     build:
       context: ./infra/mysqld-exporter-all
@@ -842,7 +842,7 @@ services:
 
   # ──────────────────────────────────────
   # MinIO — object storage (shared infra; Stream Service does not use in Fase 5)
-  # Buckets stream/ml/ota provisioned by minio-setup for Fase 6/10.
+  # Buckets stream/ml provisioned by minio-setup for Fase 6.
   # ──────────────────────────────────────
   minio:
     image: minio/minio

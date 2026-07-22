@@ -432,7 +432,7 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 
 // knownBuckets are the buckets the gallery's ml-result listing can read from;
 // used to parse a minio public URL (e.g. annotated_url) back into bucket+key.
-var knownBuckets = []string{"ml-result", "mlbucket", "ml", "stream", "ota"}
+var knownBuckets = []string{"ml-result", "mlbucket", "ml", "stream"}
 
 // bucketAndKeyFromURL extracts (bucket, key) from a minio public URL such as
 // "http://host/minio/ml/detected/foo.jpg" or "/storage/ml/...".

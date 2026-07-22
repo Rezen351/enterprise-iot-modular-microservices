@@ -1,8 +1,8 @@
 # 📋 Planning — IOT-Modular-Microservice
 
-> **Versi Dokumen:** 2.16.0  
-> **Tanggal:** 2026-07-16  
-> **Status:** 🟢 Fase 1-5 + Monitor Selesai — + Hardening Arsitektur (2.12–2.16: resilience, outbox, testing, deployment, SLA, Architecture Roadmap, cosmetic cleanup) 
+> **Versi Dokumen:** 2.17.0  
+> **Tanggal:** 2026-07-21  
+> **Status:** 🟢 Fase 1-5 + Monitor + DLQ + CI/CD + UnitTest 80% + Outbox + MinIO Scoped Keys (O2) Selesai 
 > **Penulis:** Alif Muhammad Rizky
 > **Dokumen Terkait:** [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) · [adr.md](file:///home/almuzky/TA/Microservices/docs/adr.md) · [runbook.md](file:///home/almuzky/TA/Microservices/docs/runbook.md) · [security-audit.md](file:///home/almuzky/TA/Microservices/docs/security-audit.md) · [logs.md](file:///home/almuzky/TA/Microservices/logs.md) · [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) · [AGENTS.md](file:///home/almuzky/TA/Microservices/AGENTS.md)
 
@@ -203,7 +203,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
 - **`docker-compose.yml`** — Definisi semua service dan instance database (saat ini: auth, module, analytics, wsgateway, nats, mosquitto, kong, prometheus)
 - **`.env.example`** — Template variabel lingkungan untuk konfigurasi
 - **`infra/`** — Konfigurasi infrastruktur pendukung:
-  - `mariadb/` — Skema inisialisasi database per service (auth ✅, module ✅, control ⬜, alert ⬜, stream ⬜, ml ⬜, ota ⬜, notification ⬜, audit ⬜, webhook ⬜)
+  - `mariadb/` — Skema inisialisasi database per service (auth ✅, module ✅, control ⬜, alert ⬜, stream ⬜, ml ⬜, notification ✅, webhook ✅, audit ⬜)
   - `timescaledb/` — Skema untuk time-series data (module ✅, analytics ✅)
   - `redis/` — Konfigurasi Redis bersama (`redis-shared`, multi-DB per service)
   - `minio/` — Script inisialisasi bucket
@@ -226,6 +226,7 @@ Proyek diorganisir dengan struktur sebagai berikut:
   - `notification/` ✅ — Service notifikasi multi-channel
   - `audit/` ✅ — Service audit log
   - `dlq/` ✅ — DLQ Saga Worker (Go)
+  - `webhook/` ✅ — Webhook receiver and dispatcher
   - `cctv-capture/` ⬜ — External script CCTV capture (tidak di-deploy via compose)
 - **`dashboard/`** ✅ — Frontend React untuk antarmuka pengguna
 - **`docs/`** — Dokumentasi kontrak API, NATS subjects, MQTT topics, webhook payload schema
@@ -467,16 +468,6 @@ Alur ketika operator mengirim perintah ke perangkat (misalnya menyalakan pompa):
 
 > Catatan: firmware membalas ACK via **MQTT `/confirm`**, bukan NATS Request-Reply sinkron. Timeout ditetapkan Control Service (mis. 2–5 detik, menyesuaikan interval telemetry 5s).
 
-### Saga 3 — OTA Firmware Update
-
-Alur pembaruan firmware ke ESP32 secara aman:
-
-1. **OTA Service** upload firmware baru ke MinIO, publikasikan `saga.ota.ready`
-2. **Module Service** kirim URL firmware ke ESP32 via MQTT topic `ota/push/{device}`
-3. **ESP32** konfirmasi download, status menjadi `downloading`
-4. **OTA Service** konfirmasi instalasi selesai, status menjadi `installed`
-5. **Kompensasi:** Jika timeout 30 menit tanpa konfirmasi, OTA Service publikasikan `saga.ota.compensate`, status menjadi `failed`, notifikasi dikirim ke admin
-
 ### Subscriber Nyata vs Diterbitkan (Gap Analysis)
 
 Beberapa subject sudah dipublish tapi **belum ada consumer nyata** — ini adalah celah fungsional, bukan sekadar delay:
@@ -557,13 +548,12 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | Network Isolation | Semua container berada di network private `iot-net`, hanya Kong yang terekspos ke host | ✅ |
 | Rate Limiting | Kong: 20 req/min untuk endpoint auth publik, 60-120 req/min untuk endpoint lain | ✅ |
 | CORS | Whitelist origin eksplisit (localhost:3000, localhost:5173, FRONTEND_URL), tidak menggunakan wildcard | ✅ |
-| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto | 🟡 |
-| MinIO scoped access key | Access key per-service (bukan root credential) untuk masing-masing bucket | 🟡 |
+| MQTT ACL | Kontrol akses per-topik per-service di konfigurasi Mosquitto | ✅ |
+| MinIO scoped access key | Access key per-service (bukan root credential) untuk masing-masing bucket | ✅ |
 | NATS ACL | Kontrol akses per-subject per-user di konfigurasi NATS | ✅ |
 | WebSocket Auth | ✅ JWT pada handshake WS (Bearer header / `?token=`), validasi via `JWT_SECRET` | ✅ |
-| OTA firmware signature | ✅ Verifikasi signature firmware (ED25519/ECDSA) sebelum `Update.begin` | 🟡 |
 
-> **Catatan keamanan (open items):** Baris 🟡 di atas adalah temuan terbuka (lihat `logs.md` Keamanan #1): Mosquitto masih berjalan dengan `allow_anonymous true` (template `acl.conf` ter-comment), sehingga enforcement ACL per-service belum aktif. MinIO masih menggunakan root credential (belum dibuat access key scoped per-service per bucket). OTA firmware (Fase 10) **belum** menerapkan verifikasi signature (ED25519/ECDSA) — endpoint `/api/ota` hanya mengecek `checkAuthToken()` web portal. Ketiganya tercatat sebagai remediasi terbuka, bukan selesai.
+> **Catatan keamanan (open items):** OTA firmware (Fase 10) **belum** menerapkan verifikasi signature (ED25519/ECDSA) — endpoint `/api/ota` hanya mengecek `checkAuthToken()` web portal. Ini tercatat sebagai remediasi terbuka O3. Mosquitto ACL enforcement (O1) dan MinIO scoped keys (O2) **sudah selesai** (2026-07-21/22).
 | Webhook Auth | Setiap webhook endpoint eksternal memerlukan secret token untuk verifikasi | ⬜ |
 
 ### Detail Matriks Otorisasi (RBAC Matrix)
@@ -673,7 +663,6 @@ Catatan: Validasi peran dilakukan oleh middleware `RequireRole` di level mikrose
 | 🟡 P2 | Fase 9 | Dashboard Device Management | 2-3 hari | File sudah ada, tinggal integrasi |
 | 🟢 P3 | Fase 6 | Stream Service | 5-7 hari | ✅ Selesai |
 | 🟢 P3 | Fase 6 | ML / Vision API | 7-14 hari | ✅ Selesai — Model Registry + YOLOv8 inference + MinIO/NATS |
-| ⬜ P4 | Fase 10 | OTA Service | 5-7 hari | Fitur opsional |
 | ⬜ P4 | Fase 11 | Prometheus Metrics Service | 3-5 hari | Refactoring pipeline metrik |
 | ⬜ P4 | Fase 12 | Cloudflare Tunnel | 1-2 hari | Deployment ke production |
 

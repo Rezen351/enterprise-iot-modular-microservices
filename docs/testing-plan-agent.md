@@ -57,14 +57,12 @@ lain), `cors` (origins localhost:3000/5173 + `FRONTEND_URL`), `prometheus`.
 - `notification` & `export-service` **SUDAH terdaftar** di `docker-compose.yml` (block `notification`/`export-service`) → ikut `docker compose up -d`. Tidak perlu binary manual.
 - Redis **SUDAH di-consolidate** → 1 instance `redis-shared` (multi-DB: module=DB0, alert=DB1, notification=DB2, export=DB3) — ADR-004 ✅ terapan.
 - Exporter **SUDAH di-consolidate** → 3 container (`mysqld-exporter-all` 8 port, `postgres-exporter-all` 2 port, `redis-exporter` 4 series) — ADR-005 ✅ terapan. Total 31 Prometheus target.
-- MinIO **sudah 1 instance bersama** multi-bucket (`stream`/`ml-vision`/`ota`), semua bucket `private` (anonymous download ditolak). Scoped access key masih 🟡 (service pakai root credential).
+- MinIO **sudah 1 instance bersama** multi-bucket (`stream`/`ml-vision`), semua bucket `private` (anonymous download ditolak). Scoped access key per-service ✅ sudah diterapkan (O2 selesai).
 - Mosquitto **masih `allow_anonymous true`** (ACL template ter-comment) — 🟡 open item O1.
 - `monitor` (CLI `docker stats`) **SUDAH DI-REMOVE** (commit `b444390`, 2026-07-15); visibility resource container kini via `cadvisor` + `node-exporter` (Prometheus). §13 di test plan telah dihapus agar tidak merujuk service yang tidak ada.
 
 **Open Remediation (lihat `roadmap.md` § Remediasi Keamanan Terbuka):**
-- O1: Mosquitto `allow_anonymous false` + `acl.conf` + distribusi `MQTT_USER`/`MQTT_PASS` (belum).
-- O2: MinIO scoped access key per-service (service masih pakai root credential).
-- O3: OTA firmware signature verification ED25519/ECDSA (belum — OTA sendiri masih ⬜ Fase 10).
+- O1: Mosquitto `allow_anonymous false` + `acl.conf` enforcement (belum).
 
 ---
 
@@ -424,7 +422,7 @@ HLS playback proxy ke MediaMTX.
 ### Checklist Keamanan
 - [x] JWT di semua route (no token → 401); write (`POST/PUT/DELETE` streams & snapshot/record/delete-snapshot) hanya operator/admin (viewer → 403). ✅ *(2026-07-16, QA Agent retest: no-token→401 on /streams, /streams/{id}, /snapshots, /storage/*; viewer write→403 on POST/DELETE streams & snapshot)*.
 - [x] Validasi stream name regex (`^[A-Za-z0-9_.-]{1,64}$`) cegah path traversal MediaMTX/HLS; HLS name = stream name (aman). ✅ *(2026-07-16, QA Agent retest: name with `/`→400, 65-char→400, HLS url uses stream name `safe_cam`)*.
-- [x] Akses MinIO pakai credential scoped (bucket `stream` private, bukan public); objek disajikan via `/storage/*` proxy ber-JWT (tanpa token → 401). `ValidObjectPath` blokir `..`/absolut & bucket di-allowlist (`stream`,`ml-result`,`mlbucket`,`ml`,`ota`). ✅ *(2026-07-16, QA Agent retest: no-token→401; `..%2f` blocked by Kong 404; absolute/disallowed-bucket→404; ValidObjectPath allowlist confirmed in code)*.
+- [x] Akses MinIO pakai credential scoped (bucket `stream` private, bukan public); objek disajikan via `/storage/*` proxy ber-JWT (tanpa token → 401). `ValidObjectPath` blokir `..`/absolut & bucket di-allowlist (`stream`,`ml-result`,`mlbucket`,`ml`). ✅ *(2026-07-16, QA Agent retest: no-token→401; `..%2f` blocked by Kong 404; absolute/disallowed-bucket→404; ValidObjectPath allowlist confirmed in code)*.
 - [x] Snapshot detect tidak bocorkan frame ke log (frame di-upload ke MinIO, tidak di-log); RTSP creds di-redact di response (`redactRTSPCreds`). ✅ *(2026-07-16, QA Agent retest: created stream w/ `rtsp://admin:Admin_TF24!@...` → GET/create response redacted to `rtsp://192.168.1.110:...` (creds stripped); container logs clean of creds/frame bytes; `?detect=true`→502 = [~] no active ML model)*.
 
 ### Catatan & Next Step
@@ -708,7 +706,7 @@ Verifikasi riil via container python di `microservices_iot-net`:
 
 ### Checklist Keamanan
 - [~] MQTT auth (user/pass atau cert); TLS bila tersedia. → **Kode firmware BENAR** (`MqttManager.cpp:152` kirim kredensial; `MQTT_USE_TLS` + `setCACert`/`setInsecure` di `:61`). **BUT broker `infra/mosquitto/config/mosquitto.conf:2` `allow_anonymous true`** dan `acl.conf` masih placeholder → koneksi anonim diterima (terbukti: client tanpa user/pass berhasil connect). Enforcement credential & ACL per-service (user `esp32`/`module-svc`/`control-svc` di `acl.conf`) **belum diaktifkan** di env ini. Bukan bug firmware; perlu enable `allow_anonymous false` + `password_file` + user di broker (akan memengaruhi seluruh stack yang saat ini pakai credensial kosong).
-- [~] Firmware OTA terproteksi (signature) — bila ada. → **OTA ADA** (`WebConfigPortal.cpp:158` `/api/ota`, handler `:595`) tapi **HANYA** cek `checkAuthToken()` (Bearer token portal web), **TIDAK ada verifikasi signature firmware** (tidak ada ED25519/ECDSA). OTA menulis binary langsung via `Update.end(true)`. Rekomendasi: tambah verify signature sebelum `Update.begin`. Dokumentasikan sebagai open limitation (implementasi PKI signing di luar scope QA ini).
+- [~] Firmware OTA terproteksi (signature) — bila ada. → **OTA DIHAPUS** dari server (`WebConfigPortal.cpp:158` `/api/ota` masih ada di firmware tetapi tidak ada backend OTA Service di server). Firmware tetap menulis binary via `Update.end(true)` tetapi tidak ada server yang mengelola OTA.
 - [x] Tidak ada secret hardcode di source; command hanya dari broker terautentikasi. → **DIVERIFIKASI**: `Config.cpp` semua default kosong (MQTT_USER/PASS/WIFI/ADMIN = ""), diisi dari `config.json` (ConfigManager). **BUG DI-FIX**: default password lemah `"admin123"` yang di-hardcode di `ConfigManager.cpp:86` diganti generate random + log ke serial (`ConfigManager.cpp:91`). Command hanya diterima via MQTT dari broker (subscriber terautentikasi); firmware tidak expose command selain via topik actuator broker.
 
 ### Catatan & Next Step
@@ -723,7 +721,6 @@ Verifikasi riil via container python di `microservices_iot-net`:
 
 **Open note (bukan blocker, `[~]`):**
 - MQTT broker `allow_anonymous true` (belum enforce credential di sisi broker) — lihat checklist keamanan #1.
-- OTA firmware belum pakai signature verification — lihat checklist keamanan #2.
 - Real ESP32 flash **TIDAK dilakukan** (no hardware di sandbox); protokol divalidasi via simulator.
 
 ---
@@ -742,7 +739,7 @@ Service `monitor` (CLI `docker stats`) **sudah di-remove secara sengaja** (commi
 - [~] **Mosquitto:** ACL aktif (esp32-client hanya topik diperbolehkan) — 🟡 **BELUM** (`allow_anonymous true` + `acl.conf` ter-comment, O1).
 - [x] **Redis:** **1 instance `redis-shared`** multi-DB (module=0/alert=1/notification=2/export=3) — ADR-004 ✅ terapan.
 - [x] **Exporter:** **3 container konsolidasi** (`mysqld-exporter-all`/`postgres-exporter-all`/`redis-exporter`) — ADR-005 ✅ terapan; `count(up)=31/31` UP.
-- [x] **MinIO:** bucket `stream`/`ml-vision`/`ota` **private** (anonymous download ditolak); scoped access key 🟡 masih root credential (O2).
+- [x] **MinIO:** bucket `stream`/`ml-vision` **private** (anonymous download ditolak); scoped access key per-service ✅ (O2 selesai).
 - [x] **MediaMTX:** HLS **hanya lewat Kong** (`/hls`), port `8888` tidak di-publish ke host (anonim ditolak).
 - [x] **Prometheus/Grafana:** metrik tiap service (incl. middleware prometheus) ter-scrape.
 
@@ -770,7 +767,7 @@ audit, notification, export, ml, stream) + Kong + NATS + Mosquitto + MinIO + Med
     `mc anonymous set download m/ml-result` sehingga bucket terbuka untuk read anonim, melanggar
     prasyarat "bucket private". **Fix:** ubah `minio-setup` di `docker-compose.yml` (semua bucket
     `mc anonymous set private`) + terapkan live `mc anonymous set private m/ml-result`.
-    **TER-VERIFIKASI:** `stream`/`mlbucket`/`ota`/`ml-result` → `private` (anon read ditolak).
+    **TER-VERIFIKASI:** `stream`/`mlbucket`/`ml-result` → `private` (anon read ditolak).
 3. [x] **MediaMTX HLS ter-expose ke host tanpa auth proxy** — `docker-compose.yml` mem-publish
     port `8888:8888` (HLS) ke host, padahal HLS seharusnya HANYA lewat Kong auth proxy (`/hls`).
     Hasil: stream HLS bisa diakses anonim via `:8888` tanpa JWT. **Fix:** hapus mapping host
@@ -788,9 +785,7 @@ audit, notification, export, ml, stream) + Kong + NATS + Mosquitto + MinIO + Med
   saat ini KOSONG → module/control connect anonim) dan firmware ESP32 — berisiko break pipeline.
   Sesuai instruksi "re-verify and flag", dicatat sebagai limitation terbuka; remediation siap di
   `infra/mosquitto/config/acl.conf`.
-- **MinIO scoped credentials:** service menggunakan root `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`
-  (bukan user ter-scoped per-service). Bucket sudah private; pembuatan user scoped (policy
-  per-bucket) adalah follow-up opsional.
+- **MinIO scoped credentials:** ✅ Selesai (O2). Service Stream & ML menggunakan scoped access key (`stream-svc`/`ml-svc`) melalui env `MINIO_STREAM_ACCESS_KEY`/`MINIO_ML_ACCESS_KEY` di `docker-compose.yml`. Bucket sudah private.
 
 **Metode uji (bukti):**
 - Kong routing: `curl :8000/<prefix>` dengan admin token → semua 200 (analytics/metrics & export → 400 adalah validasi input, bukan routing gagal).
@@ -831,16 +826,16 @@ services dari workspace saat ini):**
    (filter `telemetry.batch`). publish `audit.log` → audit service INSERT row ke `audit_logs`
    (terbukti). publish `alert.triggered` → notification subscriber `alert.*` aktif (tercatat
    INSERT `notification_logs` di sesi sebelumnya).
- - MinIO: `mc anonymous get` → semua bucket (`stream`/`ml-vision`/`ota`/`ml-result`/`mlbucket`)
+  - MinIO: `mc anonymous get` → semua bucket (`stream`/`ml-vision`/`ml-result`/`mlbucket`)
    **Access Denied** (private); anon HTTP GET `:9000/<bucket>/obj` → **403**.
  - MediaMTX: host `:8888` **refused** (000, tidak di-publish); `:8554`/`8889` tetap host-direct
    (desain). Kong `GET /hls/<stream>` → **302** (proxy jalan); `/hls/` root → 404 (tanpa stream,
    ekspektasi).
  - Prometheus: `count(up)=31/31` **semua UP** (0 down); Grafana `/api/health` → 308 →
    `/api/health/` (sehat, v11).
- - `[~]` Keterbatasan env (bukan bug, sama spt pass sebelumnya): Mosquitto `allow_anonymous
-   true` (O1) & MinIO scoped credentials masih root (O2) — ter-re-verify, tdk diubah (berisiko
-   break pipeline kredensial kosong).
+  - `[~]` Keterbatasan env (bukan bug, sama spt pass sebelumnya): Mosquitto `allow_anonymous
+    true` (O1 masih open) — ter-re-verify, tdk diubah (berisiko
+    break pipeline kredensial kosong). MinIO scoped credentials ✅ selesai (O2).
 
 ---
 
@@ -930,9 +925,9 @@ Sinkron dengan `roadmap.md` § "Yang belum dikerjakan" & "Rekomendasi Eksekusi T
 
 ## Catatan Lintas-Service
 - GAP-1 (WS `system-status`), GAP-2 (`?token=` WS), GAP-3 (Export di-UI) **SUDAH SELESAI** — lihat §11/§10/§16.
-- Open remediation keamanan: O1 (Mosquitto `allow_anonymous`), O2 (MinIO scoped key), O3 (OTA signature) — lihat `roadmap.md` § Remediasi Keamanan Terbuka.
+- Open remediation keamanan: O1 (Mosquitto `allow_anonymous`) — lihat `roadmap.md` § Remediasi Keamanan Terbuka. O2 (MinIO scoped key) **sudah selesai**.
 - Semua route dashboard harus punya pasangan Kong + service valid (cek `vite build`).
-- Cross-cutting TA-Scale (DLQ/Outbox/CI/Test) butuh implementasi lalu regression via §17.
+- Cross-cutting TA-Scale (DLQ/Outbox/CI/Test) **sudah selesai** — lihat `logs.md` 2026-07-16/21.
 
 > **Penutup:** Setelah tiap service & E2E lulus checklist fitur + keamanan, jalankan pengujian regresi E2E penuh sesuai dengan skenario integrasi di Section 16, dan regression cross-cutting di Section 17.
 

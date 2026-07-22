@@ -120,7 +120,7 @@ func ValidObjectPath(bucket, key string) bool {
 		return false
 	}
 	switch bucket {
-	case "stream", "ml-result", "mlbucket", "ml", "ota":
+	case "stream", "ml-result", "mlbucket", "ml":
 		return true
 	}
 	return false

@@ -11,6 +11,7 @@
 #   MYSQL_DSN_6  -> port 9109  (mariadb-alert)
 #   MYSQL_DSN_7  -> port 9110  (mariadb-notification)
 #   MYSQL_DSN_8  -> port 9111  (mariadb-ml)
+#   MYSQL_DSN_9  -> port 9112  (mariadb-webhook)
 #
 # The mapping (DSN index -> port -> instance) MUST stay in sync with
 # infra/prometheus/prometheus.yml so Grafana dashboards do not break.
@@ -31,6 +32,6 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Expose every per-DB scrape port.
-EXPOSE 9104 9105 9106 9107 9108 9109 9110 9111
+EXPOSE 9104 9105 9106 9107 9108 9109 9110 9111 9112
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]

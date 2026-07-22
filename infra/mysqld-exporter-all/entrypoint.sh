@@ -18,11 +18,12 @@
 #   6 -> 9109 mariadb-alert
 #   7 -> 9110 mariadb-notification
 #   8 -> 9111 mariadb-ml
+#   9 -> 9112 mariadb-webhook
 # =============================================================================
 set -e
 
 # index -> port
-PORTS="9104 9105 9106 9107 9108 9109 9110 9111"
+PORTS="9104 9105 9106 9107 9108 9109 9110 9111 9112"
 
 i=1
 for port in $PORTS; do

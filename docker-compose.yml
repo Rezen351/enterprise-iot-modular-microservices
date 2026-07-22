@@ -246,6 +246,30 @@ services:
       - iot-net
 
   # ──────────────────────────────
+  # MariaDB Webhook — webhook dispatch and retry state
+  # ──────────────────────────────
+  mariadb-webhook:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: webhook_db
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./volumes/mariadb-webhook:/var/lib/mysql
+      - ./infra/mariadb/webhook/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infra/mariadb/my.cnf:/etc/mysql/conf.d/disable-aio.cnf:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  # ──────────────────────────────
   # Redis Shared — single consolidated Redis for module/alert/notification/export
   # (ADR-004). Logical DB isolation: module=0, alert=1, notification=2, export=3.
   # ──────────────────────────────
@@ -485,6 +509,46 @@ services:
       - iot-net
 
   # ──────────────────────────────────────
+  # Webhook Service — webhook receiver and dispatcher metrics
+  # ──────────────────────────────────────
+  webhook:
+    build:
+      context: ./services/webhook
+      dockerfile: Dockerfile
+    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/webhook:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-webhook:3306)/webhook_db?parseTime=true&charset=utf8mb4"
+      REDIS_ADDR: "redis-shared:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_DB: "4"
+      NATS_URL: "nats://nats:4222"
+      JWT_SECRET: "${JWT_SECRET}"
+      WEBHOOK_SECRET: "${WEBHOOK_SECRET}"
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASS: "${SMTP_PASS}"
+      SMTP_FROM: "${SMTP_FROM}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID}"
+    depends_on:
+      mariadb-webhook:
+        condition: service_healthy
+      redis-shared:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-net
+
+  # ──────────────────────────────────────
   # KONG — API Gateway (satu-satunya pintu masuk)
   # ──────────────────────────────────────
   kong:
@@ -630,6 +694,7 @@ services:
       MYSQL_DSN_6: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-alert:3306)/"
       MYSQL_DSN_7: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-notification:3306)/"
       MYSQL_DSN_8: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-ml:3306)/"
+      MYSQL_DSN_9: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-webhook:3306)/"
     depends_on:
       mariadb-auth:
         condition: service_healthy
@@ -646,6 +711,8 @@ services:
       mariadb-notification:
         condition: service_healthy
       mariadb-ml:
+        condition: service_healthy
+      mariadb-webhook:
         condition: service_healthy
     networks:
       - iot-net

@@ -34,7 +34,7 @@ services:
     build:
       context: ./services/auth
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/auth:latest
+    image: ghcr.io/rezen351/enyx-enterprise/auth:latest
     restart: unless-stopped
     environment:
       DB_DSN: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/auth_db?parseTime=true"
@@ -66,7 +66,7 @@ services:
     build:
       context: ./services/wsgateway
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/wsgateway:latest
+    image: ghcr.io/rezen351/enyx-enterprise/wsgateway:latest
     restart: unless-stopped
     environment:
       NATS_URL: "nats://nats:4222"
@@ -90,7 +90,7 @@ services:
     build:
       context: ./services/alert
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/alert:latest
+    image: ghcr.io/rezen351/enyx-enterprise/alert:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -362,7 +362,7 @@ services:
     build:
       context: ./services/module
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/module:latest
+    image: ghcr.io/rezen351/enyx-enterprise/module:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -401,7 +401,7 @@ services:
     build:
       context: ./services/analytics
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/analytics:latest
+    image: ghcr.io/rezen351/enyx-enterprise/analytics:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -425,7 +425,7 @@ services:
     build:
       context: ./services/control
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/control:latest
+    image: ghcr.io/rezen351/enyx-enterprise/control:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -458,7 +458,7 @@ services:
     build:
       context: ./services/audit
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/audit:latest
+    image: ghcr.io/rezen351/enyx-enterprise/audit:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -486,7 +486,7 @@ services:
     build:
       context: ./services/dlq
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/dlq:latest
+    image: ghcr.io/rezen351/enyx-enterprise/dlq:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -515,7 +515,7 @@ services:
     build:
       context: ./services/webhook
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/webhook:latest
+    image: ghcr.io/rezen351/enyx-enterprise/webhook:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -683,7 +683,7 @@ services:
     build:
       context: ./infra/mysqld-exporter-all
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/mysqld-exporter-all:latest
+    image: ghcr.io/rezen351/enyx-enterprise/mysqld-exporter-all:latest
     restart: unless-stopped
     environment:
       MYSQL_DSN_1: "${DB_USER}:${DB_PASSWORD}@tcp(mariadb-auth:3306)/"
@@ -738,7 +738,7 @@ services:
     build:
       context: ./infra/postgres-exporter-all
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/postgres-exporter-all:latest
+    image: ghcr.io/rezen351/enyx-enterprise/postgres-exporter-all:latest
     restart: unless-stopped
     environment:
       POSTGRES_DSN_1: "postgresql://${DB_USER}:${DB_PASSWORD}@timescaledb-module:5432/module_ts?sslmode=disable"
@@ -828,7 +828,7 @@ services:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/dashboard:latest
+    image: ghcr.io/rezen351/enyx-enterprise/dashboard:latest
     restart: unless-stopped
     environment:
       VITE_API_URL: "${VITE_API_URL}"
@@ -952,7 +952,7 @@ services:
     build:
       context: ./services/stream
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/stream:latest
+    image: ghcr.io/rezen351/enyx-enterprise/stream:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -996,7 +996,7 @@ services:
     build:
       context: ./services/ml
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/ml:latest
+    image: ghcr.io/rezen351/enyx-enterprise/ml:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -1037,7 +1037,7 @@ services:
     build:
       context: ./services/notification
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/notification:latest
+    image: ghcr.io/rezen351/enyx-enterprise/notification:latest
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -1077,7 +1077,7 @@ services:
     build:
       context: ./services/export
       dockerfile: Dockerfile
-    image: ghcr.io/rezen351/enterprise-iot-modular-microservices/export:latest
+    image: ghcr.io/rezen351/enyx-enterprise/export:latest
     restart: unless-stopped
     environment:
       PORT: "8080"

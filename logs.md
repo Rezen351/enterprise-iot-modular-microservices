@@ -1273,3 +1273,20 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 
 **Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Grafana (port 3000) dan Kong (port 8000) kini sepenuhnya responsif terhadap akses IP Publik, IP LAN, maupun domain eksternal. Error permission log aktif Prometheus di pipeline CD self-hosted telah diperbaiki total dengan penyetelan kepemilikan volume dan hak user root container. Consumer JWT ESP32 dihapus dari Kong karena perangkat kini menggunakan portal/autentikasi mandiri. Kredensial MQTT sekarang diatur via `.env` untuk memudahkan rotasi tanpa mengubah compose. CD workflow kini tahan terhadap missing secrets dengan fallback ke development defaults yang diselaraskan dengan `.env.example`.
 
+---
+
+## 2026-07-22 — Notification & Webhook SMTP/Telegram Email Delivery Fix
+
+### Perbaikan SMTP Auth & Telegram/Email Env Injection
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Menambahkan variabel `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, dan Telegram vars (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) ke [`.env.example`](file:///home/almuzky/TA/Microservices/.env.example) sebagai dokumentasi resmi konfigurasi channel notifikasi. |
+| 2 | ✅ | Menyinkronkan `docker-compose.yml` service `notification` agar meneruskan semua env var SMTP/Telegram dari `.env` ke container via blok `environment`. |
+| 3 | ✅ | Memperbaiki `notification/internal/config/config.go` — menambahkan field `SMTPPass`, `TelegramBotToken`, `TelegramChatID` tanpa menghapus field lama, dan mapping env vars di `Load()`. |
+| 4 | ✅ | Menambahkan `SeedFromEnv()` di `notification/internal/service/service.go` dan `webhook/internal/service/service.go` agar saat DB settings kosong, service otomatis mengisi Telegram target/secret dan email target/secret dari env saat startup. |
+| 5 | ✅ | Mengubah `main.go` kedua service (`notification` dan `webhook`) untuk memanggil `SeedFromEnv()` setelah `ReloadSettings()` selama startup. |
+| 6 | ✅ | Memperbaiki `channels.SendEmail` di `notification/internal/channels/channels.go` agar menjalankan `StartTLS(&tls.Config{ServerName: cfg.SMTPHost})` sebelum `smtp.PlainAuth`. Tanpa ini, `smtp.PlainAuth` error `unencrypted connection` karena koneksi belum di-upgrade ke TLS. |
+| 7 | ✅ | Verifikasi API succesfully mengirim Telegram ke chat `1020639196` dan Email ke `albalislavio1@gmail.com` via Brevo SMTP relay — logs menunjukkan status `sent` (1 attempt) untuk kedua channel. |
+
+**Keputusan Teknis:** Email sebelumnya gagal secara berulang (`smtp auth failed` → `smtp tls upgrade failed`) karena 2 akar masalah: (1) env SMTP/Telegram tidak diinjeksi ke container notification service, sehingga service berjalan tanpa kredensial eksternal; (2) `smtp.PlainAuth` dipanggil tanpa `StartTLS` dulu, yang menyebabkan auth ditolak oleh server Brevo. Kedua akar masalah diperbaiki secara lokal dan verified end-to-end via `POST /v1/notifications/test`.
+

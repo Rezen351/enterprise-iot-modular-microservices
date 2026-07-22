@@ -21,12 +21,12 @@ type Config struct {
 
 	// Channel transports (optional). When empty the channel is "simulated"
 	// in DevMode so the full send path is exercisable without external creds.
-	SMTPHost string
-	SMTPPort int
-	SMTPUser string
-	SMTPPass string
-	SMTPFrom string
-	PushURL  string
+	SMTPHost         string
+	SMTPPort         string
+	SMTPUser         string
+	SMTPPass         string
+	SMTPFrom         string
+	PushURL          string
 	TelegramBotToken string
 	TelegramChatID   string
 
@@ -50,12 +50,12 @@ func Load() (*Config, error) {
 		JWTSecret:     getEnv("JWT_SECRET", ""),
 		SecretKey:     getEnv("NOTIFICATION_SECRET_KEY", getEnv("JWT_SECRET", "")),
 
-		SMTPHost: getEnv("SMTP_HOST", ""),
-		SMTPPort: atoiDefault(getEnv("SMTP_PORT", "587"), 587),
-		SMTPUser:  getEnv("SMTP_USER", ""),
-		SMTPPass:  getEnv("SMTP_PASS", ""),
-		SMTPFrom:  getEnv("SMTP_FROM", ""),
-		PushURL:  getEnv("PUSH_URL", ""),
+		SMTPHost:         getEnv("SMTP_HOST", ""),
+		SMTPPort:         atoiDefault(getEnv("SMTP_PORT", "587"), 587),
+		SMTPUser:         getEnv("SMTP_USER", ""),
+		SMTPPass:         getEnv("SMTP_PASS", ""),
+		SMTPFrom:         getEnv("SMTP_FROM", ""),
+		PushURL:          getEnv("PUSH_URL", ""),
 		TelegramBotToken: getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramChatID:   getEnv("TELEGRAM_CHAT_ID", ""),
 

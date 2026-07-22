@@ -7,6 +7,7 @@ package channels
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -48,6 +49,9 @@ func SendEmail(cfg *config.Config, to, subject, body, secret string) SenderResul
 		return SenderResult{Err: "smtp client failed"}
 	}
 	defer c.Quit()
+	if err := c.StartTLS(&tls.Config{ServerName: cfg.SMTPHost}); err != nil {
+		return SenderResult{Err: "smtp tls upgrade failed"}
+	}
 	if cfg.SMTPUser != "" {
 		if err := c.Auth(smtp.PlainAuth("", cfg.SMTPUser, secret, cfg.SMTPHost)); err != nil {
 			return SenderResult{Err: "smtp auth failed"}

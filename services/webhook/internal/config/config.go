@@ -25,6 +25,9 @@ type Config struct {
 	SMTPUser string
 	SMTPFrom string
 
+	TelegramBotToken string
+	TelegramChatID   string
+
 	MaxAttempts    int
 	RetryDelayMs   int
 	SendIntervalMs int
@@ -46,6 +49,8 @@ func Load() (*Config, error) {
 		SMTPPort:       atoiDefault(getEnv("SMTP_PORT", "587"), 587),
 		SMTPUser:       getEnv("SMTP_USER", ""),
 		SMTPFrom:       getEnv("SMTP_FROM", ""),
+		TelegramBotToken: getEnv("TELEGRAM_BOT_TOKEN", ""),
+		TelegramChatID:   getEnv("TELEGRAM_CHAT_ID", ""),
 		MaxAttempts:    atoiDefault(getEnv("WEBHOOK_MAX_ATTEMPTS", "3"), 3),
 		RetryDelayMs:   atoiDefault(getEnv("WEBHOOK_RETRY_DELAY_MS", "1000"), 1000),
 		SendIntervalMs: atoiDefault(getEnv("WEBHOOK_SEND_INTERVAL_MS", "100"), 100),

@@ -71,6 +71,34 @@ func (s *Service) GetSettingsDTO() model.SettingsDTO {
 	}
 }
 
+func (s *Service) SeedFromEnv(ctx context.Context, cfg *config.Config) error {
+	st := s.Settings()
+	if st.ID != model.SettingsID {
+		return nil
+	}
+	changed := false
+	if cfg.TelegramBotToken != "" && !st.TelegramEnabled && st.TelegramTarget == "" {
+		st.TelegramEnabled = true
+		st.TelegramTarget = cfg.TelegramChatID
+		st.TelegramSecret, _ = crypto.Encrypt(s.key, cfg.TelegramBotToken)
+		changed = true
+	}
+	if cfg.SMTPHost != "" && !st.EmailEnabled && st.EmailTarget == "" {
+		st.EmailEnabled = true
+		st.EmailTarget = cfg.SMTPUser
+		if cfg.SMTPFrom != "" {
+			st.EmailTarget = cfg.SMTPFrom
+		}
+		st.EmailSecret, _ = crypto.Encrypt(s.key, "")
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+	st.UpdatedBy = "env-seed"
+	return s.store.UpsertSettings(ctx, st)
+}
+
 func (s *Service) UpdateSettings(ctx context.Context, patch model.SettingsPatch, userID string) (*model.SettingsDTO, error) {
 	st := s.Settings()
 	st.TelegramEnabled = patch.Telegram.Enabled

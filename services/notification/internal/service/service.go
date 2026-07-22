@@ -76,6 +76,37 @@ func (s *Service) GetSettingsDTO() model.SettingsDTO {
 	}
 }
 
+// SeedFromEnv populates empty settings from environment variables on first
+// startup, so the service is usable without manual PUT /settings when env
+// vars are present.
+func (s *Service) SeedFromEnv(ctx context.Context, cfg *config.Config) error {
+	st := s.Settings()
+	if st.ID != model.SettingsID {
+		return nil
+	}
+	changed := false
+	if cfg.TelegramBotToken != "" && !st.TelegramEnabled && st.TelegramTarget == "" {
+		st.TelegramEnabled = true
+		st.TelegramTarget = cfg.TelegramChatID
+		st.TelegramSecret, _ = crypto.Encrypt(s.key, cfg.TelegramBotToken)
+		changed = true
+	}
+	if cfg.SMTPHost != "" && !st.EmailEnabled && st.EmailTarget == "" {
+		st.EmailEnabled = true
+		st.EmailTarget = cfg.SMTPFrom
+		if st.EmailTarget == "" {
+			st.EmailTarget = cfg.SMTPUser
+		}
+		st.EmailSecret, _ = crypto.Encrypt(s.key, cfg.SMTPPass)
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+	st.UpdatedBy = "env-seed"
+	return s.store.UpsertSettings(ctx, st)
+}
+
 // UpdateSettings applies a validated patch, encrypts any provided secrets,
 // persists, and refreshes the in-memory cache.
 func (s *Service) UpdateSettings(ctx context.Context, patch model.SettingsPatch, userID string) (*model.SettingsDTO, error) {

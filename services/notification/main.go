@@ -73,6 +73,9 @@ func main() {
 	if err := svc.ReloadSettings(context.Background()); err != nil {
 		log.Printf("WARN: load settings failed: %v", err)
 	}
+	if cfg.TelegramBotToken != "" || cfg.SMTPHost != "" {
+		_ = svc.SeedFromEnv(context.Background(), cfg)
+	}
 
 	// ─── NATS (subscribe alert.*) ──────────────────────────────────────
 	natsConn, err := nats.Connect(cfg.NATSUrl,

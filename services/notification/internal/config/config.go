@@ -24,8 +24,11 @@ type Config struct {
 	SMTPHost string
 	SMTPPort int
 	SMTPUser string
-	SMTPFrom string
+	SMTPPass  string
+	SMTPFrom  string
 	PushURL  string
+	TelegramBotToken string
+	TelegramChatID   string
 
 	// Worker behaviour.
 	MaxAttempts  int
@@ -49,9 +52,12 @@ func Load() (*Config, error) {
 
 		SMTPHost: getEnv("SMTP_HOST", ""),
 		SMTPPort: atoiDefault(getEnv("SMTP_PORT", "587"), 587),
-		SMTPUser: getEnv("SMTP_USER", ""),
-		SMTPFrom: getEnv("SMTP_FROM", ""),
+		SMTPUser:  getEnv("SMTP_USER", ""),
+		SMTPPass:  getEnv("SMTP_PASS", ""),
+		SMTPFrom:  getEnv("SMTP_FROM", ""),
 		PushURL:  getEnv("PUSH_URL", ""),
+		TelegramBotToken: getEnv("TELEGRAM_BOT_TOKEN", ""),
+		TelegramChatID:   getEnv("TELEGRAM_CHAT_ID", ""),
 
 		MaxAttempts:  atoiDefault(getEnv("NOTIFICATION_MAX_ATTEMPTS", "3"), 3),
 		RetryDelay:   time.Duration(atoiDefault(getEnv("NOTIFICATION_RETRY_DELAY_MS", "1000"), 1000)) * time.Millisecond,

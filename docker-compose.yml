@@ -589,6 +589,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
+    user: "0"
     command:
       - "service"
       - "install"

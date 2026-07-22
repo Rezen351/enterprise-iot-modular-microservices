@@ -589,14 +589,9 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    # Token-only run (same as `cloudflared service install <token>` on Windows):
-    # the tunnel authenticates with CLOUDFLARED_TUNNEL_TOKEN and pulls its
-    # ingress (public hostname → http://kong:8000) from the Cloudflare
-    # Zero Trust dashboard. No local config / open host ports required.
     command:
-      - "tunnel"
-      - "run"
-      - "--token"
+      - "service"
+      - "install"
       - "${CLOUDFLARED_TUNNEL_TOKEN}"
     environment:
       CLOUDFLARED_TUNNEL_TOKEN: "${CLOUDFLARED_TUNNEL_TOKEN}"

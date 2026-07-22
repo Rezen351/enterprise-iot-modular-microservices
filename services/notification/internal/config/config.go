@@ -22,7 +22,7 @@ type Config struct {
 	// Channel transports (optional). When empty the channel is "simulated"
 	// in DevMode so the full send path is exercisable without external creds.
 	SMTPHost         string
-	SMTPPort         string
+	SMTPPort         int
 	SMTPUser         string
 	SMTPPass         string
 	SMTPFrom         string

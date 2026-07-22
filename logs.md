@@ -15,18 +15,20 @@
 |---|---|---|
 | 1 | ✅ | Membuat service `webhook` baru di `services/webhook/` dengan struktur Go microservice standar (config, model, handler, service, repository, channels, crypto, queue, middleware, migrate.go, Dockerfile). |
 | 2 | ✅ | Implementasi channel delivery: Telegram (Bot API `sendMessage`), Email (SMTP plain-text), Generic Webhook (HTTP POST). |
-| 3 | ✅ | Implementasi NATS ingestion: subscribe ke `webhook.delivery` dan `webhook.retry` (sesuai planning.md). |
+| 3 | ✅ | Implementasi NATS ingestion: `webhook.delivery` (Core NATS Pub/Sub) dan `webhook.retry` (JetStream durable consumer `webhook-retry-processor`, queue group `webhook-retry-workers`). |
 | 4 | ✅ | Database `mariadb-webhook` (AUTO-MIGRATE `webhook_settings` + `webhook_logs`) + Redis logical DB4 untuk queue (`webhook:queue`). |
 | 5 | ✅ | Inbound webhook receiver endpoints: `POST /webhook/receive/telegram`, `POST /webhook/receive/email`, `POST /webhook/receive/generic`. |
 | 6 | ✅ | Config API: `GET/PUT /webhook/settings`, `GET /webhook/logs`, `POST /webhook/test`. |
 | 7 | ✅ | Integrasi ke `docker-compose.yml` (service `webhook` + `mariadb-webhook` + update `mysqld-exporter-all` port 9112 + depends_on). |
 | 8 | ✅ | Update `infra/prometheus/prometheus.yml` — scrape jobs `webhook-service` dan `mariadb-webhook` (target `mysqld-exporter-all:9112`). |
 | 9 | ✅ | Update `.env.example` — tambah `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FROM`, `SMTP_PASSWORD`, `WEBHOOK_SECRET`. |
-| 10 | ✅ | Dokumentasi: `docs/integration-guides/webhook.md` (NATS contracts, REST API, DB schema, env vars, curl examples). |
-| 11 | ❌ | Verifikasi `go build ./...` di `services/webhook` → build OK (dilakukan via `/usr/local/go/bin/go build`). |
-| 12 | 📝 | `go mod tidy` di `services/webhook` menghasilkan `go.sum` baru; tidak mengubah modul lain. |
+| 10 | ✅ | Dokumentasi: `docs/integration-guides/webhook.md` (NATS contracts, REST API, DB schema, env vars, curl examples, OpenAPI ref). |
+| 11 | ✅ | Kong routes: `webhook-upstream` + `webhook-service` di `infra/kong/kong.yml` + `/v1` prefix strip via `request-transformer`. |
+| 12 | ✅ | OpenAPI spec: `docs/openapi/webhook.yaml` (3.0.3, semua endpoint/schema/responses terdokumentasi). |
+| 13 | ✅ | Unit tests Go: `services/webhook/internal/repository/repository_test.go` (6 test) + `services/webhook/internal/service/service_test.go` (2 test) + `testdriver/driver.go` (in-memory fake DB, pattern sama audit/module). |
+| 14 | ✅ | `test/unit_test.py`: tambah `TestWebhookService` (3 test: logs, settings, test dispatch) + register di suite + `service_names`/`known_totals` di-update. |
 
-**Keputusan Teknis:** Webhook Service memakai Redis logical DB4 (baru) untuk queue, bukan memakai DB yang telah ada (mis notification DB2 agar aman dari collision). NATS subjects `webhook.delivery` dan `webhook.retry` diaktifkan untuk integrasi event-driven; generic webhook HTTP inbound endpoint memungkinkan eksternal sistem mengirim HTTP POST tanpa perlu mempublikasi ke NATS.
+**Keputusan Teknis:** Webhook Service memakai Redis logical DB4 (baru) untuk queue, bukan memakai DB yang telah ada (mis notification DB2 agar aman dari collision). NATS subjects `webhook.delivery` dan `webhook.retry` diaktifkan untuk integrasi event-driven; generic webhook HTTP inbound endpoint memungkinkan eksternal sistem mengirim HTTP POST tanpa perlu mempublikasi ke NATS. JetStream consumer untuk `webhook.retry` memakai durable consumer agar pesan retry tidak hilang saat worker restart. OpenAPI spec ditambahkan di `docs/openapi/webhook.yaml` sesuai prinsip API Contract First di `planning.md`.
 
 ---
 

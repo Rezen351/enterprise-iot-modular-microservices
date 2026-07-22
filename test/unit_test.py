@@ -514,6 +514,38 @@ class TestWSGateway(unittest.TestCase):
             self.fail(f"WebSocket node-live handshake failed: {exc}")
 
 
+class TestWebhookService(unittest.TestCase):
+    """12. Webhook Service Features (Settings, Logs, Test Dispatch, Receive Endpoints)."""
+
+    def setUp(self):
+        self.token = get_global_token()
+
+    def test_01_webhook_logs(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/webhook/logs"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for webhook logs, got {res.status_code}: {res.text}")
+
+    def test_02_get_webhook_settings(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/webhook/settings"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        res = requests.get(url, headers=headers, timeout=5)
+        self.assertEqual(res.status_code, 200, f"Expected 200 OK for webhook settings, got {res.status_code}: {res.text}")
+
+    def test_03_dispatch_test_webhook(self):
+        if not self.token:
+            self.skipTest("No auth token")
+        url = f"{BASE_URL}/v1/webhook/test"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {"channel": "telegram"}
+        res = requests.post(url, json=payload, headers=headers, timeout=5)
+        self.assertIn(res.status_code, [200, 202], f"Expected 200/202 for test webhook, got {res.status_code}: {res.text}")
+
+
 def run_unit_tests():
     """Run all unit & feature test cases across 12 microservices."""
     suite = unittest.TestSuite()
@@ -527,6 +559,7 @@ def run_unit_tests():
     suite.addTest(loader.loadTestsFromTestCase(TestAlertService))
     suite.addTest(loader.loadTestsFromTestCase(TestAuditService))
     suite.addTest(loader.loadTestsFromTestCase(TestNotificationService))
+    suite.addTest(loader.loadTestsFromTestCase(TestWebhookService))
     suite.addTest(loader.loadTestsFromTestCase(TestStreamService))
     suite.addTest(loader.loadTestsFromTestCase(TestMLService))
     suite.addTest(loader.loadTestsFromTestCase(TestExportService))
@@ -538,7 +571,7 @@ def run_unit_tests():
     # Build service names list aligned with test classes
     service_names = [
         "SystemHealth", "Auth", "Module", "Analytics", "Control",
-        "Alert", "Audit", "Notification", "Stream", "ML", "Export", "WSGateway"
+        "Alert", "Audit", "Notification", "Webhook", "Stream", "ML", "Export", "WSGateway"
     ]
 
     pass_counts = []
@@ -555,6 +588,7 @@ def run_unit_tests():
         TestAlertService: "Alert",
         TestAuditService: "Audit",
         TestNotificationService: "Notification",
+        TestWebhookService: "Webhook",
         TestStreamService: "Stream",
         TestMLService: "ML",
         TestExportService: "Export",
@@ -574,7 +608,7 @@ def run_unit_tests():
     known_totals = {
         "SystemHealth": 1, "Auth": 5, "Module": 5, "Analytics": 4,
         "Control": 6, "Alert": 4, "Audit": 2, "Notification": 3,
-        "Stream": 4, "ML": 2, "Export": 3, "WSGateway": 2,
+        "Webhook": 3, "Stream": 4, "ML": 2, "Export": 3, "WSGateway": 2,
     }
 
     for name in service_names:

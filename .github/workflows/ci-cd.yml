@@ -258,10 +258,8 @@ jobs:
           echo "WS_NATS_PASSWORD=${{ secrets.WS_NATS_PASSWORD || 'wsNatsPass!' }}" >> .env
           echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD || 'change-me-strong-password' }}" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}" >> .env
-          echo "MQTT_USER=${{ secrets.MQTT_USER || 'module-svc' }}" >> .env
-          echo "MQTT_PASS=${{ secrets.MQTT_PASS || 'moduleSvcPass123' }}" >> .env
-          echo "CONTROL_MQTT_USER=${{ secrets.CONTROL_MQTT_USER || 'control-svc' }}" >> .env
-          echo "CONTROL_MQTT_PASS=${{ secrets.CONTROL_MQTT_PASS || 'controlSvcPass123' }}" >> .env
+          echo "MQTT_USER=${{ secrets.MQTT_USER || 'smartfarm-svc' }}" >> .env
+          echo "MQTT_PASS=${{ secrets.MQTT_PASS || 'SmartFarmPass123' }}" >> .env
           echo "SMTP_HOST=${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}" >> .env
           echo "SMTP_PORT=${{ secrets.SMTP_PORT || '587' }}" >> .env
           echo "SMTP_USER=${{ secrets.SMTP_USER || 'email.sistem.anda@gmail.com' }}" >> .env

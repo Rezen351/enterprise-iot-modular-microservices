@@ -24,8 +24,8 @@ type Config struct {
 	SMTPHost string
 	SMTPPort int
 	SMTPUser string
-	SMTPPass  string
-	SMTPFrom  string
+	SMTPPass string
+	SMTPFrom string
 	PushURL  string
 	TelegramBotToken string
 	TelegramChatID   string

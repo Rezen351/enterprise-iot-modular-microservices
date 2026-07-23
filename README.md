@@ -11,9 +11,7 @@
 [![Kong](https://img.shields.io/badge/Kong-3.6-FF6B35?style=for-the-badge&logo=kong&logoColor=white)](https://konghq.com/)
 [![NATS](https://img.shields.io/badge/NATS-JetStream-2C4B7B?style=for-the-badge&logo=nats&logoColor=white)](https://nats.io/)
 [![Mermaid](https://img.shields.io/badge/Mermaid-v10.9.0-FF69B4?style=for-the-badge&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](./LICENSE)
-
----
+[![Cloudflare](https://img.shields.io/badge/Cloudflare_Tunnel-F48120?style=for-the-badge&logo=cloudflare&logoColor=white)](https://www.cloudflare.com/)
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
@@ -21,6 +19,8 @@
   <a href="#tech-stack">Tech Stack</a> •
   <a href="#microservices-ecosystem">Microservices</a> •
   <a href="#quick-start">Quick Start</a> •
+  <a href="#testing">Testing</a> •
+  <a href="#troubleshooting">Troubleshooting</a> •
   <a href="#documentation">Documentation</a> •
   <a href="#license">License</a>
 </p>
@@ -145,6 +145,72 @@ For complete architectural details, bounded contexts, and system design decision
 ```
 
 ---
+
+## 🧪 Testing
+
+The project includes a comprehensive Master Integrated Test Suite executed via:
+
+```bash
+python3 test/run_all_tests.py
+```
+
+### Generated Test Artifacts
+
+All charts are saved in [`test/results/`](./test/results):
+
+| Artifact | Description |
+|---|---|
+| `01_unit_test_summary.png` | Overall unit test pass/fail summary |
+| `01_unit_test_detailed.png` | Detailed breakdown per microservice |
+| `02_stress_test_throughput.png` | Throughput vs latency under load |
+| `02_stress_test_detailed.png` | Detailed stress test metrics |
+| `03_resilience_chaos_audit.png` | Chaos engineering audit results |
+| `03_resilience_detailed.png` | Detailed resilience metrics |
+| `04_overall_system_dashboard.png` | Unified master test dashboard overview |
+| `04_overall_system_dashboard_detailed.png` | Detailed master test dashboard |
+
+> These charts are **test-generated artifacts**, not screenshots of the live dashboard.
+
+---
+
+## 🧪 Testing
+
+The project includes a comprehensive Master Integrated Test Suite executed via:
+
+```bash
+python3 test/run_all_tests.py
+```
+
+### Generated Test Artifacts
+
+All charts are saved in [`test/results/`](./test/results):
+
+| Artifact | Description |
+|---|---|
+| `01_unit_test_summary.png` | Overall unit test pass/fail summary |
+| `01_unit_test_detailed.png` | Detailed breakdown per microservice |
+| `02_stress_test_throughput.png` | Throughput vs latency under load |
+| `02_stress_test_detailed.png` | Detailed stress test metrics |
+| `03_resilience_chaos_audit.png` | Chaos engineering audit results |
+| `03_resilience_detailed.png` | Detailed resilience metrics |
+| `04_overall_system_dashboard.png` | Unified master test dashboard overview |
+| `04_overall_system_dashboard_detailed.png` | Detailed master test dashboard |
+
+> These charts are **test-generated artifacts**, not screenshots of the live dashboard.
+
+---
+
+## 🔧 Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| Container won't start | `docker compose up -d --force-recreate <service>` |
+| Database permission errors | Do not run `down -v`; check logs and restart service |
+| Kong DNS cache stale | Restart Kong: `docker compose restart kong` |
+| Full environment reset | `docker compose down && docker compose up -d` |
+| Inspect logs | `docker compose logs -f <service>` |
+
+For operational patterns and detailed runbooks, refer to [docs/runbook.md](./docs/runbook.md).
 
 ## ⚡ Quick Start
 

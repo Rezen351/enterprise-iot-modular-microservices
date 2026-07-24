@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ArrowLeft, Activity, Tags, Plus, Trash2, Save, Radio, AlertTriangle, RefreshCw, Wifi, WifiOff, SlidersHorizontal } from 'lucide-react';
-import { API_BASE, getToken } from '../../../api/client';
+import { API_BASE, getToken, getWsUrl } from '../../../api/client';
 import { moduleApi } from '../../../api/module';
 
 function safeJson(raw) {
@@ -108,7 +108,7 @@ function NodeConfigPage({ node, onBack }) {
   useEffect(() => {
     let cancelled = false;
     let started = false;
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
+    const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`);
 
     // Defer socket creation a few ticks so React StrictMode's dev-only double
     // mount/unmount finishes before we open the WebSocket. Opening it during
@@ -185,7 +185,7 @@ function NodeConfigPage({ node, onBack }) {
   const handleDetect = () => {
     setDetecting(true);
     setTagError('');
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
+    const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`);
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch { setTagError('Failed to open live stream for detection.'); setDetecting(false); return; }
@@ -318,7 +318,7 @@ function NodeConfigPage({ node, onBack }) {
   const handleDetectOutputs = () => {
     setDetectingOutputs(true);
     setTagError('');
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
+    const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`);
     let ws;
     try { ws = new WebSocket(wsUrl); }
     catch { setTagError('Failed to open live stream for output detection.'); setDetectingOutputs(false); return; }

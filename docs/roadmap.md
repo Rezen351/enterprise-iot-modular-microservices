@@ -1,4 +1,4 @@
-# 🗺️ Roadmap — IOT-Modular-Microservice
+# 🗺️ Roadmap — enyx-enterprise
 
 > **Versi:** 2.16.0  
 > **Terakhir diperbarui:** 2026-07-16  
@@ -39,6 +39,7 @@
 ### Yang belum dikerjakan (sisa) — selaras dengan `planning.md`:
 | Service / Item | Fase (skema planning) | Prioritas | Kategori |
 |---------|------|-----------|-----------|
+| Spray Automation Service | Fase 13 | 🔴 P2 | AI-driven misting control + snapshot automation |
 | Prometheus Metrics Service | Fase 11 | ⬜ P4 | Future |
 | Cloudflare Tunnel | Fase 12 | ⬜ P4 | Future |
 | Webhook Service | (belum bernomor) | ✅ P4 | Future |
@@ -46,6 +47,105 @@
 > **Catatan:** Sisa yang belum adalah Future P4 (Prometheus Metrics, Cloudflare, Webhook).
 
 > **Catatan:** Dashboard Alert & History (Fase 10 di skema lama) sudah **SELESAI** — halaman `ALERTS` (history + sub-tab Thresholds), notification bell di header, dan `NotificationContext` menormalisasi payload Alert Service (`system.status` + raw `alert.triggered`/`alert.resolved`). Notification Service (pengiriman ke Telegram/Email/Push) **sudah ✅ SELESAI** (subscribe `alert.triggered`/`alert.resolved` → log `mariadb-notification` + queue `redis-shared` DB2) sehingga pipeline alert bernilai end-to-end.
+
+---
+
+## 🔴 Fase 13 — Spray Automation Service (P2 — Rencana)
+
+> Layanan otomatisasi sistem penyemprotan/penyiraman berbasis AI. Mengonsumsi hasil deteksi ML (panjang akar, kondisi kentang/umbi) untuk menyesuaikan jadwal misting secara dinamis. Juga menangkap snapshot secara otomatis setiap 8 jam dan ketika pompa mati, kemudian menganalisis gambar tersebut dengan ML untuk memperbarui penjadwalan.
+
+### Arsitektur
+
+```
+ML Service ──NATS──▶ Spray Automation Service
+                              │
+                              ├──▶ Control Service (update schedule)
+                              │
+                              ├──▶ Stream Service (trigger snapshot)
+                              │         │
+                              │         ▼
+                              │     MinIO (stream bucket)
+                              │         │
+                              │         ▼
+                              │     ML Service (analyze)
+                              │         │
+                              │         ▼
+                              │     NATS detection.result
+                              │         │
+                              ├──────────▶ Spray Automation Service (update schedule)
+                              │
+Module Service ──NATS──▶ Spray Automation Service (telemetry.ingest)
+                              │
+                              └──▶ MariaDB spray_db (schedule history + ML results)
+```
+
+### Checklist Implementasi
+
+| Status | Item | Deskripsi | Estimasi |
+|---|---|---|---|
+| `[ ]` | Scaffold Go service | Struktur `internal/` (config, model, service, handler, middleware, nats, cron) — no repository/DB layer | 0.5 hari |
+| `[ ]` | NATS subscriptions | Subscribe `telemetry.ingest` (pump monitoring) + `detection.result` (AI results) | 1 hari |
+| `[ ]` | Pump OFF detector | Parse telemetry, detect pump OFF, trigger snapshot via Stream Service | 1 hari |
+| `[ ]` | Periodic snapshot cron | Every 8 hours, call Stream Service to capture + detect | 0.5 hari |
+| `[ ]` | ML analysis integration | Call ML Service `/ml/detect/from-stream`, parse results (root_length, potato_condition) | 1 hari |
+| `[ ]` | AI decision engine | Compute recommended interval/duration from ML results | 1 hari |
+| `[ ]` | Control Service direct write | **Direct REST calls** to Control Service to update/create schedules (no DB of its own) | 1 hari |
+| `[ ]` | Redis cache (DB4) | State cache: cooldown, last analysis, snapshot dedup | 0.5 hari |
+| `[ ]` | REST API | GET `/spray/status`, PUT `/spray/ai/{node_id}`, POST `/spray/analyze/{node_id}`, GET `/spray/analyses` | 1 hari |
+| `[ ]` | Prometheus `/metrics` | Instrumentation HTTP + scrape via Prometheus | 0.5 hari |
+| `[ ]` | Dockerfile + healthcheck | Multi-stage + `/health` | 0.5 hari |
+| `[ ]` | Kong route + RBAC | `/spray` via Kong, role-based access | 0.5 hari |
+
+**Total estimasi: 5-7 hari (lebih cepat karena tidak ada database migration)**
+
+### Database: None (uses existing `control_db` via Control Service REST)
+
+Spray Automation Service **does not** create a new MariaDB database. It uses:
+- **Redis DB4** (`redis-shared`): State cache for cooldown timers, last analysis timestamp, snapshot dedup
+- **Control Service REST API**: To read/write schedules in existing `control_db`
+
+### Redis DB4 Keys
+
+| Key Pattern | Type | TTL | Description |
+|---|---|---|---|
+| `spray:last_analysis:{node_id}` | string | 24h | Timestamp of last AI analysis |
+| `spray:cooldown:{node_id}` | string | 30m | Cooldown timer to prevent rapid schedule changes |
+| `spray:snapshot_dedup:{stream_id}:{ts}` | string | 1h | Prevent duplicate snapshot triggers |
+| `spray:pump_off:{node_id}` | string | 60s | Debounce pump OFF events |
+
+### NATS Subject Contract
+
+| Subject | Publisher | Subscriber(s) | Pattern | Status |
+|---|---|---|---|---|
+| `telemetry.ingest` | Module Service | Spray Automation Service | Pub/Sub | ⬜ Belum (akan di-consume) |
+| `detection.result` | ML Service | Spray Automation Service | Pub/Sub | ⬜ Belum (akan di-consume) |
+| `spray.schedule.updated` | Spray Automation Service | Control Service, Dashboard | Pub/Sub | ⬜ Belum |
+| `spray.snapshot.captured` | Spray Automation Service | Dashboard | Pub/Sub | ⬜ Belum |
+| `spray.analysis.completed` | Spray Automation Service | Dashboard, Alert Service | Pub/Sub | ⬜ Belum |
+| `audit.log` | Spray Automation Service | Audit Service | Pub/Sub | ⬜ Belum |
+
+### AI Decision Logic
+
+| Root Length (cm) | Potato Condition | Action |
+|---|---|---|
+| < 5 | any | Increase misting duration +20%, decrease interval -20% |
+| 5 – 15 | healthy | Maintain current schedule |
+| 5 – 15 | moderate/poor | Increase misting duration +10% |
+| > 15 | any | Decrease misting duration -10%, increase interval +10% |
+| any | diseased | Alert operator + increase misting duration +30% |
+
+### API Endpoints
+
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/spray/status` | Get AI status for a node (last analysis, cooldown, current schedule) |
+| `PUT` | `/spray/ai/{node_id}` | Enable/disable AI control for a node |
+| `POST` | `/spray/analyze/{node_id}` | Manual trigger AI analysis + schedule update |
+| `GET` | `/spray/analyses` | List analysis history (from in-memory cache + NATS events) |
+
+---
+
+*Dokumen ini (`roadmap.md`) berisi status implementasi. Untuk arsitektur murni, lihat [`planning.md`](./planning.md).*
 
 ---
 

@@ -40,7 +40,6 @@ type Config struct {
 	MinIOSecretKey    string
 	MinIOUseSSL       bool
 	MinIOStreamBucket string
-	MinIOResultBucket string // shared ml-result bucket (cron + live captures)
 
 	// ML / Vision service — used to run AI detection on captured snapshots.
 	// The stream service mints its own service JWT (shared JWT secret) so it can
@@ -71,7 +70,6 @@ func Load() (*Config, error) {
 		MinIOSecretKey:    getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		MinIOUseSSL:       getEnvBool("MINIO_USE_SSL", false),
 		MinIOStreamBucket: getEnv("MINIO_STREAM_BUCKET", "stream"),
-		MinIOResultBucket: getEnv("MINIO_RESULT_BUCKET", "ml-result"),
 		MLBaseURL:         getEnv("ML_BASE_URL", "http://ml:8080"),
 		MLVisionModelID:   getEnv("ML_VISION_MODEL_ID", ""),
 		ReconcileInterval: time.Duration(getEnvInt("RECONCILE_INTERVAL_SECONDS", 30)) * time.Second,

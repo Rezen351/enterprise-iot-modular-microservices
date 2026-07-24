@@ -91,9 +91,12 @@ func isValidSegment(s string) bool {
 	if len(s) == 0 || len(s) > 128 {
 		return false
 	}
+	if s == "*" {
+		return true
+	}
 	for _, r := range s {
 		if !(r >= 'a' && r <= 'z') && !(r >= 'A' && r <= 'Z') &&
-			!(r >= '0' && r <= '9') && r != '_' && r != '.' && r != '-' && r != ':' {
+			!(r >= '0' && r <= '9') && r != '_' && r != '.' && r != '-' && r != ':' && r != '*' {
 			return false
 		}
 	}
@@ -127,14 +130,17 @@ func (s *Store) QueryPage(ctx context.Context, q model.ExportQuery, cursor model
 
 	// Only safe, public columns are projected — `raw` JSONB is excluded.
 	sql := `SELECT time, node_id, module_id, metric, value FROM telemetry WHERE 1=1`
-	if len(q.NodeIDs) > 0 {
+	hasNodeWildcard := len(q.NodeIDs) == 1 && q.NodeIDs[0] == "*"
+	if len(q.NodeIDs) > 0 && !hasNodeWildcard {
 		placeholders := make([]string, 0, len(q.NodeIDs))
 		for _, n := range q.NodeIDs {
 			placeholders = append(placeholders, arg(n))
 		}
 		sql += ` AND node_id IN (` + strings.Join(placeholders, ",") + `)`
 	}
-	if len(q.Metrics) > 0 {
+
+	hasMetricWildcard := len(q.Metrics) == 0 || (len(q.Metrics) == 1 && q.Metrics[0] == "*")
+	if len(q.Metrics) > 0 && !hasMetricWildcard {
 		placeholders := make([]string, 0, len(q.Metrics))
 		for _, m := range q.Metrics {
 			placeholders = append(placeholders, arg(m))

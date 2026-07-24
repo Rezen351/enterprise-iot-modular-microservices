@@ -1,4 +1,4 @@
-# 📋 Planning — IOT-Modular-Microservice
+# 📋 Planning — enyx-enterprise
 
 > **Versi Dokumen:** 2.17.0  
 > **Tanggal:** 2026-07-22  
@@ -78,7 +78,7 @@ ESP32 → MQTT (Mosquitto) → Module Service → MariaDB (metadata)
                                                   → Alert Service → Notification (Telegram/Email/Push)
 
 CCTV / ESP32-CAM → RTSP → MediaMTX → Stream Service (register path) → HLS/WebRTC → Dashboard Live View
-Stream Service → snapshot → MinIO bucket `stream` → ML Service (detect) → MinIO bucket `ml-result`
+Stream Service → snapshot → MinIO bucket `stream` → ML Service (detect) → MinIO bucket `mlbucket`
 
 User → Browser → Kong (API Gateway) → Auth Service (JWT validation)
                                        → Module Service (CRUD modules/nodes)
@@ -112,7 +112,7 @@ flowchart TB
     STR --> MINIO[("MinIO multi-bucket")]
     MINIO --> BSTR["bucket stream"]
     MINIO --> BML["bucket ml"]
-    MINIO --> BMLR["bucket ml-result"]
+    MINIO --> BMLR["bucket ml"]
     STR -.->|snapshot to AI detect| ML["ML Vision API"]
     ML -->|read frame| BSTR
     ML --> BML
@@ -176,14 +176,14 @@ Setiap service memiliki instance database terpisah sesuai dengan kebutuhan data-
 | Control | `mariadb-control` | — | — | — | ✅ Running |
 | Stream | `mariadb-stream` | — | — | bucket `stream` | ✅ Running |
 | Alert | `mariadb-alert` | — | DB1 `alert` | — | ✅ Running |
-| ML / Vision | `mariadb-ml` | — | — | bucket `ml` | ✅ Running |
+| ML / Vision | `mariadb-ml` | — | — | bucket `mlbucket` | ✅ Running |
 | Analytics | — | `timescaledb-analytics` | — | — | ✅ Running |
 | Export | — | `timescaledb-module` (read) | DB3 `export` | — | ✅ Running |
 | Notification | `mariadb-notification` | — | DB2 `notification` | — | ✅ Running |
 | Audit | `mariadb-audit` | — | — | — | ✅ Running |
 | DLQ | — | — | — | — | ✅ Running |
 
-> **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`). Cukup **1 instance MinIO bersama** (`minio`) dengan **multi-bucket** (`stream`, `ml`, `ml-result`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi ke bucket `ml`.
+> **Keputusan Konsolidasi MinIO (2026-07-12):** Tidak lagi membuat instance MinIO terpisah per service (`minio-stream`, `minio-ml`). Cukup **1 instance MinIO bersama** (`minio`) dengan **2 bucket** (`stream`, `mlbucket`) dan **access key ter-scoping per service** (prinsip *Zero-Trust Internal* tetap terjaga). Stream tetap menulis snapshot/recording ke bucket `stream` miliknya → tidak bergantung ML yang belum dibuat. ML membaca frame sumber dari bucket `stream` (key read-only) dan menulis hasil anotasi/metadata/model ke bucket `mlbucket`.
 >
 > **Keputusan Konsolidasi Redis (2026-07-16, ADR-004):** Tidak lagi membuat instance Redis terpisah per service (`redis-module`, `redis-alert`, `redis-notification`, `redis-export`). Cukup **1 instance Redis bersama** (`redis-shared`) dengan **multi-DB logical** (module=DB0, alert=DB1, notification=DB2, export=DB3) + **1 exporter bersama**. Redis hanya cache/ephemeral store (bukan sumber kebenaran domain), sehingga konsolidasi ini tidak melanggar prinsip *Database-per-Service* (MariaDB/TimescaleDB tetap per-service).
 >
@@ -397,6 +397,9 @@ NATS digunakan sebagai event bus untuk komunikasi antar-service. Berikut adalah 
 | `control.commands.>` | Control Service | Control Service (reply) | Request-Reply | ⬜ Belum |
 | `detection.result` | Vision API | Analytics, WebSocket, Webhook | Pub/Sub | ✅ Dipublish |
 | `audit.log` | Semua service | Audit Service | Pub/Sub | ✅ Dipublish (Auth, Module, Control, Stream, ML, Alert, Notification, Export, DLQ) & ✅ di-consume oleh Audit Service |
+| `spray.schedule.updated` | Spray Automation | Control Service, Dashboard | Pub/Sub | ⬜ Rencana |
+| `spray.snapshot.captured` | Spray Automation | Dashboard | Pub/Sub | ⬜ Rencana |
+| `spray.analysis.completed` | Spray Automation | Dashboard, Alert Service | Pub/Sub | ⬜ Rencana |
 | `metrics.health` | Semua service | Prometheus | Pub/Sub | ⬜ Belum (masih scrape langsung) |
 | `webhook.delivery` | Webhook (future) | Audit Service | Pub/Sub | ⬜ Belum |
 | `webhook.retry` | Webhook (future) | Webhook (future) | Queue | ⬜ Belum |
@@ -532,6 +535,7 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | 8 | Audit Service | ✅ Selesai | P1 |
 | 9 | Dashboard Lengkap | ✅ Selesai | P3 |
 | 9b | Export Service / Data API | ✅ Selesai | P3 |
+| 13 | Spray Automation Service (AI-driven misting + snapshot) | ⬜ Rencana | P2 |
 
 > **Catatan:** Detail kontrak firmware (Control), endpoint ML, dan implementasi Stream (ffmpeg/ffprobe) berada di `roadmap.md`. Keputusan arsitektur (MinIO, Export Opsi A, Shared JWT) berada di [`adr.md`](./adr.md`).
 
@@ -553,7 +557,7 @@ Status implementasi per fase **di dokumentasikan lengkap di [`roadmap.md`](./roa
 | NATS ACL | Kontrol akses per-subject per-user di konfigurasi NATS | ✅ |
 | WebSocket Auth | ✅ JWT pada handshake WS (Bearer header / `?token=`), validasi via `JWT_SECRET` | ✅ |
 
-> **Catatan keamanan (open items):** OTA firmware (Fase 10) **belum** menerapkan verifikasi signature (ED25519/ECDSA) — endpoint `/api/ota` hanya mengecek `checkAuthToken()` web portal. Ini tercatat sebagai remediasi terbuka O3. Mosquitto ACL enforcement (O1) dan MinIO scoped keys (O2) **sudah selesai** (2026-07-21/22).
+> **Catatan keamanan (open items):** Mosquitto ACL enforcement (O1) dan MinIO scoped keys (O2) **sudah selesai** (2026-07-21/22).
 | Webhook Auth | Setiap webhook endpoint eksternal memerlukan secret token untuk verifikasi | ⬜ |
 
 ### Detail Matriks Otorisasi (RBAC Matrix)

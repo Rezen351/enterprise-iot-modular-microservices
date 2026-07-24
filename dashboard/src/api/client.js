@@ -1,24 +1,56 @@
 // ============================================================================
-// API CLIENT — talks to the Kong API Gateway (single entry point)
-// ----------------------------------------------------------------------------
-// All dashboard requests go through Kong (default http://localhost:8000), which
-// routes /auth/* to the Auth Service. Override with VITE_API_URL if needed.
+// API CLIENT — same-origin requests (served by nginx in the dashboard
+// container). Kong stays on the Docker internal network at :8000 and is
+// invisible from the browser. Override with VITE_API_URL only if you need
+// to point to an external API gateway.
 // ============================================================================
 
 function resolveApiBase() {
   const envUrl = import.meta.env?.VITE_API_URL;
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    if (!envUrl || (envUrl.includes('localhost') && !isLocalhost)) {
-      return `${window.location.protocol}//${hostname}:8000`;
+    if (typeof envUrl === 'string' && envUrl.trim() !== '' && !envUrl.includes('localhost')) {
+      return envUrl;
     }
-    return envUrl;
+    if (typeof envUrl === 'string' && envUrl.includes('localhost')) {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return envUrl;
+      }
+    }
+    return '/';
   }
   return envUrl || 'http://localhost:8000';
 }
 
 export const API_BASE = resolveApiBase();
+
+export function getWsUrl(path) {
+  let proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  let host = window.location.host;
+
+  const base = API_BASE === '/' ? '' : (API_BASE || '');
+  if (base.startsWith('http://') || base.startsWith('https://')) {
+    try {
+      const u = new URL(base);
+      proto = u.protocol === 'https:' ? 'wss:' : 'ws:';
+      host = u.host;
+    } catch (e) {
+      console.error('Failed to parse API_BASE for WebSocket URL:', e);
+    }
+  }
+
+  // Fallback if host is empty (e.g. file:// protocol or Capacitor webview context)
+  if (!host) {
+    // If window.location.hostname is set but host is somehow empty, use that; otherwise fallback
+    host = window.location.hostname || 'localhost:5173';
+  }
+
+  // Ensure path starts with a slash
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `${proto}//${host}${cleanPath}`;
+}
+
 
 // ---- Session helpers ------------------------------------------------------
 export const getToken = () => sessionStorage.getItem('token');
@@ -43,7 +75,7 @@ export function withToken(url) {
     }
   }
   const apiPath = path.startsWith('/v1/') || path === '/v1' ? path : `/v1${path.startsWith('/') ? '' : '/'}${path}`;
-  const base = API_BASE || 'http://localhost:8000';
+  const base = API_BASE === '/' ? '' : (API_BASE || 'http://localhost:8000');
   const sep = apiPath.includes('?') ? '&' : '?';
   const token = getToken();
   return `${base}${apiPath}${token ? `${sep}token=${encodeURIComponent(token)}` : ''}`;
@@ -127,10 +159,11 @@ export async function request(path, { method = 'GET', body, auth = false, header
   }
 
   const apiPath = path.startsWith('/v1/') || path === '/v1' ? path : `/v1${path.startsWith('/') ? '' : '/'}${path}`;
+  const base = API_BASE === '/' ? '' : (API_BASE || 'http://localhost:8000');
 
   let res;
   try {
-    res = await fetch(`${API_BASE}${apiPath}`, {
+    res = await fetch(`${base}${apiPath}`, {
       method,
       headers: finalHeaders,
       body: body != null ? JSON.stringify(body) : undefined,
@@ -147,12 +180,16 @@ export async function request(path, { method = 'GET', body, auth = false, header
   }
 
   const raw = await res.text();
+  const contentType = res.headers.get('content-type') || '';
   let data = null;
   if (raw) {
+    if (contentType.includes('text/csv') || raw.startsWith('time,') || raw.startsWith('node_id,')) {
+      return raw;
+    }
     try {
       data = JSON.parse(raw);
     } catch {
-      data = { message: raw };
+      data = raw;
     }
   }
 

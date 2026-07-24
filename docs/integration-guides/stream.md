@@ -10,7 +10,7 @@ The **Stream Service** manages video streaming for CCTV and ESP32-CAM devices in
 | **Port** | `8080` (configurable via `PORT`) |
 | **Protocol** | REST/JSON (Chi router) |
 | **Database** | MariaDB `stream_db` (per-service isolation) |
-| **Object Storage** | MinIO bucket `stream` (snapshots/recordings) + `ml-result` (AI detections) |
+| **Object Storage** | MinIO bucket `stream` (snapshots/recordings) + `ml` (AI detections) |
 | **Video Engine** | MediaMTX v3 Control API |
 | **ML Integration** | HTTP client to ML/Vision service (`POST /ml/detect`) |
 | **Auth** | Shared JWT (HMAC) via middleware; operator/admin role checks for write routes |
@@ -223,7 +223,7 @@ Capture the current frame from the live stream.
 
 **Behavior:**
 - `detect=false` (default): Frame is uploaded to MinIO bucket `stream` under `snapshots/{name}/{uuid}.jpg`. A `Snapshot` row with `kind="snapshot"` is stored in the DB.
-- `detect=true`: Frame is sent to the ML/Vision service (`POST /ml/detect`). The result (frame + detection JSON + annotated image) is stored in the shared `ml-result` bucket. No row is written to the Stream DB's `snapshots` table for detections.
+- `detect=true`: Frame is sent to the ML/Vision service (`POST /ml/detect`). The result (frame + detection JSON + annotated image) is stored in the shared `ml` bucket. No row is written to the Stream DB's `snapshots` table for detections.
 
 **Response (201) — plain snapshot:**
 ```json
@@ -363,7 +363,7 @@ Delete the snapshot row and remove the object from MinIO.
 ### 2.5 Object Storage Proxy (`/storage/*`)
 
 #### `GET /storage/{bucket}/{key...}`
-Stream a private MinIO object through the Stream Service using its scoped credentials. The bucket must be one of: `stream`, `ml-result`, `mlbucket`, `ml`.
+Stream a private MinIO object through the Stream Service using its scoped credentials. The bucket must be one of: `stream`, `mlbucket`, `ml`.
 
 **Headers:**
 | Header | Value |
@@ -412,7 +412,7 @@ The service interacts with MediaMTX via its Control API (v3):
 |---|---|---|
 | Outbound | `PutObject` | Upload snapshots (`snapshots/{name}/{uuid}.jpg`) |
 | Outbound | `PutObject` | Upload recordings (`recordings/{name}/{uuid}.mp4`) |
-| Outbound | `PutObject` | Upload ML results to `ml-result` bucket (`frames/`, `results/`, `annotated/`) |
+| Outbound | `PutObject` | Upload ML results to `ml` bucket (`frames/`, `results/`, `annotated/`) |
 | Outbound | `GetObject` | Serve objects via `/storage/*` proxy |
 | Outbound | `RemoveObject` | Delete objects when snapshot is deleted |
 
@@ -442,9 +442,9 @@ Snapshots and recordings are stored in MinIO and surfaced as same-origin proxy U
 |---|---|---|---|
 | Plain snapshot | `/storage/stream/snapshots/{name}/{uuid}.jpg` | `stream` | `snapshots/` |
 | Recording | `/storage/stream/recordings/{name}/{uuid}.mp4` | `stream` | `recordings/` |
-| AI detection frame | `/storage/ml-result/frames/{name}/{ts}.jpg` | `ml-result` | `frames/` |
-| AI detection JSON | `/storage/ml-result/results/{name}/{ts}.json` | `ml-result` | `results/` |
-| AI annotated image | `/storage/ml-result/annotated/{name}/{ts}.jpg` | `ml-result` | `annotated/` |
+| AI detection frame | `/storage/ml/frames/{name}/{ts}.jpg` | `ml` | `frames/` |
+| AI detection JSON | `/storage/ml/results/{name}/{ts}.json` | `ml` | `results/` |
+| AI annotated image | `/storage/ml/annotated/{name}/{ts}.jpg` | `ml` | `annotated/` |
 
 ### 4.3 NATS Subjects
 The Stream Service does **not** publish or subscribe to any NATS subjects. It is a pure REST service with outbound HTTP dependencies (MediaMTX, MinIO, ML).
@@ -496,7 +496,6 @@ If you need to call the Stream Service from another backend service (e.g., a cro
 | `MINIO_SECRET_KEY` | `${MINIO_STREAM_SECRET_KEY}` | MinIO secret key (scoped for stream service; falls back to `MINIO_SECRET_KEY`) |
 | `MINIO_USE_SSL` | `false` | Enable HTTPS for MinIO |
 | `MINIO_STREAM_BUCKET` | `stream` | Bucket for snapshots and recordings |
-| `MINIO_RESULT_BUCKET` | `ml-result` | Shared bucket for AI detection results |
 | `ML_BASE_URL` | `http://ml:8080` | ML/Vision service root URL |
 | `ML_VISION_MODEL_ID` | `""` | Default model ID for AI detection |
 | `RECONCILE_INTERVAL_SECONDS` | `30` | Periodic MediaMTX path reconcile interval (0 = startup only) |

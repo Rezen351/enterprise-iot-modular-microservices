@@ -69,9 +69,7 @@ class Settings(BaseSettings):
     minio_use_ssl: bool = False
     minio_ml_bucket: str = "mlbucket"
     minio_stream_bucket: str = "stream"
-    # Bucket where the external CCTV capture cron stores collected frames
-    # + detection results (separate from the ML service's own `ml` bucket).
-    minio_result_bucket: str = "ml-result"
+    minio_result_bucket: str = "mlbucket"
     # Prefix layout inside the ml bucket.
     minio_original_prefix: str = "original"
     minio_annotated_prefix: str = "detected"

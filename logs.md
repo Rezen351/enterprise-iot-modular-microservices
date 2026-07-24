@@ -1,4 +1,4 @@
-# 📓 Development Logs — IOT-Modular-Microservice
+# 📓 Development Logs — enyx-enterprise
 
 > **Format:** `[YYYY-MM-DD] [STATUS] Deskripsi`  
 > **Status:** ✅ Done · 🟡 In Progress · ❌ Blocked · 🔁 Revised · 📝 Note
@@ -7,7 +7,219 @@
 
 ---
 
+### Dashboard UI — 10-Row Preview Grid & Unwrapped API Payload Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Payload Unwrapping Alignment ([Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx#L365-L380)):** Mengubah penanganan respons API di `loadPreview()` menjadi `const payload = res?.data || res;` untuk menangkap payload yang telah di-unwrap oleh client API. |
+| 2 | ✅ | **10-Row Preview Grid Cap ([Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx#L340-L380)):** Mengatur batas pengambilan data pratinjau menjadi `params.limit = 100` di backend dan membatasi tampilan grid antarmuka UI secara khusus untuk **10 baris data terbaru** (`setPreview(data.slice(0, 10))`). |
+
+**Keputusan Teknis:** Sebelumnya, tabel pratinjau (*preview grid*) di antarmuka UI menampilkan tulisan "No data found for the selected filter" karena `exportApi.listTelemetry` telah mengeksekusi `unwrap()` yang melepaskan properti `data`, sehingga baris `const payload = res?.data` menghasilkan `undefined` dan mengosongkan array pratinjau. Dengan menyelaraskan ekstraksi payload `res?.data || res` dan membatasi tampilan tepat 10 baris terbaru, tabel pratinjau UI kini langsung terisi dengan 10 baris data telemetri terkini.
+
+---
+
+### Export Service & Dashboard — Wide Pivoted CSV Export Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Go TelemetryHandler Pivoting ([handler.go](file:///home/almuzky/TA/Microservices/services/export/internal/handler/handler.go)):** Memperbarui handler ekspor backend Go agar melakukan *pivoting* data telemetri dari format vertikal (*narrow*) menjadi format horizontal (*wide* tabular). Setiap nama metrik kini dipivot secara otomatis menjadi kolom CSV tersendiri (`time, node_id, module_id, temp, hum, wifi, modbus, ...`). |
+| 2 | ✅ | **Frontend Preview & JSON-to-CSV Pivoting ([Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx)):** Menambahkan helper `pivotTelemetryRows()` dan memperbarui `jsonToCsv()` di React Dashboard, sehingga pratinjau tabel UI maupun pengunduhan CSV otomatis menampilkan data terkelompok per timestamp dengan kolom khusus untuk setiap metrik. |
+
+**Keputusan Teknis:** Format CSV sebelumnya (*narrow format*) menempatkan setiap bacaan sensor pada baris baru dengan kolom `metric` dan `value`, sehingga 15 metrik pada 1 timestamp membutuhkan 15 baris terpisah. Mengubah format menjadi *wide pivoted format* menyatukan seluruh bacaan pada timestamp yang sama ke dalam 1 baris dengan kolom-kolom terpisah untuk tiap metrik. Format baru ini jauh lebih rapi, ringkas, hemat baris, dan langsung siap dianalisis di Microsoft Excel, Google Sheets, maupun Python Pandas.
+
+---
+
+### Export Service & Dashboard — All Metrics Wildcard Export Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Wildcard Segment Validation ([tsdb.go](file:///home/almuzky/TA/Microservices/services/export/internal/tsdb/tsdb.go)):** Memperbarui `isValidSegment` di TimescaleDB store agar mengizinkan karakter `*` (*wildcard*) secara eksplisit untuk parameter `metric` dan `node_id`. |
+| 2 | ✅ | **Dynamic SQL Wildcard Query ([tsdb.go](file:///home/almuzky/TA/Microservices/services/export/internal/tsdb/tsdb.go)):** Mengubah klausa `AND metric IN (...)` di `QueryPage` sehingga jika `metric` berisi `*` atau tidak diisi, query otomatis melewati pembatasan nama metrik dan mengambil seluruh data telemetry (suhu, kelembapan, inputs, outputs, wifi, heap, modbus) sekaligus dalam 1 kali request. |
+| 3 | ✅ | **Optional Metric Parameter ([handler.go](file:///home/almuzky/TA/Microservices/services/export/internal/handler/handler.go)):** Memperbarui `TelemetryHandler` dan `MetadataHandler` agar menjadikan parameter `metric` opsional dengan default wildcard `*` bila tidak ditentukan. |
+| 4 | ✅ | **UI All Metrics Dropdown Option ([Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx)):** Menambahkan pilihan **"All Metrics (*)"** pada dropdown Metric serta menjadikannya pilihan default, sehingga pengguna dapat mengunduh seluruh parameter node secara lengkap hanya dengan 1 kali klik **Download CSV**. |
+
+**Keputusan Teknis:** Sebelumnya, antarmuka ekspor data mewajibkan pengguna memilih 1 jenis metrik saja (misalnya hanya `temperature` atau `humidity`), yang mengharuskan pengguna mengunduh file terpisah secara berulang untuk tiap parameter. Dengan mengimplementasikan wildcard filtering (`metric=*`) di level TimescaleDB query engine dan menambahkan opsi **"All Metrics (*)"** di UI Dashboard, seluruh data telemetri milik node bersangkutan langsung terkeskpor lengkap dalam 1 file `.csv` sekaligus.
+
+---
+
+### Frontend & Export API — Clean Raw CSV Export Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Client Fetch Interceptor Update ([client.js](file:///home/almuzky/TA/Microservices/dashboard/src/api/client.js)):** Memperbarui fungsi `request()` agar mengenali respons dengan `Content-Type: text/csv` atau teks berformat CSV (`time,...`), lalu mengembalikan string mentah (*raw string*) tanpa membungkusnya ke dalam objek JSON `{ message: raw }`. |
+| 2 | ✅ | **Export API Wrapper Preserving Raw CSV ([export.js](file:///home/almuzky/TA/Microservices/dashboard/src/api/export.js)):** Memperbarui fungsi `unwrap()` agar tidak mengubah string CSV menjadi JSON saat menerima file ekspor data. |
+| 3 | ✅ | **Download Handler & UI Preview Enhancement ([Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx)):** Menambahkan fungsi helper `jsonToCsv()` untuk konversi array JSON ke format CSV standar Excel, serta memastikan tombol **Download CSV** mengunduh file `.csv` mentah berkolom (*raw CSV*) tanpa karakter pembungkus JSON atau baris baru palsu. |
+| 4 | ✅ | **Dual Route Support & JSON Preview in Go Backend ([handler.go](file:///home/almuzky/TA/Microservices/services/export/internal/handler/handler.go)):** Memperbarui `TelemetryHandler` di Export Service agar mendukung parameter `format=json` untuk pratinjau tabel UI serta `format=csv` untuk streaming file CSV ber-header lengkap (`time,node_id,module_id,metric,value`). |
+
+**Keputusan Teknis:** Format CSV sebelumnya terlihat aneh (tersusun dalam 3 baris JSON `{ "message": "..." }` di Excel) karena HTTP client di `client.js` secara otomatis membungkus string mentah non-JSON yang diterima ke dalam objek `{ message: raw }` jika parsing JSON gagal. Ketika fungsi `download()` di frontend mengeksekusi `JSON.stringify(payload)`, teks CSV terenkapsulasi sebagai string JSON dengan karakter `\n` harfiah. Mengembalikan string CSV mentah secara langsung dari `client.js` dan `export.js` membuat file `.csv` terunduh sebagai teks murni yang langsung terpisah rapi menjadi kolom-kolom standar di Microsoft Excel dan Google Sheets.
+
+---
+
+### Backend — Webhook Service 500 (Internal Server Error) Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Webhook Container Rebuild & Deploy:** Membangun ulang image Docker `webhook` (`ghcr.io/rezen351/enyx-enterprise/webhook:latest`) dari source code Go terbaru untuk memperbarui biner yang mengalami *panic context interface conversion* di `middleware.UserIDFromContext`. |
+| 2 | ✅ | **Unit Test Suite Hardening:** Mengubah `test_03_update_profile` di [unit_test.py](file:///home/almuzky/TA/Microservices/test/unit_test.py) agar selalu menyertakan `ADMIN_USER` (`admin`) secara konsisten, mencegah akun admin berubah nama secara sementara menjadi `admin_updated`. |
+| 3 | ✅ | **Verifikasi API Test Delivery:** Memanggil endpoint `POST /v1/webhook/test` melalui Kong Gateway (`http://localhost:8000/v1/webhook/test`) dengan payload `{"channel": "telegram"}` dan mengonfirmasi bahwa respons mengembalikan HTTP `202 Accepted` (`{"data":{"enqueued":1,"message":"test webhook queued for delivery"}}`). |
+
+**Keputusan Teknis:** Error `POST http://localhost:5173/v1/webhook/test 500 (Internal Server Error)` terjadi karena container Docker `webhook` yang berjalan di environment sebelumnya menggunakan image biner lama yang belum terompilasi ulang, yang memicu runtime panic `interface conversion: *context.valueCtx is not interface { Get(string) ... }` pada fungsi `middleware.UserIDFromContext`. Membangun ulang (*rebuild*) container `webhook` dari source code Go terbaru menyelesaikan panic ini. Selain itu, mengubah payload di `test_03_update_profile` di test suite memastikan kredensial akun admin utama tidak pernah termutasi menjadi `admin_updated` selama pengujian berlangsung.
+
+---
+
+### Frontend — Webhook Page Infinite Recursion & Freeze Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Lucide Icon Import Alias:** Memperbaiki import icon `lucide-react` di [Webhook.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Webhook.jsx) dengan menambahkan alias `Webhook as WebhookIcon`. Ini menyelesaikan bentrokan nama komponen yang menyebabkan tag `<Webhook />` memanggil komponen dirinya sendiri secara rekursif tanpa batas (*infinite render loop*). |
+| 2 | ✅ | **React Rules of Hooks Fix:** Memindahkan guard pembanding `if (!isAdmin())` ke bawah setelah deklarasi `useCallback` dan `useEffect` agar eksekusi Hooks pada React tidak melanggar *Rules of Hooks*. |
+| 3 | ✅ | **Rebuild & Deploy Dashboard:** Melakukan build ulang image Docker dashboard dan memastikan container berjalan aktif tanpa error kompilasi. |
+
+**Keputusan Teknis:** Saat tombol menu Webhook diklik, browser langsung *freeze / ngehang* total karena pada baris 308 berkas `Webhook.jsx` terdapat tag `<Webhook className="w-4 h-4" />`. Karena icon `Webhook` dari `lucide-react` belum di-import, React menginterpretasikan tag tersebut sebagai panggilan ke komponen induk `function Webhook()`, memicu *infinite component recursion* synchronous yang menghabiskan memori browser. Menggunakan import alias `Webhook as WebhookIcon` dan mengganti tag ke `<WebhookIcon />` menghentikan rekursi tersebut. Selain itu, mengoreksi urutan deklarasi Hooks mencegah potensi error perubahan jumlah Hooks pada render cycle berikutnya.
+
+---
+
+### Backend — Auth Login 401 (Unauthorized) & Test Suite Username Reversion Fix
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Admin Credential Restoration:** Mengembalikan username akun admin di MariaDB `auth_db` dari `admin_updated` (sisa hasil eksekusi unit test) menjadi `admin` melalui kueri SQL `UPDATE users SET username='admin' WHERE email='admin@smartfarm.local'`. |
+| 2 | ✅ | **Unit Test Suite Hardening:** Memperbaiki [unit_test.py](file:///home/almuzky/TA/Microservices/test/unit_test.py) pada metode `test_03_update_profile` agar langsung memulihkan kembali username ke `ADMIN_USER` (`admin`) setelah menguji endpoint `PUT /v1/auth/me`. |
+| 3 | ✅ | **Verifikasi Endpoint Login:** Menguji pemanggilan API `POST /v1/auth/login` melalui Kong Gateway (`http://localhost:8000/v1/auth/login`) dan mengonfirmasi bahwa respons mengembalikan HTTP `200 OK` beserta `access_token` & `refresh_token` yang valid. |
+| 4 | ✅ | **Automated Test User Cleanup:** Menambahkan penanganan `tearDownClass` dan perbaikan identifier di [unit_test.py](file:///home/almuzky/TA/Microservices/test/unit_test.py) serta step pembersihan pada [test_auth.sh](file:///home/almuzky/TA/Microservices/services/auth/test_auth.sh), sehingga seluruh user uji coba yang dibuat selama pengujian otomatis langsung dihapus bersih dari MariaDB (`auth_db`). |
+
+**Keputusan Teknis:** Kesalahan `POST http://localhost:5173/v1/auth/login 401 (Unauthorized)` terjadi karena running unit test sebelumnya (`test_03_update_profile` di `test/unit_test.py`) mengubah username akun admin utama dari `admin` menjadi `admin_updated` tanpa mengembalikannya (*revert*) setelah pengujian selesai. Akibatnya, saat pengguna atau frontend mencoba login menggunakan username default `admin`, Auth Service tidak menemukan record pengguna di database dan mengembalikan error `401 Unauthorized` (credentials invalid). Dengan mereset username di MariaDB `auth_db` dan memperbarui `test_03_update_profile` di suite pengujian otomatis agar selalu memulihkan username asal, serta memasang mekanisme pembersihan otomatis (`tearDownClass` dan API admin delete user) pada script pengujian, kredensial admin tetap stabil dan database terbebas dari akun uji sisa.
+
+---
+
+### Frontend — Export Menu Reference Error, Relative Import & Context Dropdowns Fix
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Export Page Icon Import:** Menambahkan `Filter` ke dalam import list dari `'lucide-react'` di [Export.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Export.jsx). Hal ini menyelesaikan ReferenceError yang membuat dashboard crash saat membuka menu Export. |
+| 2 | ✅ | **Webhook Page Import Path:** Memperbaiki relative path import `webhookApi` dari `../../api/webhook` menjadi `../../../api/webhook` di [Webhook.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/Webhook.jsx), sehingga mengizinkan bundler Vite di dalam Dockerfile untuk mengompilasi dashboard secara sukses. |
+| 3 | ✅ | **Empty Filter Validation in Export Page:** Menambahkan penanganan validasi agar halaman preview dan tombol download tidak langsung melakukan pemanggilan API ketika field wajib (`Node ID` dan `Metric`) masih kosong. Halaman kini menampilkan pesan edukasi yang ramah alih-alih kotak error merah `400 Bad Request`. |
+| 4 | ✅ | **Header Module & Dropdowns Sync:** Mengintegrasikan `useModule` context. Halaman Export sekarang otomatis membaca Module ID terpilih secara global (input Module ID dikunci dan terisi otomatis). Halaman juga memanggil `/export/v1/nodes` untuk menyusun dropdown selector dinamis untuk Node ID dan Metric yang sesuai, sehingga pengguna tidak perlu mengetik nama node/metric secara manual. |
+| 5 | ✅ | **RFC3339 Date Formatting Compliance:** Mengonversi data string tanggal `YYYY-MM-DD` dari input `<input type="date">` menjadi format RFC3339 penuh (dengan tambahan suffix `T00:00:00Z` untuk 'from' dan `T23:59:59Z` untuk 'to') sebelum melakukan request API. Ini mengatasi error `400 Bad Request` dari backend (`invalid 'to' (use RFC3339 or unix seconds)`). |
+| 6 | ✅ | **Cleanup Unimplemented 404 Tabs:** Menghapus tab Aggregate, Alerts, Commands, Audit, dan Discover dari daftar tab UI karena backend Export Service memang tidak mengimplementasikannya (sesuai arsitektur ADR-002 yang menunda porsi ini ke Fase 9b atau didistribusikan ke service lain). Hal ini meniadakan error `404 Not Found` pada konsol browser. |
+| 7 | ✅ | **Rebuild & Redeploy:** Melakukan pembangunan ulang image dashboard Docker dan menjalankan container-nya kembali. Verifikasi menunjukkan proses kompilasi berjalan sukses 100% dan dashboard dapat melayani menu export tanpa error. |
+
+**Keputusan Teknis:** Saat membuka menu export, React melemparkan `ReferenceError: Filter is not defined` karena komponen `<Filter>` digunakan dalam layout filter tetapi tidak pernah dideklarasikan/diimpor dari `lucide-react`. Selain itu, saat mencoba membangun ulang dashboard untuk menerapkan perbaikan, bundler Vite gagal di tahap build dengan error `UNRESOLVED_IMPORT` karena import path `webhookApi` pada berkas `Webhook.jsx` salah menuliskan level kedalaman direktori (hanya naik dua tingkat, alih-alih tiga). Ditambah lagi, initial load pada halaman telemetry memicu pemanggilan API tanpa parameter wajib `node_id` dan `metric` yang menghasilkan error `400 Bad Request` (`node_id and metric are required`) secara langsung. Menambahkan validasi parameter kosong pada state preview dan download sebelum melakukan request API berhasil menyelesaikan masalah kegagalan UI initial load ini secara elegan. Untuk meningkatkan pengalaman pengguna lebih jauh, kolom teks input manual diganti dengan dropdown pilihan yang datanya disinkronkan dengan Modul aktif global serta metadata historis dari Export Service, sehingga mempermudah pemilahan telemetry yang valid. Input datepicker HTML5 menghasilkan string `YYYY-MM-DD` yang ditolak backend; solusinya adalah menyisipkan filter middleware format `toRFC3339` di frontend sebelum request dilepas. Terakhir, menyembunyikan tab yang tidak memiliki implementasi endpoint di backend menghindarkan browser dari pemanggilan 404 sia-sia.
+
+---
+
+### Backend — External MQTT Broker Integration & Client ID Randomization Fix
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Docker Compose Fix:** Mengubah `MQTT_URL` di `docker-compose.yml` untuk service `module` dan `control` dari nilai hardcoded `"tcp://mosquitto:1883"` menjadi variable `"${MQTT_URL}"`. Ini memungkinkan microservices terhubung ke broker eksternal LAN sesuai nilai di berkas `.env` (mis. `tcp://192.168.1.103:1883`). |
+| 2 | ✅ | **Client ID Unique Suffix:** Menambahkan suffix unik timestamp (`time.Now().UnixNano() % 1000000`) ke MQTT Client ID di `services/module/internal/mqtt/subscriber.go` dan `services/control/internal/mqtt/mqtt.go` untuk menghindari tabrakan Client ID (`module-svc` dan `control-svc`) pada broker eksternal. |
+| 3 | ✅ | **Orphaned Container Cleanup:** Mematikan dan menghapus kontainer control yang yatim piatu (`a7abeb0fe34e_microservices-control-1`) menggunakan perintah `docker compose up -d --remove-orphans`. |
+| 4 | ✅ | **Deploy & Verify:** Rebuild dan jalankan ulang container `module` dan `control`. Hasil verifikasi log menunjukkan koneksi ke broker eksternal `192.168.1.103:1883` berhasil dan stabil tanpa ada pemutusan berulang (`EOF`), dan perangkat fisik `ECE334219870` langsung terdeteksi online. |
+
+**Keputusan Teknis:** Sebelum perbaikan ini, service `module` dan `control` selalu terhubung ke broker Mosquitto internal container karena nilai port & host di-hardcode. Di sisi lain, perangkat fisik ESP32 terhubung ke broker eksternal LAN (`192.168.1.103`). Akibatnya, perintah kontrol dari dashboard dipublikasikan ke broker yang salah dan status perangkat selalu *timeout*. Setelah mengaktifkan pembacaan env `MQTT_URL`, sempat terjadi pemutusan koneksi berulang (`EOF`) pada `control-svc` karena bentrokan Client ID (ada 2 instance running akibat kontainer yatim). Membersihkan kontainer yatim dan menambahkan suffix acak pada Client ID menyelesaikan masalah koneksi secara permanen.
+
+---
+
+---
+
+### Backend — CCTV Recording H.264 Transcoding Resolution (Black Thumbnail Fix)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Transcoding Implementation:** Changed the `ffmpeg` recording command in [service.go](file:///home/almuzky/TA/Microservices/services/stream/internal/service/service.go) to transcode video to H.264 (`-c:v libx264`) and audio to AAC (`-c:a aac`) instead of copying raw streams (`-c copy`). |
+| 2 | ✅ | **Robust Channel Mapping:** Appended optional mapping flags (`-map 0:v? -map 0:a?`) to handle streams that don't possess audio channels without failing. |
+| 3 | ✅ | **Verify & Deploy:** Rebuilt the `stream` container and verified that newly captured video recordings are successfully output as H.264 (`avc1`), which standard web browsers can natively decode and display. |
+
+**Keputusan Teknis:** Kamera CCTV default mengalirkan data dengan codec H.265 (HEVC). Sebelumnya, `ffmpeg` merekam video dengan flag `-c copy` yang menyalin track H.265 mentah ke dalam MP4 container. Karena browser modern tidak mendukung decoding H.265 secara bawaan dalam tag `<video>`, thumbnail video & preview di Gallery tampil sebagai kotak hitam polos. Mengubah target codec video ke `libx264` (H.264) dan audio ke `aac` dengan preset `ultrafast` dan `-tune zerolatency` menghasilkan berkas video yang kompatibel dengan browser, ringan didecode, dan memiliki thumbnail/frame awal yang dapat dirender otomatis oleh HTML5 video player.
+
+---
+
+### Frontend & Backend — Recording State Synchronization Resolution
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **`StreamView` DTO Update:** Added `recording` and `recording_start` properties to `StreamView` DTO in [model.go](file:///home/almuzky/TA/Microservices/services/stream/internal/model/model.go). |
+| 2 | ✅ | **`StreamService` Integration:** Modified `toView` and `StartRecording` in [service.go](file:///home/almuzky/TA/Microservices/services/stream/internal/service/service.go) to track the active recording process start time and populate the properties. |
+| 3 | ✅ | **UI Integration:** Modified `StreamCard` in [LiveView.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/LiveView.jsx) to initialize and synchronize its local `recording` and `recordingStart` state from the backend properties, ensuring correct stop/start state on refresh. |
+| 4 | ✅ | **Rebuild & Deploy:** Rebuilt both the `stream` and `dashboard` containers and restarted them. Verified that active recording state persists across page refreshes. |
+
+**Keputusan Teknis:** Tanpa sinkronisasi status rekaman dari backend, me-refresh halaman dashboard akan mereset state `recording` frontend menjadi `false`. Ketika pengguna mengklik kembali tombol rekam untuk menghentikannya, UI keliru memanggil `/record/start` (bukan `/record/stop`) yang memicu error `recording already in progress` dan membuat rekaman tidak bisa dihentikan. Dengan menyertakan `recording` dan `recording_start` (timestamp Unix) pada DTO `/streams`, frontend dapat menentukan state dan menghitung `elapsed` secara dinamis, sehingga pemanggilan `/record/stop` berfungsi dengan benar.
+
+---
+
+### Frontend — Nginx Image Caching Precedence Resolution (Snapshot 404s)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Nginx Location Block Reordering:** Moved the static caching block (`location ~* \.(js|css|png|jpg|...)`) in [nginx.conf](file:///home/almuzky/TA/Microservices/dashboard/nginx.conf) below the Kong API proxy configuration block. |
+| 2 | ✅ | **Verify Image Retrieval:** Checked image request `/v1/storage/stream/snapshots/...jpg` via curl. Verified it is correctly proxied to Kong/MediaMTX instead of throwing a local Nginx 404. |
+
+**Keputusan Teknis:** Nginx mengevaluasi lokasi regex (`location ~`) berdasarkan urutan penemuannya di berkas konfigurasi. Dengan meletakkan aturan caching asset statis di atas blok proxy, request API yang memuat file media (seperti `.jpg` snapshot) salah dicocokkan terlebih dahulu oleh caching block, sehingga Nginx mencari file tersebut di disk lokal penampung dashboard. Memindahkan blok caching ke bawah blok proxy memecahkan masalah ini.
+
+---
+
+### Frontend — Nginx Priority Routing & Snapshot Download Auth Audit
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Nginx Priority Modifier (`^~`):** Changed the `/live/` block to `location ^~ /live/` in `dashboard/nginx.conf`. This prevents Nginx's regex static assets caching block (`\.(js|css|...)$`) from intercepting `hls.min.js` and incorrectly serving it from local disk instead of proxying it to MediaMTX. |
+| 2 | ✅ | **Download Authorization Audit:** Updated `triggerDownload` in `Snapshot.jsx` to use the helper `withToken(u)` instead of `absUrl(u)`. This correctly appends the JWT token (`?token=...`) so that browser downloads of snapshots/recordings from `/storage` do not fail with 401 Unauthorized. |
+| 3 | ✅ | **Rebuild & Run:** Rebuilt and restarted the dashboard container (`docker compose up -d dashboard --build`), confirming that `hls.min.js` GET requests now successfully return 200 OK. |
+
+**Keputusan Teknis:** Penggunaan modifier `^~` pada `location ^~ /live/` mematikan pencarian ekspresi reguler (regex) oleh Nginx jika path `/live/` adalah kecocokan terpanjang. Ini krusial karena file `.js` seperti `hls.min.js` sebelumnya dicuri oleh aturan caching file statis Nginx. Di sisi download, helper `withToken` digunakan menggantikan `absUrl` lokal agar request download menyertakan token auth query string agar lolos dari validasi JWT gateway.
+
+---
+
+
+---
+
+
+### Frontend — WebSocket Connection Hostname 'ws' Resolution Fix
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **`getWsUrl` Utility:** Added central WebSocket URL generator helper `getWsUrl` to `dashboard/src/api/client.js` with fallback logic if hostname is empty. |
+| 2 | ✅ | **Refactor Components:** Updated all dashboard WebSocket endpoints in `NotificationContext.jsx`, `NodeMonitorModal.jsx`, `NodeDetailPanel.jsx`, `NodeConfigPage.jsx`, and `Monitor.jsx` to use the helper. |
+| 3 | ✅ | **Verify Build & Run:** Built the dashboard Docker image and verified Vite compiled successfully, then restarted the dashboard container. |
+| 4 | ✅ | **Verify System Integration:** Ran system tests (`run_all_tests.py`), confirming that all WebSocket tests pass. |
+
+**Keputusan Teknis:** WebSocket URL generator disatukan ke helper `getWsUrl()` di client API agar jika client/browser berjalan pada host yang kosong (seperti file://, capacitor, or secure contexts without hostname), dia secara aman default ke localhost dan tidak secara keliru menghasilkan `wss://ws/...` yang menganggap prefix path `/ws/` sebagai hostname literal.
+
+---
+
+
+### Frontend — Rebuild Dashboard with `--no-cache` + Verify WebSocket
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **`docker compose build --no-cache dashboard`** berhasil meng-compile ulang image `ghcr.io/rezen351/enyx-enterprise/dashboard:latest` (sha256 `b4c8a57cfe7d`, 64.5MB) dari nol — builder Node.js `npm ci` + Vite build selesai tanpa cache layer. |
+| 2 | ✅ | **`docker compose up -d dashboard`** menjalankan container baru `microservices-dashboard-1` yang menggunakan image hasil rebuild. |
+| 3 | ✅ | **Verifikasi WebSocket via curl HTTP Upgrade** terhadap `ws://localhost:5173/ws/nodes/ECE334219870/live?token=<JWT>` (menggunakan access token dari login admin `admin_updated@smartfarm.local`). Response: **HTTP/1.1 101 Switching Protocols** — WebSocket handshake berhasil. |
+| 4 | ✅ | **Verifikasi WebSocket melalui Kong directly:** `ws://localhost:8000/ws/nodes/ECE334219870/live?token=<JWT>` juga return **HTTP/1.1 101 Switching Protocols**. wsgateway log mencatat `client connected node=ECE334219870 (subject=mqtt.ECE334219870)` — konfirmasi WS live stream aktif. |
+| 5 | ✅ | Dashboard container HEALTHY pada port 5173; frontend static assets (nginx) + nginx proxy `/v1`, `/auth`, `/ws` → Kong semuanya berfungsi. |
+
+**Keputusan Teknis:** Rebuild `--no-cache` dilakukan untuk memastikan image dashboard terbaru (Vite build production) tanpa dependensi cache lama. WebSocket URL dari dashboard (`ws://localhost:5173/ws/...`) berhasil upgrade ke Kong via nginx proxy; tidak ada perubahan kode diperlukan — path `/ws/` di `dashboard/nginx.conf` sudah benar dengan `proxy_http_version 1.1` + `Upgrade`/`Connection upgrade` headers. wscat ternyata tidak menampilkan output di sandbox CLI; pengujian dilakukan via `curl -v -N -H "Connection: Upgrade" -H "Upgrade: websocket"` yang secara andal menunjukkan status 101.
+
+---
+
 ## 2026-07-22
+
+### Frontend & Infrastruktur — Dashboard Relative API + Cloudflare Tunnel Fix + Domain Routing
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Dashboard relative API:** ubah `dashboard/src/api/client.js` `resolveApiBase()` agar mengembalikan `/` (same-origin) sebagai default, bukan `http://localhost:8000` atau `http://192.168.1.103:8000`. Login dan seluruh request API frontend kini melewati nginx di container dashboard, bukan langsung ke Kong dari browser. |
+| 2 | ✅ | **nginx proxy:** `dashboard/nginx.conf` sudah include proxy block untuk `/v1`, `/auth`, `/health`, `/modules`, `/nodes`, `/analytics`, `/control`, `/audit`, `/alerts`, `/thresholds`, `/streams`, `/snapshots`, `/storage`, `/ml`, `/notifications`, `/export`, `/hls`, dan `/ws` → `http://kong:8000` (WS juga sudah `Upgrade`/`Connection`). |
+| 3 | ✅ | **Dockerfile & compose:** `dashboard/Dockerfile` ARG `VITE_API_URL` diubah default ke `/`; `docker-compose.yml` dashboard service sekarang passing `build.args VITE_API_URL` dari `.env` dengan fallback `/`. |
+| 4 | ✅ | **.env:** `VITE_API_URL` diubah dari `https://api.smartfarm.example` menjadi `/` agar browser memakai same-origin relative path. |
+| 5 | ✅ | **Cloudflare tunnel:** `cloudflared` command di `docker-compose.yml` diubah dari `service install ...` menjadi `tunnel run --token ${CLOUDFLARED_TUNNEL_TOKEN} smartfarm-tunnel` (menambahkan nama tunnel sebagai argumen terakhir). Tunnel sekarang terhubung ke edge Cloudflare (connIndex 0–3). |
+| 6 | ✅ | **Verifikasi domain:** `https://testenyx.almuzky.my.id/` returning HTTP 200 via tunnel; `POST /auth/login` melalui domain tunnel returning valid JWT (`{"success":true,"data":{...}}`). Header `X-Dashboard-Relative-API: true` confirmed. |
+| 7 | ✅ | **.env.example & dashboard/.env.example:** diselaraskan dengan perubahan `VITE_API_URL=/`. |
+
+**Keputusan Teknis:** Dashboard tidak lagi memanggil Kong langsung dari browser (tidak ada dependency ke port 8000 exposed ke LAN). Semua API traffic melewati nginx di container dashboard (:5173) → proxy ke Kong di Docker internal network. Ini menghilangkan error `ERR_CONNECTION_TIMED_OUT` dan 504 pada akses LAN karena Kong :8000 tidak perlu di-expose ke luar Docker host. Domain `https://testenyx.almuzky.my.id/` menjadi single entry point publik. Cloudflare tunnel menggunakan mode `tunnel run --token <token> <tunnel-name>` dengan tunnel name `smartfarm-tunnel`.
+
+---
 
 ### Service — Webhook Service untuk Telegram & Email
 
@@ -44,7 +256,7 @@
 | 4 | ✅ | Update `docs/planning.md` versi → 2.17.0, tanggal → 2026-07-22, status → sync dengan roadmap. |
 | 5 | ✅ | Update `docs/planning.md` Keamanan table: MQTT ACL → ✅ (O1 selesai 2026-07-21), MinIO scoped key → 🟡 (O2 in progress). |
 
-**Keputusan Teknis:** Roadmap dan planning kini akurat menyatakan bahwa seluruh item cross-cutting TA-Scale (DLQ, CI/CD, UnitTest, Outbox) telah selesai. Sisa prioritas adalah O2 (MinIO scoped keys) dan Future P4 (OTA, Prometheus Metrics, Cloudflare, Webhook).
+**Keputusan Teknis:** Roadmap dan planning kini akurat menyatakan bahwa seluruh item cross-cutting TA-Scale (DLQ, CI/CD, UnitTest, Outbox) telah selesai. Sisa prioritas adalah O2 (MinIO scoped keys) dan Future P4 (Prometheus Metrics, Cloudflare, Webhook).
 
 ---
 
@@ -61,20 +273,6 @@
 
 ---
 
-## 2026-07-21
-### Server — Remove OTA Feature (Fase 10)
-
-| # | Status | Aktivitas |
-|---|---|---|
-| 1 | ✅ | Hapus permission `perm-ota-write` dan assignment-nya di `services/auth/migrate.go` (seed permissions + role_permissions untuk admin & operator). |
-| 2 | ✅ | Hapus bucket `ota` dari `KNOWN_BUCKETS` di `services/cctv-capture/cron_capture.py`. |
-| 3 | ✅ | Hapus bucket `ota` dari `tmp-minio-test/minio-test3.go`. |
-| 4 | ✅ | Hapus bucket `ota` dari `ValidObjectPath` allowlist di `services/stream/internal/client/minio/minio.go` dan `knownBuckets` di `services/stream/internal/service/service.go`. |
-| 5 | ✅ | Update dokumentasi: `docs/integration-guides/auth.md`, `docs/integration-guides/stream.md`, `docs/planning.md`, `docs/roadmap.md`, `docs/security-audit.md`, `docs/adr.md`, `docker-compose.yml`, `docs/testing-plan-agent.md`, `docs/testing-implementasi-manual.md`. |
-
-**Keputusan Teknis:** Fitur OTA dihapus dari server karena sudah ada di sisi firmware (ESP32 `/api/ota`). Tidak ada service OTA backend yang di-build; bucket MinIO `ota` dan permission RBAC `ota:write` dihapus dari seluruh kode dan dokumentasi server. Firmware tetap memiliki endpoint `/api/ota` tetapi tidak ada server yang mengelola push firmware — OTA sepenuhnya menjadi tanggung jawab firmware.
-
----
 
 ### CI/CD — Perbaikan Permission Denied pada Workspace Cleanup (EACCES node_modules)
 
@@ -92,9 +290,9 @@
 
 | # | Status | Aktivitas |
 |---|---|---|
-| 1 | ✅ | Buat 3 user MinIO ter-scope: `stream-svc` (rw `stream`+`ml-result`, ro `mlbucket`), `ml-svc` (rw `mlbucket`+`ml-result`, ro `stream`), `ota-svc` (rw `ota`). |
-| 2 | ✅ | Buat 3 policy IAM MinIO: `stream-svc-policy-v2`, `ml-svc-policy`, `ota-svc-policy` dengan aksi S3 + bucket ARN sesuai kebutuhan tiap service. |
-| 3 | ✅ | Update `.env` & `.env.example`: tambah `MINIO_STREAM_ACCESS_KEY`/`SECRET_KEY`, `MINIO_ML_ACCESS_KEY`/`SECRET_KEY`, `MINIO_OTA_ACCESS_KEY`/`SECRET_KEY`. |
+| 1 | ✅ | Buat 2 user MinIO ter-scope: `stream-svc` (rw `stream`+`ml-result`, ro `mlbucket`), `ml-svc` (rw `mlbucket`+`ml-result`, ro `stream`). |
+| 2 | ✅ | Buat 2 policy IAM MinIO: `stream-svc-policy-v2`, `ml-svc-policy` dengan aksi S3 + bucket ARN sesuai kebutuhan tiap service. |
+| 3 | ✅ | Update `.env` & `.env.example`: tambah `MINIO_STREAM_ACCESS_KEY`/`SECRET_KEY`, `MINIO_ML_ACCESS_KEY`/`SECRET_KEY`. |
 | 4 | ✅ | Update `docker-compose.yml`: stream service pakai `${MINIO_STREAM_ACCESS_KEY}`/`${MINIO_STREAM_SECRET_KEY}`; ml service pakai `${MINIO_ML_ACCESS_KEY}`/`${MINIO_ML_SECRET_KEY}`. |
 | 5 | ✅ | Update `services/stream/internal/config/config.go`: fallback `MINIO_STREAM_ACCESS_KEY` → `MINIO_ACCESS_KEY` (tanpa ubah behavior service lain). |
 | 6 | ✅ | Update `services/ml/app/config.py`: ganti default hardcoded `minioadmin` dengan `Field(..., validation_alias="MINIO_ML_ACCESS_KEY")`. |
@@ -118,7 +316,7 @@
 | # | Status | Aktivitas |
 |---|---|---|
 | 1 | ✅ | Perbarui berkas [README.md](file:///home/almuzky/TA/Microservices/README.md) mengikuti standar repositori open-source modern di GitHub: menambahkan badge shields (Architecture, Docker, Go, Python, Kong, NATS, License), diagram arsitektur Mermaid, ringkasan fitur utama, tabel ekosistem 12 mikroservis, petunjuk Quick Start, struktur proyek, dan indeks dokumentasi. |
-| 2 | ✅ | Bersihkan istilah legacy spesifik ("aeroponiks") dari [README.md](file:///home/almuzky/TA/Microservices/README.md) dan selaraskan dengan judul utama proyek: **Enterprise IoT Modular Microservices — Environment Monitoring System**. |
+| 2 | ✅ | Bersihkan istilah legacy spesifik ("aeroponiks") dari [README.md](file:///home/almuzky/TA/Microservices/README.md) dan selaraskan dengan judul utama proyek: **enyx-enterprise — Environment Monitoring System**. |
 
 **Keputusan Teknis:** `README.md` menggunakan format GitHub-Flavored Markdown dengan badge visual, Mermaid diagram, dan navigasi anchor agar mudah dibaca oleh kontributor eksternal maupun tim internal. Seluruh teks dan deskripsi ditulis dalam Bahasa Inggris sesuai AGENTS.md §1.
 
@@ -298,7 +496,7 @@
 | 3 | ✅ | Rate-limit: hammer `POST /auth/login` salah → 429 di attempt ke-61 (limit 60/menit). CORS preflight: `Origin: localhost:5173` → ACAO hadir; `evil.com` → tanpa ACAO. |
 | 4 | ✅ | Migration idempoten: `restart module alert audit auth` → `[migrate] <db> schema OK` tanpa error. |
 | 5 | ✅ | NATS JetStream: `jsz` → stream `TELEMETRY_BATCH` + consumer `analytics-batch` (filter `telemetry.batch`). Publish `audit.log` → audit service INSERT `audit_logs` (terbukti). `alert.*` → notification subscriber aktif. |
-| 6 | ✅ | MinIO: `mc anonymous get` semua bucket (`stream/ml-vision/ota/ml-result/mlbucket`) → Access Denied (private); anon HTTP GET `:9000/<bucket>/obj` → 403. |
+| 6 | ✅ | MinIO: `mc anonymous get` semua bucket (`stream/ml-vision/ml-result/mlbucket`) → Access Denied (private); anon HTTP GET `:9000/<bucket>/obj` → 403. |
 | 7 | ✅ | MediaMTX: host `:8888` refused (000, tidak di-publish); `:8554`/`8889` host-direct (desain). Kong `GET /hls/<stream>` → 302 (proxy jalan). |
 | 8 | ✅ | Prometheus `count(up)=31/31` semua UP (0 down). Grafana `/api/health` → 308 → `/api/health/` (sehat). |
 | 9 | ✅ | **0 bug baru** ditemukan — seluruh 9 langkah §14 lulus; tidak ada perubahan kode/rebuild. `[~]` env limitation (bukan bug): Mosquitto `allow_anonymous true` (O1) & MinIO scoped creds masih root (O2) — ter-re-verify, tidak diubah (risiko break pipeline kredensial kosong). |
@@ -322,7 +520,7 @@
 |---|---|---|
 | 1 | ✅ | Re-verifikasi §12 Fitur+Keamanan via simulator MQTT Python (`/tmp`, TIDAK di-commit, dijalankan dalam container di network `microservices_iot-net` karena host tdk resolve `mosquitto`). Connect ke `mosquitto:1883` diterima (broker `allow_anonymous true` → anonim diizinkan). Topic `smartfarm/#` disubscribe oleh Module. |
 | 2 | ✅ | F1 connect/MQTT → diterima Module (subscribed `smartfarm/#`). F2 discovery `smartfarm/discovery` → `HandleDiscovery` upsert → `GET /nodes/discovered` berisi `qa-sim-node-01` (status online). F3 telemetry `smartfarm/qa-sim-node-01/telemetry` (schema `telemetry.inputs/outputs/modbus`+`network/device_info/connection_stats`) → **2586 baris** di TimescaleDB `telemetry` (metrics `ph`/`water_level`/`s_atas_temp`). F4 `POST /control/command` (MANUAL) → Control publish `smartfarm/actuator/qa-sim-node-01` `set_output` → simulator terima & balas `smartfarm/qa-sim-node-01/confirm` `req_id`→`executed` → status command `acked` (`acked_at` terisi). F5 `POST /nodes/qa-sim-node-01/pair` → `paired=true` + `module_id` terisi. |
-| 3 | ✅ | Keamanan: MqttManager kirim kredensial + TLS (`setCACert`/`setInsecure`); Config.cpp semua default kosong (MQTT_USER/PASS/WIFI/ADMIN = ""); password fix `ConfigManager.cpp:91` generate random via `esp_random()` (tidak ada `admin123` hardcode). OTA no signature & `allow_anonymous true` = `[~]` env limitation (bukan bug firmware). |
+| 3 | ✅ | Keamanan: MqttManager kirim kredensial + TLS (`setCACert`/`setInsecure`); Config.cpp semua default kosong (MQTT_USER/PASS/WIFI/ADMIN = ""); password fix `ConfigManager.cpp:91` generate random via `esp_random()` (tidak ada `admin123` hardcode). `allow_anonymous true` = `[~]` env limitation (bukan bug firmware). |
 | 4 | ✅ | Cleanup: `docker stop` 9 service terkait; unpair+delete node `qa-sim-node-01`; DELETE telemetry sim di TSDB (0 rows); delete module QA; clear retained `smartfarm/status/qa-sim-node-01`; hapus `/tmp/firmware_sim.py` + volume. Verifikasi steril: discovered tdk berisi sim, modules=0, telemetry sim=0. |
 
 **Keputusan Teknis:** 0 bug ditemukan — semua 5 Fitur + 3 Keamanan §12 lulus ulang (status `[x]`/`[~]` di doc tetap valid). Firmware ESP32 tdk di-compile di sandbox (platformio bentrok `click`→`AttributeError`; unrelated). Go `go build`/`go vet` module/control tdk dijalankan di host (Go tdk terinstall; service jalan di container & sehat + memproses MQTT benar). Kontainer terkait di-stop setelah sesi; shared infra lain (auth/analytics/alert/audit/notification/ml/stream/wsgateway/exporter) tetap up.
@@ -375,7 +573,7 @@
 |---|---|---|
 | 1 | ✅ | **H1 — Validasi compose:** `docker compose config` dari `/home/almuzky/TA/Microservices` → **exit 0, YAML valid tanpa error/warning**. Seluruh perubahan sistem (B: service `notification`+`export-service`+DB+depends_on, C: konsolidasi Redis → `redis-shared` multi-DB, D: konsolidasi exporter) lolos validasi struktur. |
 | 2 | ✅ | **H2 — logs.md:** menambah entry final sync ini (status ✅) yang merangkum seluruh penyelarasan doc↔system: Notification & Export ditambah ke compose (B1/B2), Redis dikonsolidasi ke `redis-shared` (C/ADR-004), exporter dikonsolidasi (D/ADR-005), security table dibuat jujur (E), target Prometheus diperbarui (F), section UI test ditambah (G). |
-| 3 | ✅ | **H3 — planning.md "Kriteria Selesai":** flow `Alert → Notification` dan `Notification → Export` ditandai ✅ (end-to-end satisfied); `Webhook Service`, OTA, Prometheus Metrics Service, Cloudflare Tunnel tetap **Future P4**. |
+| 3 | ✅ | **H3 — planning.md "Kriteria Selesai":** flow `Alert → Notification` dan `Notification → Export` ditandai ✅ (end-to-end satisfied); `Webhook Service`, Prometheus Metrics Service, Cloudflare Tunnel tetap **Future P4**. |
 | 4 | ✅ | **H3 — testing-implementasi-manual.md (stale note fix):** catatan §14b diperbarui — service `notification` kini **SUDAH didefinisikan di `docker-compose.yml`** (item B1 done); tidak ada status checklist `[ ]` yang diubah. |
 
 **Keputusan Teknis:** Final sync H1–H3 **SELESAI**. ADR-004 (Redis → `redis-shared` multi-DB, 1 instance) dan ADR-005 (exporter → `mysqld-exporter-all`/`postgres-exporter-all`/`redis-exporter`, 3 container) kini **benar-benar terimplementasi di `docker-compose.yml`** (bukan lagi hanya tertulis ✅ di planning). `docker compose config` exit 0 memvalidasi tidak ada orphan/error pasca-konsolidasi. Tidak ada perubahan kode/logic — hanya verifikasi + dokumentasi final.
@@ -416,7 +614,7 @@
 | 5 | ✅ | **CORS preflight:** `OPTIONS` dari `Origin: http://localhost:5173` → `Access-Control-Allow-Origin: http://localhost:5173`; dari `evil.com` → TIDAK ada header ACAO (browser akan blokir). |
 | 6 | ✅ | **DB migration idempoten:** `docker compose restart module/alert/audit/auth` → log `[migrate] <db> schema OK` tanpa error (GORM AutoMigrate di `*_svc/migrate.go` sebagai single source of truth). |
 | 7 | ✅ | **NATS JetStream:** `jsz` → stream `TELEMETRY_BATCH` + consumer `analytics-batch` (subject `telemetry.batch`, durable JetStream, idempotent `AddStream`). Event bridge terverifikasi: publish `audit.log` → tercatat di `audit_logs` (Core NATS QueueSubscribe); Alert subscribe `telemetry.ingest`; Notification subscribe `alert.*` (subscriber listening aktif). |
-| 8 | ✅ | **MinIO:** `stream`/`mlbucket`/`ota`/`ml-result` → **private** (anon read ditolak). `minio-setup` diubah ke `private` untuk semua bucket. |
+| 8 | ✅ | **MinIO:** `stream`/`mlbucket`/`ml-result` → **private** (anon read ditolak). `minio-setup` diubah ke `private` untuk semua bucket. |
 | 9 | ✅ | **MediaMTX HLS aman:** host port `8888` di-unpublish (HLS hanya via Kong auth proxy); `curl :8888/hls` → 000 (refused), `curl :8000/hls` → 302; API `:9997` tetap internal-only. |
 | 10 | ✅ | **Prometheus/Grafana:** `count(up)=31/31` target `up`; metrik app-service (`auth/module/audit/alert_http_requests_total`, `kong_http_requests_total`) ter-scrape via middleware prometheus; Grafana `/api/health` → 200. |
 | 11 | 🔧 | **BUG FIX 1 (DB analytics):** `timescaledb-analytics` tidak punya DB `analytics_ts` (init.sql jalan di DB default `postgres`) + `pg_hba.conf` localhost-only → Analytics connect gagal `no pg_hba.conf entry` → semua `/analytics/*` 500. **Fix:** `CREATE DATABASE analytics_ts` + jalankan `infra/timescaledb/analytics/init.sql` ke `analytics_ts` + tambah `host all all all scram-sha-256` ke `pg_hba.conf` (persist di volume) + `pg_reload_conf()`. **TER-VERIFIKASI:** `/analytics/nodes` & `/analytics/metrics` → 200. |
@@ -440,7 +638,7 @@
 |---|---|---|
 | 1 | ✅ | Menyelaraskan [testing-implementasi-manual.md](file:///home/almuzky/TA/Microservices/docs/testing-implementasi-manual.md) dengan state implementasi terkini di [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) / [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md): Alert, Notification, Audit, dan Export Service dipindah dari tabel "future" §14 ke section mandiri §14a–§14d (sudah diimplementasikan & lulus API test). |
 | 2 | ✅ | Mereset seluruh status checklist manual (`[x]` → `[ ]`) di bagian UI/manual (WS §4, Control §5, Stream §6, ML §7, Monitor §8, Security §9, MQTT/NATS §10, Observability §11, Dashboard §12, §14a–§14d) — agent tidak mencentang checklist manual/UI (milik User), hanya menyimpan catatan backend yang sudah lulus API test. |
-| 3 | ✅ | Memperbaiki anomali dokumen: `system-status` WS (W9) ditandai "belum" → kini GAP-1 tertutup di backend; SEC5/SEC6 tetap `[~]` (Mosquitto/NATS `allow_anonymous` masih true); MSG9/Msg11 diperbarui ke state "sudah di-consume/dipublish"; MSG6 (OTA) tetap `[-]` (Future P4). |
+| 3 | ✅ | Memperbaiki anomali dokumen: `system-status` WS (W9) ditandai "belum" → kini GAP-1 tertutup di backend; SEC5/SEC6 tetap `[~]` (Mosquitto/NATS `allow_anonymous` masih true); MSG9/Msg11 diperbarui ke state "sudah di-consume/dipublish"; MSG6 tetap `[-]` (Future P4). |
 | 4 | ✅ | Memperbaiki referensi rate-limit Kong di [testing-plan-agent.md](file:///home/almuzky/TA/Microservices/docs/testing-plan-agent.md) KONTEKS (global 100/menit → auth 20/menit publik, 60–120/menit route lain, sesuai planning) serta timeline M2 di manual doc. |
 
 **Keputusan Teknis:** Dokumentasi pengujian kini konsisten dengan `planning.md`/`roadmap.md`. Checklist manual/UI tetap `[ ]` (tanpa centang agent) sesuai batasan AGENTS.md Butir 5; catatan "backend sudah lulus API test" disisipkan sebagai konteks agar User tahu service sudah jalan namun tetap harus validasi visual.
@@ -528,14 +726,13 @@
 | 4 | 🔧 | **BUG FIX 1 (Module/Control gagal sambung MQTT — BREAK pipeline):** `.env:50` `MQTT_URL=tcp://192.168.1.103:1884` menunjuk broker LAN eksternal yg tidak ada di sandbox (1884 tertutup) → Module/Control connect gagal, tidak ada discovery/telemetry/command. **Fix:** `.env` `MQTT_URL=tcp://mosquitto:1883` (broker internal compose). **TER-VERIFIKASI:** setelah `docker compose up -d module control` (recreate agar env baru kebaca — `restart` TIDAK membaca `.env` baru), log `[mqtt] connecting to broker tcp://mosquitto:1883 ... connected ... subscribed: smartfarm/#`; qa-sim muncul di discovered + telemetry masuk TSDB. |
 | 5 | 🔧 | **BUG FIX 2 (hardcoded weak default password di firmware):** `firmware/aeroponic-node/src/core/ConfigManager.cpp:86` `Config::ADMIN_PASS = "admin123"` (secret hardcode, melanggar AGENTS.md §5). **Fix:** ganti dengan generate password random via `esp_random()` + log serial saat `config.json` kosong (`ConfigManager.cpp:91`). **TER-VERIFIKASI:** firmware TIDAK di-compile di sandbox (environment: `platformio` 4.3.4 bentrok versi `click` → `AttributeError resultcallback`, unrelated ke perubahan); perubahan lolos review statis mengikuti pola `WebConfigPortal.cpp:116`. |
 | 6 | 📝 | **Open note (Keamanan #1):** broker `infra/mosquitto/config/mosquitto.conf:2` `allow_anonymous true` + `acl.conf` placeholder → koneksi anonim diterima (terbukti client tanpa user/pass connect sukses). Enforcement credential/ACL per-service (`esp32`/`module-svc`/`control-svc`) belum aktif. Bukan bug firmware; perlu `allow_anonymous false` + `password_file` (memengaruhi seluruh stack yg pakai credensial kosong). |
-| 7 | 📝 | **Open note (Keamanan #2):** OTA firmware ADA (`WebConfigPortal.cpp:158` `/api/ota`) tapi HANYA cek `checkAuthToken()` (Bearer portal web), **TIDAK ada verifikasi signature** (ED25519/ECDSA). Rekomendasi: verify signature sebelum `Update.begin`. Di luar scope QA ini. |
-| 8 | ✅ | Cleanup: test node `qa-sim-node-01` di-unpair + delete via API; module `QAFirmwareTest` di-delete; tag-mapping qa-sim dihapus; container `module`/`control`/`mariadb-module`/`mariadb-control`/`timescaledb-module`/`redis-module`/`mosquitto` di-`stop`; script `/tmp/firmware_sim.py` + log dihapus → env steril. |
+| 7 | ✅ | Cleanup: test node `qa-sim-node-01` di-unpair + delete via API; module `QAFirmwareTest` di-delete; tag-mapping qa-sim dihapus; container `module`/`control`/`mariadb-module`/`mariadb-control`/`timescaledb-module`/`redis-module`/`mosquitto` di-`stop`; script `/tmp/firmware_sim.py` + log dihapus → env steril. |
 
 **Keputusan Teknis:** Firmware Aeroponic Node dinyatakan **SELESAI (clean untuk kontrak protokol)** — seluruh checklist fitur §12 lulus & 2 temuan di-fix & terverifikasi:
 1. **[CRITICAL] Module/Control MQTT_URL salah** — `.env` `192.168.1.103:1884`→`mosquitto:1883`. Verifikasi: pipeline discovery→telemetry→command→confirm→pair jalan penuh.
 2. **[SECURITY] Hardcoded `admin123`** — `ConfigManager.cpp` ganti generate random. Verifikasi: review statis + pola `esp_random()` existing.
 
-**Sisa (bukan blocker):** MQTT broker `allow_anonymous` masih true (credential belum di-enforce di broker); OTA belum pakai signature; real ESP32 flash tidak dilakukan (no hardware — divalidasi via simulator).
+**Sisa (bukan blocker):** MQTT broker `allow_anonymous` masih true (credential belum di-enforce di broker); real ESP32 flash tidak dilakukan (no hardware — divalidasi via simulator).
 
 ---
 
@@ -710,7 +907,7 @@
 
 | # | Status | Aktivitas |
 |---|---|---|
-| 1 | ✅ | Direktori proyek `IOT-Modular-Microservice/` dibuat |
+| 1 | ✅ | Direktori proyek `enyx-enterprise/` dibuat |
 | 2 | ✅ | Struktur folder `infra/`, `services/`, `docs/` dibuat via `mkdir -p` |
 | 3 | ✅ | Rencana arsitektur didefinisikan: **Database-per-Service** (17 instance DB terpisah) |
 | 4 | ✅ | `docker-compose.yml` dibuat — fase awal: `mariadb-auth`, `auth`, `nats`, `mosquitto`, `kong` |
@@ -1282,7 +1479,7 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 17 | ✅ | Menghapus consumer JWT `esp32-device` dari `infra/kong/kong.yml` karena ESP32 kini memiliki portal/autentikasi sendiri dan tidak perlu通过 Kong JWT. Menghapus variabel `KONG_JWT_SECRET_ESP32` dari `.env.example`, `.env`, dan `.github/workflows/ci-cd.yml`. |
 | 18 | ✅ | `docker-compose.yml`: Mengganti hardcoded kredensial MQTT menjadi referensi variabel `.env` — Module service pakai `${MQTT_USER}`/`${MQTT_PASS}`, Control service pakai `${CONTROL_MQTT_USER}`/`${CONTROL_MQTT_PASS}`. |
 | 19 | ✅ | `.github/workflows/ci-cd.yml`: Menambahkan fallback default值 untuk setiap GitHub Secret yang digunakan dalam step `Set up Docker Compose Environment`. Jika secret tidak ditemukan di repository, CD akan menggunakan nilai default dari `.env.example` (misal: `secrets.MYSQL_ROOT_PASSWORD || 'app1234'`) agar deployment tidak gagal. |
-| 20 | ✅ | `.github/workflows/ci-cd.yml`: Menyelaraskan semua fallback default值 dengan `.env.example` aktual — `MINIO_SECRET_KEY` diperbaiki ke `minioadmin`, `REDIS_PASSWORD` ke `''`, `GRAFANA_ADMIN_PASSWORD` ke `change-me-strong-password`, menambahkan fallback untuk scoped MinIO keys (stream/ml/ota), serta menghapus variabel CCTV yang tidak terpakai. |
+| 20 | ✅ | `.github/workflows/ci-cd.yml`: Menyelaraskan semua fallback default值 dengan `.env.example` aktual — `MINIO_SECRET_KEY` diperbaiki ke `minioadmin`, `REDIS_PASSWORD` ke `''`, `GRAFANA_ADMIN_PASSWORD` ke `change-me-strong-password`, menambahkan fallback untuk scoped MinIO keys (stream/ml), serta menghapus variabel CCTV yang tidak terpakai. |
 
 **Keputusan Teknis:** Vite dev server dan dashboard React kini otomatis mendeteksi alamat IP / hostname pengakses dan menggunakan versioning `/v1` untuk semua request. Grafana (port 3000) dan Kong (port 8000) kini sepenuhnya responsif terhadap akses IP Publik, IP LAN, maupun domain eksternal. Error permission log aktif Prometheus di pipeline CD self-hosted telah diperbaiki total dengan penyetelan kepemilikan volume dan hak user root container. Consumer JWT ESP32 dihapus dari Kong karena perangkat kini menggunakan portal/autentikasi mandiri. Kredensial MQTT sekarang diatur via `.env` untuk memudahkan rotasi tanpa mengubah compose. CD workflow kini tahan terhadap missing secrets dengan fallback ke development defaults yang diselaraskan dengan `.env.example`.
 
@@ -1302,3 +1499,36 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 7 | ✅ | Verifikasi API succesfully mengirim Telegram ke chat `1020639196` dan Email ke `albalislavio1@gmail.com` via Brevo SMTP relay — logs menunjukkan status `sent` (1 attempt) untuk kedua channel. |
 
 **Keputusan Teknis:** Email sebelumnya gagal secara berulang (`smtp auth failed` → `smtp tls upgrade failed`) karena 2 akar masalah: (1) env SMTP/Telegram tidak diinjeksi ke container notification service, sehingga service berjalan tanpa kredensial eksternal; (2) `smtp.PlainAuth` dipanggil tanpa `StartTLS` dulu, yang menyebabkan auth ditolak oleh server Brevo. Kedua akar masalah diperbaiki secara lokal dan verified end-to-end via `POST /v1/notifications/test`.
+
+---
+
+## 2026-07-23 — Dashboard Export UI (Data Export Page)
+
+### Penambahan Halaman Data Export di Dashboard
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | Membuat `dashboard/src/api/export.js` — API client untuk seluruh endpoint `/export/v1/*` (telemetry, aggregate, nodes, alerts, commands, audit, discover) dengan helper `unwrap` + `qs` konsisten dengan API client lain. |
+| 2 | ✅ | Membuat `dashboard/src/components/Dashboard/Pages/Export.jsx` — halaman Data Export dengan tab navigasi (Telemetry, Aggregate, Nodes, Alerts, Commands, Audit, Discover), filter per-tab, format selector (CSV/JSON/Parquet/Excel), preview tabel (maks 20 baris), paginasi, dan download via Blob API. |
+| 3 | ✅ | Menambahkan item `EXPORT` ke sidebar utama dashboard (`Sidebar.jsx`) dengan icon `Download` + route `export` di `DashboardLayout.jsx`. |
+| 4 | ✅ | Verifikasi build: `npm run build` (vite) + ESLint lolos tanpa error. Role-based access: semua role ter-autentikasi dapat mengakses; backend tetap enforce JWT + RBAC. |
+
+**Keputusan Teknis:** Export UI diimplementasikan sebagai halaman mandiri (bukan modal) karena jumlah filter + format + tab cukup kompleks. Tab Discover memanggil `/export/v1/discover` untuk menampilkan schema tables & columns tanpa download. Preview tabel dibatasi 20 baris untuk performa; paginasi mengikuti offset/limit API. Download menggunakan browser Blob API agar format CSV/JSON/Parquet/Excel ditangani konsisten tanpa backend redirect.
+
+---
+
+## 2026-07-24 — Spray Automation Service Planning & Integration Guide
+
+### Perencanaan Service Baru: Spray Automation Service
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Analisis Kebutuhan:** Mendefinisikan arsitektur service baru untuk otomatisasi sistem penyemprotan aeroponik berbasis AI. Input: data deteksi ML (panjang akar, kondisi kentang/umbi). Output: penjadwalan misting dinamis (interval & durasi). |
+| 2 | ✅ | **Dokumen Planning:** Membuat [spray-automation.md](file:///home/almuzky/TA/Microservices/docs/spray-automation.md) — arsitektur lengkap, data flow, database schema, API endpoints, AI decision logic, environment variables, dan implementation checklist (estimasi 7-10 hari). |
+| 3 | ✅ | **Dokumen Integration Guide:** Membuat [spray.md](file:///home/almuzky/TA/Microservices/docs/integration-guides/spray.md) — kontrak REST API, NATS subjects, integrasi dengan Module/Control/Stream/ML Service, curl examples, error reference, dan resilience notes. |
+| 4 | ✅ | **Update Roadmap:** Menambahkan Fase 13 (Spray Automation Service) ke [roadmap.md](file:///home/almuzky/TA/Microservices/docs/roadmap.md) dengan status ⬜ Rencana, prioritas P2, estimasi 7-10 hari. |
+| 5 | ✅ | **Update Planning:** Menambahkan `mariadb-spray` ke tabel Database-per-Service di [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) (DB4 di `redis-shared`), menambahkan fase 13 ke tabel Fase Implementasi, dan menambahkan NATS subjects baru (`spray.*`). |
+| 6 | ✅ | **Update Redis Consolidation Note:** Memperbarui catatan konsolidasi Redis (ADR-004) di [planning.md](file:///home/almuzky/TA/Microservices/docs/planning.md) untuk menyertakan DB4 (`spray`). |
+
+**Keputusan Teknis:** Service baru ini memenuhi prinsip Database-per-Service dengan database MariaDB mandiri (`mariadb-spray`) dan Redis logical DB4. Mengadopsi polaTransactional Outbox (ADR-007) untuk event publishing. Integrasi dengan service yang sudah ada (Module, Control, Stream, ML) dilakukan via NATS (event-driven) dan REST (command/query) tanpa memodifikasi service yang sudah berjalan. AI decision engine menggunakan skor berbobot (root length 60% + potato condition 40%) untuk menentukan penyesuaian misting.
+
+---

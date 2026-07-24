@@ -57,13 +57,16 @@ func badRequest(w http.ResponseWriter, msg string) {
 	errorResponse(w, http.StatusBadRequest, "BAD_REQUEST", msg)
 }
 
-// parseTime accepts RFC3339 or unix-seconds strings.
+// parseTime accepts RFC3339, YYYY-MM-DD date strings, or unix-seconds strings.
 func parseTime(v string) (time.Time, bool) {
 	if v == "" {
 		return time.Time{}, false
 	}
 	if t, err := time.Parse(time.RFC3339, v); err == nil {
 		return t, true
+	}
+	if t, err := time.Parse("2006-01-02", v); err == nil {
+		return t.UTC(), true
 	}
 	if sec, err := strconv.ParseInt(v, 10, 64); err == nil {
 		return time.Unix(sec, 0).UTC(), true
@@ -92,17 +95,24 @@ func (h *Handler) TelemetryHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodeIDs := splitCSV(q.Get("node_id"))
 	metrics := splitCSV(q.Get("metric"))
-	if len(nodeIDs) == 0 || len(metrics) == 0 {
-		badRequest(w, "node_id and metric are required")
+	if len(nodeIDs) == 0 {
+		badRequest(w, "node_id is required")
 		return
+	}
+	if len(metrics) == 0 {
+		metrics = []string{"*"}
 	}
 
 	from, to := service.DefaultWindow()
 	if v := q.Get("to"); v != "" {
 		if t, ok := parseTime(v); ok {
-			to = t
+			if len(v) == 10 { // YYYY-MM-DD format: set to end of day
+				to = t.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+			} else {
+				to = t
+			}
 		} else {
-			badRequest(w, "invalid 'to' (use RFC3339 or unix seconds)")
+			badRequest(w, "invalid 'to' (use RFC3339, YYYY-MM-DD, or unix seconds)")
 			return
 		}
 	}
@@ -162,6 +172,17 @@ func (h *Handler) TelemetryHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// If format=json is explicitly requested (e.g. for UI preview), return JSON envelope
+	if strings.ToLower(q.Get("format")) == "json" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"rows":        page.Rows,
+			"total":       len(page.Rows),
+			"has_more":    page.HasMore,
+			"next_cursor": page.NextCursor,
+		})
+		return
+	}
+
 	// Expose the next cursor as a response header so clients can follow pages
 	// directly from the file download without parsing the CSV body.
 	if page.HasMore && page.NextCursor != "" {
@@ -176,22 +197,55 @@ func (h *Handler) TelemetryHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	cw := csv.NewWriter(w)
-	if err := cw.Write([]string{"time", "node_id", "module_id", "metric", "value"}); err != nil {
+
+	// Pivot telemetry rows into wide format (columns per metric) for clean Excel tabular view
+	type timeGroupKey struct {
+		time     time.Time
+		nodeID   string
+		moduleID string
+	}
+
+	var metricOrder []string
+	metricSet := make(map[string]bool)
+	groupKeys := []timeGroupKey{}
+	groupMap := make(map[timeGroupKey]map[string]float64)
+
+	for _, row := range page.Rows {
+		if !metricSet[row.Metric] {
+			metricSet[row.Metric] = true
+			metricOrder = append(metricOrder, row.Metric)
+		}
+
+		modID := ""
+		if row.ModuleID != nil {
+			modID = *row.ModuleID
+		}
+		k := timeGroupKey{time: row.Time.UTC(), nodeID: row.NodeID, moduleID: modID}
+		if _, exists := groupMap[k]; !exists {
+			groupMap[k] = make(map[string]float64)
+			groupKeys = append(groupKeys, k)
+		}
+		groupMap[k][row.Metric] = row.Value
+	}
+
+	header := append([]string{"time", "node_id", "module_id"}, metricOrder...)
+	if err := cw.Write(header); err != nil {
 		log.Printf("[handler] csv header write failed: %v", err)
 		return
 	}
-	for _, row := range page.Rows {
-		moduleID := ""
-		if row.ModuleID != nil {
-			moduleID = *row.ModuleID
+
+	for _, k := range groupKeys {
+		metricVals := groupMap[k]
+		record := make([]string, 0, len(header))
+		record = append(record, k.time.Format(time.RFC3339), k.nodeID, k.moduleID)
+		for _, m := range metricOrder {
+			if val, ok := metricVals[m]; ok {
+				record = append(record, strconv.FormatFloat(val, 'f', -1, 64))
+			} else {
+				record = append(record, "")
+			}
 		}
-		if err := cw.Write([]string{
-			row.Time.UTC().Format(time.RFC3339),
-			row.NodeID,
-			moduleID,
-			row.Metric,
-			strconv.FormatFloat(row.Value, 'f', -1, 64),
-		}); err != nil {
+		if err := cw.Write(record); err != nil {
 			log.Printf("[handler] csv row write failed: %v", err)
 			return
 		}
@@ -209,17 +263,24 @@ func (h *Handler) MetadataHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodeIDs := splitCSV(q.Get("node_id"))
 	metrics := splitCSV(q.Get("metric"))
-	if len(nodeIDs) == 0 || len(metrics) == 0 {
-		badRequest(w, "node_id and metric are required")
+	if len(nodeIDs) == 0 {
+		badRequest(w, "node_id is required")
 		return
+	}
+	if len(metrics) == 0 {
+		metrics = []string{"*"}
 	}
 
 	from, to := service.DefaultWindow()
 	if v := q.Get("to"); v != "" {
 		if t, ok := parseTime(v); ok {
-			to = t
+			if len(v) == 10 { // YYYY-MM-DD format: set to end of day
+				to = t.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+			} else {
+				to = t
+			}
 		} else {
-			badRequest(w, "invalid 'to' (use RFC3339 or unix seconds)")
+			badRequest(w, "invalid 'to' (use RFC3339, YYYY-MM-DD, or unix seconds)")
 			return
 		}
 	}
@@ -335,7 +396,14 @@ func (h *Handler) OpenAPIHandler(w http.ResponseWriter, r *http.Request) {
 // unauthenticated; /health (registered in main.go) stays public for Kong.
 func (h *Handler) Routes(r chi.Router, authMw, rbacMw func(http.Handler) http.Handler) {
 	r.With(authMw, rbacMw).Get("/export/v1/telemetry", h.TelemetryHandler)
+	r.With(authMw, rbacMw).Get("/export/telemetry", h.TelemetryHandler)
+
 	r.With(authMw, rbacMw).Get("/export/v1/nodes", h.NodesHandler)
+	r.With(authMw, rbacMw).Get("/export/nodes", h.NodesHandler)
+
 	r.With(authMw, rbacMw).Get("/export/v1/meta", h.MetadataHandler)
+	r.With(authMw, rbacMw).Get("/export/meta", h.MetadataHandler)
+
 	r.With(authMw, rbacMw).Get("/export/v1/openapi", h.OpenAPIHandler)
+	r.With(authMw, rbacMw).Get("/export/openapi", h.OpenAPIHandler)
 }

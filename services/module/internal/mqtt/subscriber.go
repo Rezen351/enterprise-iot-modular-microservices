@@ -3,6 +3,7 @@ package mqtt
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -31,9 +32,15 @@ type Config struct {
 
 // New connects to the broker and returns a Subscriber (not yet subscribed).
 func New(cfg Config, svc *service.ModuleService) (*Subscriber, error) {
+	clientID := cfg.ClientID
+	if clientID == "" {
+		clientID = "module-svc"
+	}
+	clientID = fmt.Sprintf("%s-%d", clientID, time.Now().UnixNano()%1000000)
+
 	opts := mqtt.NewClientOptions().
 		AddBroker(cfg.BrokerURL).
-		SetClientID(cfg.ClientID).
+		SetClientID(clientID).
 		SetAutoReconnect(true).
 		SetConnectRetry(true).
 		SetConnectRetryInterval(5 * time.Second).

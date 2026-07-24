@@ -47,9 +47,15 @@ type confirmPayload struct {
 func New(cfg Config, onConfirm ConfirmHandler, onTelemetry TelemetryHandler) (*Client, error) {
 	c := &Client{topicPrefix: cfg.TopicPrefix, onConfirm: onConfirm, onTelemetry: onTelemetry}
 
+	clientID := cfg.ClientID
+	if clientID == "" {
+		clientID = "control-svc"
+	}
+	clientID = fmt.Sprintf("%s-%d", clientID, time.Now().UnixNano()%1000000)
+
 	opts := paho.NewClientOptions().
 		AddBroker(cfg.BrokerURL).
-		SetClientID(cfg.ClientID).
+		SetClientID(clientID).
 		SetAutoReconnect(true).
 		SetConnectRetry(true).
 		SetConnectRetryInterval(5 * time.Second).

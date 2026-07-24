@@ -30,3 +30,47 @@ Teks itu hanya muncul saat WebSocket **sudah `open`** tapi `messages` kosong (da
 **Solusi:**
 - **Quick fix:** `docker restart microservices-module-1` → koneksi Core NATS dibangun ulang saat startup, live monitor langsung jalan.
 - **Permanent fix (SELESAI 2026-07-14):** ditambahkan `nats.DisconnectErrHandler` / `nats.ReconnectHandler` / `nats.ClosedHandler` / `nats.ErrorHandler` + log di `services/module/main.go` dan `services/wsgateway/main.go`, serta health-check periodik (30s) yang men-log WARN bila `!natsConn.IsConnected()`. Selain itu `publishTelemetry` (`services/module/internal/service/service.go:575`) kini men-log error `telemetry.ingest` (tidak lagi `_ =` diam-diam). WS-Gateway (`NodeLive`) juga mereplay payload telemetry terakhir dari cache `mqtt.>` saat client connect, sehingga tidak "loading" bila device report-nya jarang.
+
+---
+
+## ⚠️ Dashboard Error 404 / 401 / 502 / 503 saat akses API
+
+**Gejala:** Dashboard di `:5173/v1/...` menampilkan:
+- `404 page not found`
+- `401 Unauthorized` berulang kali
+- `502 Bad Gateway`
+- `503 Service Temporarily Unavailable`
+
+### Diagnosa cepat
+
+| Error | Arsitektur penyebab | Aksi | Kenapa |
+|---|---|---|---|
+| `404 page not found` | Kong belum running / belum healthy | `docker compose up -d kong` lalu tunggu healthy | Nginx dashboard mem-proxy `/v1/...` ke `kong:8000`. Jika Kong tidak ada, nginx balas 404. |
+| `401 Unauthorized` berulang | Token kadaluarsa/invalid dan refresh gagal | Clear `sessionStorage` + refresh halaman, atau login ulang | Client coba refresh token berkali-kali; kalau refresh juga 401, UI terjebak loop. |
+| `502 Bad Gateway` | Kong running tapi upstream tidak reachable | `docker compose restart kong` atau cek IP `kong` | Nginx sudah resolve `kong:8000` tapi Kong belum siap/listening. |
+| `503 Service Temporarily Unavailable` | Kong healthy tapi hasilkan `failure to get a peer from the ring-balancer` | `docker compose restart kong` | Kong menahan **stale DNS cache** (Lua resolver cache); restart menghapus cache lalu upstream bisa ditemukan. |
+
+### Kapan harus restart dashboard
+
+- **Tidak perlu** saat Kong hanya di-start (`up -d kong`) atau di-restart.
+- **Perlu** saat Kong di-recreate (`--force-recreate kong`).
+- **Alasan:** `nginx.conf` pakai `proxy_pass http://kong:8000`. Nginx resolve DNS `kong` saat startup dan cache IP-nya. Kalau Kong recreate dapat IP baru, nginx bisa masih kirim ke IP lama sampai resolve ulang.
+
+### Cek apakah IP Kong berubah
+
+```bash
+docker inspect microservices-kong-1 --format '{{range $k,$v := .NetworkSettings.Networks}}{{$v.IPAddress}}{{end}}'
+```
+
+Jika ragu apakah dashboard sudah melihat IP yang sama (saat dashboard running):
+
+```bash
+docker compose exec dashboard sh -c 'getent hosts kong'
+```
+
+Kalau output beda dari IP Kong saat ini → `docker compose restart dashboard` agar nginx resolve IP baru segera.
+
+### Catatan teknis
+
+- **Nginx + DNS cache:** Docker embedded DNS TTL untuk user-defined network biasanya ~60 detik. Start Kong biasanya aman tanpa restart dashboard.
+- **Kong + Lua DNS cache:** Kong bisa cache resolver hasil; kalau upstream container baru dan 503 masih muncul, `restart kong` adalah langkah paling cepat.

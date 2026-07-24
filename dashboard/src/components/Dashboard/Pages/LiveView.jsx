@@ -111,10 +111,15 @@ function StatusPill({ status, enabled }) {
 // ─── Stream card ───────────────────────────────────────────────────────────────
 function StreamCard({ stream, onEdit, onDelete }) {
   const [busy, setBusy] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordingStart, setRecordingStart] = useState(null);
+  const [recording, setRecording] = useState(stream.recording || false);
+  const [recordingStart, setRecordingStart] = useState(stream.recording_start || null);
   const [elapsed, setElapsed] = useState(0);
   const [flash, setFlash] = useState(null); // { type: 'ok'|'err', msg }
+
+  useEffect(() => {
+    setRecording(stream.recording || false);
+    setRecordingStart(stream.recording_start || null);
+  }, [stream.recording, stream.recording_start]);
 
   // Live ticking elapsed-time counter while a recording is active.
   useEffect(() => {

@@ -56,6 +56,8 @@ import Snapshot from './Pages/Snapshot';
 import Monitor from './Pages/Monitor';
 import Audit from './Pages/Audit';
 import Alerts from './Pages/Alerts';
+import Export from './Pages/Export';
+import Webhook from './Pages/Webhook';
 import NotificationBell from './NotificationBell';
 
 function DashboardContent({ onLogout }) {
@@ -116,6 +118,10 @@ function DashboardContent({ onLogout }) {
         return <Audit />;
       case 'alerts':
         return <Alerts />;
+      case 'export':
+        return <Export />;
+      case 'webhook':
+        return <Webhook />;
       case 'users':
         return isAdmin ? <UserManagement /> : <Profile onLogout={onLogout} />;
       default:

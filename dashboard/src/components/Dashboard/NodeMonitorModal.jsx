@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, X, Radio, Trash2, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
-import { API_BASE, getToken } from '../../api/client';
+import { API_BASE, getToken, getWsUrl } from '../../api/client';
 
 function safeJson(raw) {
   try {
@@ -56,7 +56,7 @@ function NodeMonitorModal({ node, onClose }) {
 
   useEffect(() => {
     let cancelled = false;
-    const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`;
+    const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(nodeId)}/live?token=${encodeURIComponent(getToken() || '')}`);
     let ws;
     try {
       ws = new WebSocket(wsUrl);

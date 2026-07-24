@@ -30,8 +30,8 @@ type Config struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		Port: getEnv("PORT", "8080"),
-		TimescaleDSN: getEnv("TIMESCALE_DSN",
-			"postgres://app:app1234@timescaledb-module:5432/module_ts?sslmode=disable"),
+		TimescaleDSN: getEnv("TIMESCALE_DSN", getEnv("TIMESCALEDB_MODULE_DSN",
+			"postgres://app:app1234@timescaledb-module:5432/module_ts?sslmode=disable")),
 		RedisAddr:     getEnv("REDIS_ADDR", "redis-shared:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       atoiDefault(getEnv("REDIS_DB", "3"), 3),

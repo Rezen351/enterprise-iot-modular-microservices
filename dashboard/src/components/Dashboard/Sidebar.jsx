@@ -13,7 +13,9 @@ import {
   Camera,
   Activity,
   ScrollText,
-  ShieldAlert
+  ShieldAlert,
+  Download,
+  Globe
 } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen, setMobileOpen, hidden = false, me = null }) {
@@ -27,6 +29,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
     { id: 'live', label: 'LIVE', icon: Video },
     { id: 'snapshot', label: 'GALLERY', icon: Camera },
     { id: 'alerts', label: 'ALERTS', icon: ShieldAlert },
+    { id: 'export', label: 'EXPORT', icon: Download },
   ];
 
   // Admin-only tools grouped under a single collapsible "ADMINISTRATOR" tree.
@@ -37,6 +40,7 @@ function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, mobileOpen,
     children: [
       { id: 'module', label: 'MODULE', icon: Server },
       { id: 'audit', label: 'AUDIT', icon: ScrollText },
+      { id: 'webhook', label: 'WEBHOOK', icon: Globe },
       { id: 'users', label: 'ACCOUNT', icon: User },
     ],
   };

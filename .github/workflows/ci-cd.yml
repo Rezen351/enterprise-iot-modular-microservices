@@ -241,12 +241,10 @@ jobs:
           echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY || 'minioadmin' }}" >> .env
           echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY || 'minioadmin' }}" >> .env
           echo "MINIO_STREAM_ACCESS_KEY=${{ secrets.MINIO_STREAM_ACCESS_KEY || 'ZGDJP7Verr817O3dwf8y' }}" >> .env
-          echo "MINIO_STREAM_SECRET_KEY=${{ secrets.MINIO_STREAM_SECRET_KEY || '29B1XkbNURJVDKLourhEQlked9Qdl9Rmoo5r5B62' }}" >> .env
-          echo "MINIO_ML_ACCESS_KEY=${{ secrets.MINIO_ML_ACCESS_KEY || 'fXaqHEsNJOFfQQCkE5Sc' }}" >> .env
-          echo "MINIO_ML_SECRET_KEY=${{ secrets.MINIO_ML_SECRET_KEY || 'zpHJI7J0ojPoao1Kc2ZSpKzcpHI3zdn5e7bXBBRv' }}" >> .env
-          echo "MINIO_OTA_ACCESS_KEY=${{ secrets.MINIO_OTA_ACCESS_KEY || 'obakBr4hHdWJtL2iWwgA' }}" >> .env
-          echo "MINIO_OTA_SECRET_KEY=${{ secrets.MINIO_OTA_SECRET_KEY || 'dwvml0vQYMdLw3dFWKPGnMQ6cNXNmJTgbiC1mVji' }}" >> .env
-          echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD || 'admin1234' }}" >> .env
+           echo "MINIO_STREAM_SECRET_KEY=${{ secrets.MINIO_STREAM_SECRET_KEY || '29B1XkbNURJVDKLourhEQlked9Qdl9Rmoo5r5B62' }}" >> .env
+           echo "MINIO_ML_ACCESS_KEY=${{ secrets.MINIO_ML_ACCESS_KEY || 'fXaqHEsNJOFfQQCkE5Sc' }}" >> .env
+           echo "MINIO_ML_SECRET_KEY=${{ secrets.MINIO_ML_SECRET_KEY || 'zpHJI7J0ojPoao1Kc2ZSpKzcpHI3zdn5e7bXBBRv' }}" >> .env
+           echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD || 'admin1234' }}" >> .env
           echo "KONG_JWT_SECRET_FRONTEND=${{ secrets.KONG_JWT_SECRET_FRONTEND || 'changeme-frontend-secret' }}" >> .env
           echo "MODULE_NATS_PASSWORD=${{ secrets.MODULE_NATS_PASSWORD || 'moduleNatsPass!' }}" >> .env
           echo "ALERT_NATS_PASSWORD=${{ secrets.ALERT_NATS_PASSWORD || 'alertNatsPass!' }}" >> .env

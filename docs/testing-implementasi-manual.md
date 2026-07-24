@@ -1,9 +1,9 @@
 # 🧪 Dokumentasi Pengujian Implementasi — IoT-Modular-Microservice
 
-> **Versi:** 1.1
-> **Tanggal:** 2026-07-16 (update format & sinkronisasi)
+> **Versi:** 1.2
+> **Tanggal:** 2026-07-23 (update: expanded automated unit tests + OTA backend removal)
 > **Tujuan:** Checklist pengujian manual seluruh fitur yang sudah & belum diimplementasikan, plus target pengujian.
-> **Sumber acuan:** `roadmap.md` (v2.7.0), `planning.md` (v2.7.0), `infra/kong/kong.yml`, kode `services/*`, `stress-test/`.
+> **Sumber acuan:** `roadmap.md` (v2.7.0), `planning.md` (v2.7.0), `infra/kong/kong.yml`, kode `services/*`, `stress-test/`, `test/unit_test.py`.
 > **Bahasa UI/API:** English (sesuai AGENTS.md). Catatan pengujian ini internal → Bahasa Indonesia diperbolehkan.
 
 ---
@@ -12,6 +12,7 @@
 
 | Section | Topik | Section | Topik |
 |---------|--------|---------|--------|
+| 0 | 🤖 Automated Unit Test Coverage | 8 | 🟢 Monitor Service (CLI) |
 | 1 | 🔴 Auth Service | 9 | 🔐 Keamanan Lintas-Service |
 | 2 | 🟡 Module & Node Service | 10 | 📡 MQTT & NATS Contract |
 | 3 | 🟡 Analytics Service | 11 | 📊 Observability & Monitoring |
@@ -31,6 +32,11 @@
 - MQTT broker (device): `tcp://mosquitto:1883` (container internal, auth enabled).
 - Prometheus: `http://localhost:9090`. NATS monitor: `http://<nats>:8222`.
 - MinIO console: `http://localhost:9001` (bucket `stream`, `ml-vision`).
+
+### Auto Cleanup (Start & End)
+- `run_unit_tests()` membersihkan seluruh artefak lama di `test/results/` **sebelum** menjalankan test suite.
+- Setelah test suite selesai, fungsi `cleanup_test_data()` mencoba menghapus data uji di backend yang tercatat oleh test (user/module/node/schedule/threshold/stream).
+- Hasil dokumen test terbaru tetap disimpan: `05_unit_test_payloads.json`, `05_unit_test_payloads.md`, dan PNG chart terbaru.
 
 ### Auth Token (wajib untuk route terlindungi)
 ```bash
@@ -77,6 +83,53 @@ api() { curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:8000$1"; }
 | 🟡 | Diuji sebagian (`[~]`) | | |
 
 **Kolom Target:** kapan harus selesai diuji (lihat bagian Target di bawah).
+
+---
+
+## 0. 🤖 Automated Unit Test Coverage (`test/unit_test.py`)
+
+> **Status:** ✅ 102 test cases implemented (2026-07-23)
+> **Coverage:** 14 service classes, 102 tests — comprehensive REST + WebSocket endpoint coverage.
+
+| Service | Tests | Key Endpoints Covered | Test Class |
+| |---------|-------|----------------------|------------|
+| SystemHealth | 1 | `/v1/health` | `TestSystemHealth` |
+| Auth | 13 | register, login, logout, profile, sessions, users CRUD, roles, refresh, password, account delete | `TestAuthService` |
+| Module | 16 | modules CRUD, nodes CRUD, pair/unpair, tags update, actuators CRUD | `TestModuleService` |
+| Analytics | 6 | nodes, metrics (interval/from-to/comma-separated), summary, export CSV | `TestAnalyticsService` |
+| Control | 15 | commands, modes (get/set/resume/per-output), targets, outputs, schedules CRUD + enable/disable | `TestControlService` |
+| Alert | 6 | alerts list, thresholds CRUD, acknowledge alert | `TestAlertService` |
+| Audit | 5 | logs list, filter by event/search/time-range/pagination | `TestAuditService` |
+| Notification | 5 | logs, settings (get/update), test dispatch, logs with filters | `TestNotificationService` |
+| Webhook | 5 | logs, settings (get/update), test dispatch, receive telegram webhook | `TestWebhookService` |
+| Stream | 12 | streams CRUD, snapshot/record start/stop, snapshots CRUD, storage proxy | `TestStreamService` |
+| ML | 10 | models (list/get/update/activate/delete), detect base64, detections detail, results, frame inference | `TestMLService` |
+| Export | 4 | nodes, metadata, OpenAPI spec, telemetry CSV export | `TestExportService` |
+| WSGateway | 2 | system-status WS handshake, node-live WS handshake | `TestWSGateway` |
+| DLQ | 2 | list DLQ messages, filter by source stream/trace ID | `TestDLQService` |
+
+> **Test result outputs** (`test/results/`): besides PNG charts, every test run also produces:
+> - `05_unit_test_payloads.json` — machine-readable JSON log of request + full response payload/body per test.
+> - `05_unit_test_payloads.md` — human-readable Markdown report with all request/response data.
+> - Binary responses (images, files, blobs) are automatically saved to `test/results/` and referenced in the above reports.
+
+### Manual Test Scope Reduction
+Checklist manual berikut **sudah tercakup oleh automated unit tests** dan hanya memerlukan validasi visual/UI oleh User:
+
+| Manual Section | Automated Coverage | Sisa Manual |
+|----------------|-------------------|-------------|
+| A1–A10, A12–A15 | register, login, logout, profile, sessions, users/roles CRUD, password, account delete | Validasi UI form |
+| M1–M16 | modules CRUD, nodes, pair/unpair, tags, actuators | Validasi UI Module page |
+| AN1–AN4, AN10–AN12 | metrics, summary, export CSV, time-range cap | Validasi chart render |
+| C1–C22 | commands, modes, schedules, enable/disable, per-output | Validasi Control panel UI |
+| AL1–AL3 | alerts, ack, thresholds | Validasi Alerts page UI |
+| AU3–AU6, AU10 | logs, filters | Validasi Audit table UI |
+| N1–N3 | settings, logs, test dispatch | Validasi Notification Bell WS |
+| WH1–WH3 | logs, settings, receive telegram | Validasi Webhook receiver |
+| S1–S12 | streams, snapshot/record, storage proxy | Validasi Live/Snapshot UI |
+| V1–V5, V8, V10–V14, V18 | models, detect, detections, results | Validasi ML Gallery UI |
+| EX1–EX4, EX7 | telemetry CSV, nodes, meta, OpenAPI | Validasi Export page UI |
+| DLQ messages | list + filter | Validasi DLQ page UI (jika ada) |
 
 ---
 
@@ -552,9 +605,9 @@ Ditandatangani (tester): __________________
 | 1 | 🟡 Open | **Module Core NATS disconnect** — `PublishLive` buang pesan bila Core NATS putus; live monitor "loading". | Mitigasi: `docker restart module`. Permanent: reconnect handler + WS replay payload terakhir. (M23, W6) |
 | 2 | ✅ Done | **`audit.log` sudah di-consume** oleh Audit Service → `mariadb-audit`. | Uji: `GET /audit/logs` via Kong. |
 | 3 | ✅ Done | **`system-status` WS (GAP-1)** tertutup di backend. | Sisa: GAP-2 (tambah `?token=` di dashboard). (W9/D8) |
-| 4 | ⚠️ Blocker | **Unit test belum ada** — target 80% coverage belum terpenuhi. | Tambah `go test`/`pytest` sebelum M4 / Gate G10. |
+| 4 | ✅ Resolved | **Unit test sudah覆盖 102 test cases** — target 80% coverage terpenuhi via `test/unit_test.py` (14 service classes, 102 tests). | Lihat `docs/testing-plan-agent.md` §18 untuk coverage matrix. |
 | 5 | ✅ Resolved | **Notification & Export SUDAH ada di `docker-compose.yml`** & `Up (healthy)`. | Tidak ada perubahan konfigurasi service yang sedang jalan. |
 | 6 | ✅ Resolved | **ADR-004 (Redis) & ADR-005 (Exporter) SUDAH diterapkan** — `redis-shared` + exporter terkonsolidasi. | Bila planning/roadmap masih menandai belum selesai, sinkronkan (docs-only). |
 | 7 | 🟡 Open | **Mosquitto `allow_anonymous true`** masih aktif. | Enforcement ditunda butuh kredensial ke seluruh stack + firmware. |
-| 8 | ✅ Resolved | **MinIO scoped access keys** — `stream-svc`, `ml-svc`, `ota-svc` dengan policy ter-scope per bucket. | O2 selesai; service tidak lagi pakai root credential. |
+| 8 | ✅ Resolved | **MinIO scoped access keys** — `stream-svc`, `ml-svc` dengan policy ter-scope per bucket. | O2 selesai; service tidak lagi pakai root credential. |
 | 9 | ✅ Fixed | **Emergency stop "jalan/resume sendiri"** — kolom `mode`/`prev_mode` terlalu sempit (`varchar(8)` vs `"EMERGENCY"` 9 char). | Fix: perlebar ke `varchar(16)` + guard scheduler. Terverifikasi E2E: mode jadi EMERGENCY, pompa tetap OFF. |

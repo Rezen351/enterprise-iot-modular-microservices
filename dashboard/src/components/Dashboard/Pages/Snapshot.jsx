@@ -127,7 +127,7 @@ function DetectionSummary({ item }) {
   );
 }
 
-// ─── ml-result (external cctv-capture cron) helpers ──────────────────────────
+// ─── mlbucket (external cctv-capture cron) helpers ──────────────────────────
 function parseKey(key) {
   const parts = (key || '').split('/');
   const stream = parts[1] || 'unknown';
@@ -141,7 +141,7 @@ function resultJsonUrl(frameUrl) {
 function annotatedUrl(frameUrl) {
   return withToken(frameUrl.replace('/frames/', '/annotated/'));
 }
-// Normalize an ml-result object into the same shape used by the gallery grid.
+// Normalize an ml object into the same shape used by the gallery grid.
 function normalizeCapture(raw) {
   const { stream, stem } = parseKey(raw.key);
   return {
@@ -158,18 +158,15 @@ function normalizeCapture(raw) {
   };
 }
 
-function absUrl(u) {
-  if (!u) return '';
-  return u.startsWith('http') ? u : `${window.location.origin}${u}`;
-}
 function triggerDownload(u, name) {
   const a = document.createElement('a');
-  a.href = absUrl(u);
+  a.href = withToken(u);
   a.download = name || '';
   document.body.appendChild(a);
   a.click();
   a.remove();
 }
+
 
 export default function Snapshot() {
   const { selectedModule } = useModule();
@@ -179,7 +176,7 @@ export default function Snapshot() {
   const [filter, setFilter] = useState('snapshot'); // 'snapshot' | 'recording' | 'ai'
   const [busyId, setBusyId] = useState(null);
   const [preview, setPreview] = useState(null); // lightbox item
-  const [captureDetail, setCaptureDetail] = useState(null); // ml-result result JSON
+  const [captureDetail, setCaptureDetail] = useState(null); // mlbucket result JSON
 
   // Local search + filter controls
   const [query, setQuery] = useState('');
@@ -230,23 +227,28 @@ export default function Snapshot() {
     setError('');
     try {
       if (filter === 'ai') {
-        // AI Detection: every ML result (cron routine captures + live "Capture
-        // Detect AI" captures) lives in the shared ml-result bucket. Show both
-        // the raw frames and the annotated (boxed) images together.
-        const framesRes = await mlApi.listResults('frames').catch(() => null);
-        const annotatedRes = await mlApi.listResults('annotated').catch(() => null);
+        // AI Detection: only show results for the selected module.
+        // If no module is selected, the gallery stays empty so the user
+        // cannot see detection results from unrelated modules.
+        if (!selectedModule) {
+          setItems([]);
+          return;
+        }
+        const data = await streamApi.list({ module_id: selectedModule.id }).catch(() => null);
+        const names = new Set((data?.streams || []).map((s) => s.name));
+        if (!names.size) {
+          setItems([]);
+          return;
+        }
+        const [framesRes, annotatedRes] = await Promise.all([
+          mlApi.listResults('frames').catch(() => null),
+          mlApi.listResults('annotated').catch(() => null),
+        ]);
         const frames = framesRes?.items || (Array.isArray(framesRes) ? framesRes : []);
         const annotated = annotatedRes?.items || (Array.isArray(annotatedRes) ? annotatedRes : []);
         const a = frames.map(normalizeCapture);
         const b = annotated.map(normalizeCapture);
-        let list = [...a, ...b];
-        // Scope to the selected module: keep only frames whose stream belongs to
-        // a stream bound to the active module.
-        if (selectedModule) {
-          const data = await streamApi.list({ module_id: selectedModule.id }).catch(() => null);
-          const names = new Set((data?.streams || []).map((s) => s.name));
-          list = list.filter((it) => names.has(it.stream_name));
-        }
+        const list = [...a, ...b].filter((it) => names.has(it.stream_name));
         setItems(list);
       } else if (filter === 'snapshot' || filter === 'recording') {
         const data = await streamApi.listSnapshots({ kind: filter, module_id: selectedModule?.id || '' });
@@ -347,7 +349,7 @@ export default function Snapshot() {
 
   return (
     <div className="space-y-4">
-      <PageHeader icon={Camera} title="GALLERY" subtitle="File manager for CCTV captures, recordings, AI detections, and periodic cron captures (ml-result bucket). Select, download, or delete.">
+      <PageHeader icon={Camera} title="GALLERY" subtitle="File manager for CCTV captures, recordings, AI detections, and periodic cron captures (mlbucket bucket). Select, download, or delete.">
         <div className="flex items-center gap-2">
           <button
             onClick={load}
@@ -443,7 +445,7 @@ export default function Snapshot() {
             ) : (
               <>
                 <div className="text-sm font-black uppercase tracking-widest text-slate-300">Gallery Empty</div>
-                <div className="text-xs text-slate-500 mt-1">Use the camera (SNAPSHOT) on the LIVE page for a plain frame, or AI Detect for a detection. AI DETECTION shows every ML result (cron routine + live captures) from the ml-result bucket.</div>
+                <div className="text-xs text-slate-500 mt-1">Use the camera (SNAPSHOT) on the LIVE page for a plain frame, or AI Detect for a detection. AI DETECTION shows every ML result (cron routine + live captures) from the mlbucket bucket.</div>
               </>
             )}
           </div>

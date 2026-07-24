@@ -42,7 +42,6 @@ type StreamService struct {
 	ml           *mlclient.Client
 	kongURL      string
 	cctvRTSP     string
-	resultBucket string // shared ml-result bucket for cron + live captures
 
 	// Active ffmpeg recordings, keyed by stream id. The Stream Service records
 	// directly via ffmpeg (not MediaMTX's disk recorder) so the resulting clip
@@ -53,16 +52,18 @@ type StreamService struct {
 
 // recJob tracks a single in-progress ffmpeg recording.
 type recJob struct {
-	cmd      *exec.Cmd
-	outPath  string
-	name     string
-	streamID string
-	moduleID string
-	done     chan struct{} // closed once ffmpeg is fully reaped by the reaper
+	cmd       *exec.Cmd
+	outPath   string
+	name      string
+	streamID  string
+	moduleID  string
+	done      chan struct{} // closed once ffmpeg is fully reaped by the reaper
+	startTime time.Time
 }
 
-func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP, resultBucket string) *StreamService {
-	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP, resultBucket: resultBucket, recJobs: make(map[string]*recJob)}
+
+func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP string) *StreamService {
+	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP, recJobs: make(map[string]*recJob)}
 }
 
 // CreateStream inserts the DB row then registers the path in MediaMTX.
@@ -215,22 +216,33 @@ func (s *StreamService) toView(ctx context.Context, st *model.Stream) *model.Str
 	if st.Enabled {
 		status = s.media.GetPathStatus(ctx, st.Name)
 	}
+	s.recMu.Lock()
+	job, recording := s.recJobs[st.ID]
+	var startTime int64
+	if recording {
+		startTime = job.startTime.UnixMilli()
+	}
+	s.recMu.Unlock()
+
 	return &model.StreamView{
-		ID:          st.ID,
-		Name:        st.Name,
-		DeviceLabel: st.DeviceLabel,
-		Location:    st.Location,
-		SourceRTSP:  redactRTSPCreds(st.SourceRTSP),
-		NodeID:      st.NodeID,
-		ModuleID:    st.ModuleID,
-		Enabled:     st.Enabled,
-		Status:      status,
-		HlsURL:      s.hlsURL(st.Name),
-		WebRTCURL:   s.webrtcURL(st.Name),
-		CreatedAt:   st.CreatedAt,
-		UpdatedAt:   st.UpdatedAt,
+		ID:             st.ID,
+		Name:           st.Name,
+		DeviceLabel:    st.DeviceLabel,
+		Location:       st.Location,
+		SourceRTSP:     redactRTSPCreds(st.SourceRTSP),
+		NodeID:         st.NodeID,
+		ModuleID:       st.ModuleID,
+		Enabled:        st.Enabled,
+		Status:         status,
+		HlsURL:         s.hlsURL(st.Name),
+		WebRTCURL:      s.webrtcURL(st.Name),
+		Recording:      recording,
+		RecordingStart: startTime,
+		CreatedAt:      st.CreatedAt,
+		UpdatedAt:      st.UpdatedAt,
 	}
 }
+
 
 // ensurePath re-registers a stream's MediaMTX path config if it is missing.
 // API-added paths are ephemeral and lost on a MediaMTX restart, so we must
@@ -346,10 +358,10 @@ func (s *StreamService) ServeObject(w http.ResponseWriter, bucket, key string) e
 //   - detect=false (plain snapshot): the frame is uploaded to the MinIO stream
 //     bucket and a "snapshot" metadata row is stored — shown only in the
 //     gallery's SNAPSHOT tab. No ML is involved.
-//   - detect=true (AI Detect): the frame is sent to the AI vision model and the
-//     result (frame + detection JSON + annotated image) is written to the shared
-//     ml-result bucket — shown in the gallery's AI DETECTION tab. Nothing is
-//     written to the stream bucket or the stream-DB snapshots table.
+  //   - detect=true (AI Detect): the frame is sent to the AI vision model and the
+  //     result (frame + detection JSON + annotated image) is written to the shared
+  //     ml bucket — shown in the gallery's AI DETECTION tab. Nothing is
+  //     written to the stream bucket or the stream-DB snapshots table.
 func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect bool) (*model.SnapshotView, error) {
 	if s.minio == nil {
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
@@ -390,10 +402,10 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 		return toSnapshotView(snap), nil
 	}
 
-	// AI Detect: run the frame through the vision model and store the result in
-	// the shared ml-result bucket (gallery AI DETECTION tab). Nothing is written
-	// to the stream bucket or the stream-DB snapshots table — the authoritative
-	// copy lives in ml-result, same as the cron capture job.
+  // AI Detect: run the frame through the vision model and store the result in
+  // the shared ml bucket (gallery AI DETECTION tab). Nothing is written
+  // to the stream bucket or the stream-DB snapshots table — the authoritative
+  // copy lives in ml, same as the cron capture job.
 	if s.ml == nil {
 		return nil, fmt.Errorf("%w: AI vision client not configured", ErrMinIO)
 	}
@@ -410,7 +422,7 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 	}
 
 	// Response view built from the detection result (not persisted to the
-	// stream DB; the stored copy is in ml-result).
+	// stream DB; the stored copy is in ml).
 	classesJSON, _ := json.Marshal(result.Classes)
 	detJSON, _ := json.Marshal(result.Detections)
 	view := model.SnapshotView{
@@ -430,9 +442,9 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 	return &view, nil
 }
 
-// knownBuckets are the buckets the gallery's ml-result listing can read from;
+// knownBuckets are the buckets the gallery's ml listing can read from;
 // used to parse a minio public URL (e.g. annotated_url) back into bucket+key.
-var knownBuckets = []string{"ml-result", "mlbucket", "ml", "stream"}
+var knownBuckets = []string{"mlbucket", "stream"}
 
 // bucketAndKeyFromURL extracts (bucket, key) from a minio public URL such as
 // "http://host/minio/ml/detected/foo.jpg" or "/storage/ml/...".
@@ -455,10 +467,10 @@ func bucketAndKeyFromURL(raw string) (string, string) {
 
 // writeToResultBucket stores the captured frame, the optional annotated image
 // (mirrored from the ML bucket), and a result JSON record into the shared
-// ml-result bucket. Best-effort: any failure is logged and skipped so the
+// mlbucket bucket. Best-effort: any failure is logged and skipped so the
 // primary snapshot/detection DB row is never affected.
 func (s *StreamService) writeToResultBucket(streamName string, data []byte, ct string, result *mlclient.DetectResult) {
-	bucket := s.resultBucket
+	bucket := "mlbucket"
 	ts := time.Now().UTC().Format("20060102_150405")
 
 	frameKey := fmt.Sprintf("frames/%s/%s.jpg", streamName, ts)
@@ -557,15 +569,17 @@ func (s *StreamService) StartRecording(ctx context.Context, id string) error {
 	}
 	outPath := filepath.Join(os.TempDir(), "rec-"+uuid.New().String()+".mp4")
 	// Pull from the MediaMTX RTSP relay (which triggers the on-demand source).
-	// -c copy keeps the original codec for a browser-playable MP4.
+	// Transcode to browser-playable H.264 video and AAC audio.
 	cmd := exec.Command("ffmpeg", "-rtsp_transport", "tcp", "-y",
 		"-i", fmt.Sprintf("rtsp://mediamtx:8554/%s", st.Name),
-		"-c", "copy", outPath)
+		"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
+		"-pix_fmt", "yuv420p", "-c:a", "aac", "-map", "0:v?", "-map", "0:a?",
+		outPath)
 	if err := cmd.Start(); err != nil {
 		s.recMu.Unlock()
 		return fmt.Errorf("%w: failed to start recorder: %v", ErrMediaMTX, err)
 	}
-	job := &recJob{cmd: cmd, outPath: outPath, name: st.Name, streamID: st.ID, moduleID: st.ModuleID, done: make(chan struct{})}
+	job := &recJob{cmd: cmd, outPath: outPath, name: st.Name, streamID: st.ID, moduleID: st.ModuleID, done: make(chan struct{}), startTime: time.Now()}
 	s.recJobs[id] = job
 	s.recMu.Unlock()
 

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import EnvironmentalOverview from './EnvironmentalOverview';
-import { API_BASE, getToken, request } from '../../../api/client';
+import { API_BASE, getToken, request, getWsUrl } from '../../../api/client';
 import controlApi from '../../../api/control';
 import { moduleApi } from '../../../api/module';
 import { useModule } from '../../../context/ModuleContext';
@@ -384,7 +384,7 @@ function Monitor() {
     for (const node of nodes) {
       const id = node.node_id;
       if (sockets[id]) continue;
-      const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(id)}/live?token=${encodeURIComponent(token)}`;
+      const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(id)}/live?token=${encodeURIComponent(token)}`);
       let ws;
       try { ws = new WebSocket(wsUrl); } catch {
         setTelemetry((prev) => ({ ...prev, [id]: { status: 'error', error: 'WS init failed' } }));
@@ -405,7 +405,7 @@ function Monitor() {
               try { sockets[id].close(); } catch { /* ignore */ }
               delete sockets[id];
               const token = getToken() || '';
-              const wsUrl = `${API_BASE.replace(/^http/, 'ws')}/ws/nodes/${encodeURIComponent(id)}/live?token=${encodeURIComponent(token)}`;
+              const wsUrl = getWsUrl(`/ws/nodes/${encodeURIComponent(id)}/live?token=${encodeURIComponent(token)}`);
               let ns;
               try { ns = new WebSocket(wsUrl); } catch { return curr; }
               sockets[id] = ns;

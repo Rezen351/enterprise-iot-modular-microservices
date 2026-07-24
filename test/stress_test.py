@@ -1,5 +1,5 @@
 """
-Enterprise IoT Modular Microservices - Industry-Standard Web & API Stress Test Suite
+enyx-enterprise - Industry-Standard Web & API Stress Test Suite
 Implements Load, Spike, Soak, Breakpoint, and WebSocket Concurrency Stress Testing.
 """
 
@@ -69,11 +69,24 @@ class Stats:
 
 def get_auth_token(base_url: str, username: str, password: str) -> str:
     url = f"{base_url}/v1/auth/login"
-    res = requests.post(url, json={"identifier": username, "password": password}, timeout=5)
-    if res.status_code == 200:
-        data = res.json().get("data", {})
-        return data.get("access_token") or data.get("token")
-    raise RuntimeError(f"Login failed: {res.status_code} {res.text}")
+    last_status = None
+    last_text = ""
+    for attempt in range(1, 4):
+        try:
+            res = requests.post(url, json={"identifier": username, "password": password}, timeout=10)
+            last_status = res.status_code
+            last_text = res.text
+            if res.status_code == 200:
+                data = res.json().get("data", {})
+                return data.get("access_token") or data.get("token")
+            if res.status_code == 429 and attempt < 3:
+                time.sleep(2 ** attempt)
+                continue
+        except Exception:
+            if attempt < 3:
+                time.sleep(2 ** attempt)
+                continue
+    raise RuntimeError(f"Login failed after retries: {last_status} {last_text}")
 
 
 def execute_request(base_url: str, token: str, endpoint: dict) -> tuple:

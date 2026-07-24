@@ -6,7 +6,7 @@ Runs independently of the microservices. Every interval it:
      misting is captured in the frame),
    3. grabs a single CCTV frame via ffmpeg from the RTSP relay,
    4. runs inference through the ML service /ml/detect API,
-   5. uploads the raw frame + detection result to the `ml-result` MinIO bucket
+   5. uploads the raw frame + detection result to the `ml` MinIO bucket
       (the SAME bucket the in-app "Capture Detect AI" button writes to, so
       both routine cron captures and user-triggered captures appear together
       in the gallery's CAPTURES tab).
@@ -40,7 +40,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cctv-capture")
 
-KNOWN_BUCKETS = ["ml", "stream", "ml-result"]
+KNOWN_BUCKETS = ["mlbucket", "stream"]
 
 
 def env(key: str, default: str = "") -> str:
@@ -342,7 +342,7 @@ def mirror_annotated(client: minio.Minio, detection: dict, result_bucket: str, d
     annotated_url = detection.get("annotated_url")
     if not annotated_url:
         return None
-    src_bucket, src_key = key_from_url(annotated_url, "ml")
+    src_bucket, src_key = key_from_url(annotated_url, "mlbucket")
     try:
         data = client.get_object(src_bucket, src_key).read()
     except Exception as exc:
@@ -373,7 +373,6 @@ def log_config() -> None:
         ("SKIP_WHEN_TELEMETRY_MISSING", env("SKIP_WHEN_TELEMETRY_MISSING", "true")),
         ("PUMP_PATHS", env("PUMP_PATHS", "telemetry.outputs.pump")),
         ("LOAD_PATHS", env("LOAD_PATHS", "telemetry.outputs.load1")),
-        ("MINIO_RESULT_BUCKET", env("MINIO_RESULT_BUCKET", "ml-result")),
         ("MINIO_STREAM_BUCKET", env("MINIO_STREAM_BUCKET", "stream")),
         ("MODEL_ID", env("MODEL_ID", "")),
         ("ML_BASE_URL", env("ML_BASE_URL", "http://ml:8080")),
@@ -424,7 +423,7 @@ def run_cycle() -> None:
     ffmpeg_timeout = env_int("FFMPEG_TIMEOUT", 8)
 
     client = build_minio_client()
-    result_bucket = env("MINIO_RESULT_BUCKET", "ml-result")
+    result_bucket = "mlbucket"
     ensure_bucket(client, result_bucket)
     # The raw frame is also written to the `stream` bucket so the ML service
     # `/ml/detect/from-stream` endpoint (which reads frames from `stream`) can
@@ -508,7 +507,7 @@ def run_cycle() -> None:
             mirror_annotated(client, detection, result_bucket, annotated_key)
 
         logger.info(
-            "captured %s -> ml-result/%s | detections=%s classes=%s",
+            "captured %s -> ml/%s | detections=%s classes=%s",
             target, record_key,
             detection.get("num_detections") if detection else "n/a",
             detection.get("classes") if detection else "n/a",

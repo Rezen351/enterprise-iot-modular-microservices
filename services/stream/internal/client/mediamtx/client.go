@@ -220,10 +220,10 @@ func (c *Client) SetRecord(ctx context.Context, name string, enabled bool) error
 // The total worst-case budget (attempts × ffmpegTimeout + backoff) stays well
 // below the stream server's http WriteTimeout (see main.go) so the response is
 // never aborted mid-write (which would surface as a Kong 504).
-const snapshotAttempts = 3
+const snapshotAttempts = 4
 
 // ffmpegTimeout bounds a single ffmpeg capture attempt.
-const ffmpegTimeout = 8 * time.Second
+const ffmpegTimeout = 12 * time.Second
 
 // minSnapshotBytes rejects tiny/partial frames. A real 1080p JPEG frame is tens
 // of KB; a garbled first-GOP frame is a few KB. Below this we retry, but accept

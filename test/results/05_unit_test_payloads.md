@@ -1,0 +1,6273 @@
+# Unit Test Payloads & Responses
+
+Total captured requests: 107
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0036s
+- **Payload:**
+```json
+{
+  "data": {
+    "status": "ok"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0038s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "name": "",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "last_seen_at": "2026-07-24T03:57:06.95Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T03:57:06.95Z"
+      },
+      {
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": true,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T03:56:03.591Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0036s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "name": "",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "last_seen_at": "2026-07-24T03:57:06.95Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T03:57:06.95Z"
+      },
+      {
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": true,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T03:56:03.591Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0039s
+- **Payload:**
+```json
+{
+  "data": {
+    "status": "ok"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0052s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "ed410133-521a-415d-85c6-aea62efacb85",
+    "username": "admin",
+    "email": "admin@smartfarm.local",
+    "roles": [
+      "admin"
+    ],
+    "is_active": true,
+    "last_login_at": "2026-07-24T03:57:24.362Z",
+    "created_at": "2026-07-23T05:05:51.176Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 200
+- **Duration:** 0.6124s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "ed410133-521a-415d-85c6-aea62efacb85",
+    "username": "admin",
+    "email": "admin@smartfarm.local",
+    "roles": [
+      "admin"
+    ],
+    "is_active": true,
+    "last_login_at": "2026-07-24T03:57:24.362Z",
+    "created_at": "2026-07-23T05:05:51.176Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0043s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "sessions": [
+      {
+        "id": "d39e7034-a59b-4310-8449-76dbaa4ca4c4",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T03:57:24.542Z",
+        "expires_at": "2026-07-31T03:57:24.542Z"
+      },
+      {
+        "id": "ce2a3352-402f-4886-b619-2e56f77dfe5a",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T03:56:16.603Z",
+        "expires_at": "2026-07-31T03:56:16.603Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.006s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 4,
+    "users": [
+      {
+        "id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "username": "admin",
+        "email": "admin@smartfarm.local",
+        "roles": [
+          "admin"
+        ],
+        "is_active": true,
+        "last_login_at": "2026-07-24T03:57:24.362Z",
+        "created_at": "2026-07-23T05:05:51.176Z"
+      },
+      {
+        "id": "c94330a4-b2d8-49f1-8cea-120de512af15",
+        "username": "testuser_1784822546",
+        "email": "test_1784822546@example.com",
+        "roles": [
+          "viewer"
+        ],
+        "is_active": true,
+        "created_at": "2026-07-23T16:02:26.093Z"
+      },
+      {
+        "id": "aaef0ec4-c799-47c6-a9ea-523c5f037745",
+        "username": "testuser_1784823567",
+        "email": "test_1784823567@example.com",
+        "roles": null,
+        "is_active": true,
+        "created_at": "2026-07-23T16:19:27.938Z"
+      },
+      {
+        "id": "65c2572c-cce8-4463-945d-24db34ac717f",
+        "username": "testuser_1784834532",
+        "email": "test_1784834532@example.com",
+        "roles": null,
+        "is_active": true,
+        "created_at": "2026-07-23T19:22:12.742Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.004s
+- **Payload:**
+```json
+{
+  "data": {
+    "roles": [
+      {
+        "id": "role-admin-001",
+        "name": "admin",
+        "description": "Full access to all resources",
+        "created_at": "2026-07-15T13:36:53Z"
+      },
+      {
+        "id": "role-operator-001",
+        "name": "operator",
+        "description": "Manage devices and view telemetry",
+        "created_at": "2026-07-15T13:36:53Z"
+      },
+      {
+        "id": "role-viewer-001",
+        "name": "viewer",
+        "description": "Read-only access to telemetry and alerts",
+        "created_at": "2026-07-15T13:36:53Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 0.587s
+- **Payload:**
+```json
+{
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZXMiOlsiYWRtaW4iXSwiaXNzIjoiYXV0aC1zdmMiLCJzdWIiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJleHAiOjE3ODQ5MDg2NDUsIm5iZiI6MTc4NDg2NTQ0NSwiaWF0IjoxNzg0ODY1NDQ1fQ.ey08BFYXnjigkybqItGiFALXNIXwSlMPW9dDwKU7ZUY",
+    "refresh_token": "tCqRzdz_g627-T6uf-2tpgNr075hZuBCra9gDxvWOwo=",
+    "expires_in": 43200
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** None
+- **Duration:** 5.0065s
+- **Error:** HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** None
+- **Duration:** 5.0063s
+- **Error:** HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0042s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 3,
+    "modules": [
+      {
+        "id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "Test Greenhouse 1784823577",
+        "description": "Automated unit test module",
+        "config": "{}",
+        "created_at": "2026-07-23T16:19:37.9Z",
+        "updated_at": "2026-07-23T16:19:37.9Z"
+      },
+      {
+        "id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
+        "name": "Test Greenhouse 1784821577",
+        "description": "Automated unit test module",
+        "config": "{}",
+        "created_at": "2026-07-23T15:46:17.343Z",
+        "updated_at": "2026-07-23T15:46:17.343Z"
+      },
+      {
+        "id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "A",
+        "description": "",
+        "config": "{}",
+        "created_at": "2026-07-22T16:48:32.733Z",
+        "updated_at": "2026-07-22T16:48:32.733Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 201
+- **Duration:** 3.3538s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "6912a154-c212-414b-844d-42ca7665512a",
+    "name": "Test Greenhouse 1784865456",
+    "description": "Automated unit test module",
+    "config": "{}",
+    "created_at": "2026-07-24T03:57:36.150570516Z",
+    "updated_at": "2026-07-24T03:57:36.150570516Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 2.1088s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "module deleted; its nodes were unpaired"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0037s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "name": "",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "last_seen_at": "2026-07-24T03:57:36.951Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T03:57:36.951Z"
+      },
+      {
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": true,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T03:56:03.591Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0041s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 1,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "name": "",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "last_seen_at": "2026-07-24T03:57:36.951Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T03:57:36.951Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0055s
+- **Payload:**
+```json
+{
+  "data": {
+    "node_id": "node-02",
+    "tags": [
+      {
+        "id": "3e8a9d81-972a-4d74-bf44-ddf6ed8360fe",
+        "node_id": "node-02",
+        "kind": "sensor",
+        "source_key": "sensor_1",
+        "tag_name": "temperature",
+        "display_name": "Temperature",
+        "label": "C",
+        "unit": "°C",
+        "data_type": "float",
+        "enabled": true,
+        "created_at": "2026-07-24T03:56:02.811Z",
+        "updated_at": "2026-07-24T03:56:02.811Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0047s
+- **Payload:**
+```json
+{
+  "data": {
+    "node_id": "node-02",
+    "tags": []
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0042s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:56:03.591Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 200
+- **Duration:** 2.0277s
+- **Payload:**
+```json
+{
+  "data": {
+    "node_id": "node-02",
+    "tags": [
+      {
+        "id": "89da3ca0-b81a-44a3-8dcc-0e9c9ec0a14d",
+        "node_id": "node-02",
+        "kind": "sensor",
+        "source_key": "sensor_1",
+        "tag_name": "temperature",
+        "display_name": "Temperature",
+        "label": "C",
+        "unit": "°C",
+        "data_type": "float",
+        "enabled": true,
+        "created_at": "2026-07-24T03:57:42.99Z",
+        "updated_at": "2026-07-24T03:57:42.99Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 400
+- **Duration:** 0.0034s
+- **Payload:**
+```json
+{
+  "data": {
+    "error": {
+      "code": "BAD_REQUEST",
+      "message": "module_id is required and must reference an existing module"
+    },
+    "success": false
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 1.9737s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": false,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:43.669Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0038s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 3,
+    "modules": [
+      {
+        "id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "Test Greenhouse 1784823577",
+        "description": "Automated unit test module",
+        "config": "{}",
+        "created_at": "2026-07-23T16:19:37.9Z",
+        "updated_at": "2026-07-23T16:19:37.9Z"
+      },
+      {
+        "id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
+        "name": "Test Greenhouse 1784821577",
+        "description": "Automated unit test module",
+        "config": "{}",
+        "created_at": "2026-07-23T15:46:17.343Z",
+        "updated_at": "2026-07-23T15:46:17.343Z"
+      },
+      {
+        "id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "A",
+        "description": "",
+        "config": "{}",
+        "created_at": "2026-07-22T16:48:32.733Z",
+        "updated_at": "2026-07-22T16:48:32.733Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 0.9009s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0039s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "name": "",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "last_seen_at": "2026-07-24T03:57:36.951Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T03:57:36.951Z"
+      },
+      {
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": true,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T03:57:45.648Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 201
+- **Duration:** 0.1275s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "158dd7ce-854a-4e09-bcab-3f24ca2d1dcd",
+    "node_id": "node-02",
+    "kind": "actuator",
+    "source_key": "fan",
+    "tag_name": "fan",
+    "display_name": "Fan",
+    "label": "",
+    "unit": "on/off",
+    "data_type": "boolean",
+    "enabled": true,
+    "created_at": "2026-07-24T03:57:47.552844353Z",
+    "updated_at": "2026-07-24T03:57:47.552844353Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 0.3444s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "actuator tag deleted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0158s
+- **Payload:**
+```json
+{
+  "data": {
+    "nodes": [
+      {
+        "node_id": "ECE334219870",
+        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "ECE334219870",
+        "module_id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "ECE334219870",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "node-06",
+        "module_id": "",
+        "metrics": [
+          "temperature"
+        ]
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0065s
+- **Payload:**
+```json
+{
+  "data": {
+    "interval": "1h",
+    "series": {
+      "node-02": {
+        "temperature": []
+      }
+    }
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.005s
+- **Payload:**
+```json
+{
+  "data": {
+    "node_id": "node-02",
+    "metric": "temperature",
+    "count": 0,
+    "min": 0,
+    "max": 0,
+    "avg": 0,
+    "last": 0,
+    "first_ts": 0,
+    "last_ts": 0
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0054s
+- **Payload:**
+```
+bucket,node_id,metric,count,sum,min,max,avg,last
+
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0051s
+- **Payload:**
+```json
+{
+  "data": {
+    "interval": "1h",
+    "series": {
+      "node-02": {
+        "temperature": []
+      }
+    }
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0076s
+- **Payload:**
+```json
+{
+  "data": {
+    "interval": "1h",
+    "series": {
+      "node-02": {
+        "humidity": [],
+        "temperature": []
+      }
+    }
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0039s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0032s
+- **Payload:**
+```json
+{
+  "data": {
+    "commands": [],
+    "count": 0
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0034s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0034s
+- **Payload:**
+```json
+{
+  "data": {
+    "mode": "AUTO",
+    "node_id": "node-02"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0037s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 200
+- **Duration:** 0.2016s
+- **Payload:**
+```json
+{
+  "data": {
+    "mode": "MANUAL",
+    "node_id": "node-02"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0028s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0044s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 0,
+    "targets": []
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0027s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.002s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 0,
+    "outputs": []
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.003s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 400
+- **Duration:** 0.004s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "unknown control type"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0029s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 0.1112s
+- **Payload:**
+```json
+{
+  "data": {
+    "mode": "AUTO",
+    "node_id": "node-02"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0038s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0038s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 0,
+    "schedules": []
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0044s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 201
+- **Duration:** 0.3114s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "277b5b9e-ac34-4152-8245-473d241450cf",
+    "node_id": "node-02",
+    "output_name": "pump",
+    "tag_name": "",
+    "type": "interval",
+    "params": {
+      "on_sec": 10,
+      "off_sec": 5,
+      "value_on": 1,
+      "value_off": 0
+    },
+    "enabled": false,
+    "created_at": "2026-07-24T03:57:48.443713032Z",
+    "updated_at": "2026-07-24T03:57:48.443713032Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 1.2755s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "schedule deleted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0027s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.003s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0037s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0031s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.003s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 200
+- **Duration:** 0.3858s
+- **Payload:**
+```json
+{
+  "data": {
+    "mode": "AUTO",
+    "node_id": "node-02",
+    "output": "pump"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0032s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+    "node_id": "node-02",
+    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
+    "name": "",
+    "mac": "",
+    "ip": "",
+    "fw_version": "",
+    "status": "online",
+    "paired": true,
+    "discovered_at": "2026-07-23T17:46:04Z",
+    "created_at": "2026-07-23T17:46:04Z",
+    "updated_at": "2026-07-24T03:57:45.648Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0039s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "schedule not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0047s
+- **Payload:**
+```json
+{
+  "data": {
+    "alerts": [
+      {
+        "id": "42f1685e-b0ea-4d45-a71f-f1f869743cf3",
+        "node_id": "qac5",
+        "metric": "qac5m",
+        "value": 40,
+        "threshold_value": 30,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qac5 metric \"qac5m\" value 40 above max 30",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.272Z",
+        "triggered_at": "2026-07-16T10:02:36.897Z",
+        "resolved_at": null
+      },
+      {
+        "id": "def9613c-9a0b-4f65-bef8-5aae6cb32568",
+        "node_id": "qafv3",
+        "metric": "qafv3",
+        "value": 99,
+        "threshold_value": 10,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qafv3 metric \"qafv3\" value 99 above max 10",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.373Z",
+        "triggered_at": "2026-07-16T09:56:53.379Z",
+        "resolved_at": "2026-07-16T09:58:18.006Z"
+      },
+      {
+        "id": "3678a2a3-c378-4ae6-8c05-b47f2ac2a5d0",
+        "node_id": "qafv1",
+        "metric": "qafv1",
+        "value": 50,
+        "threshold_value": 1,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qafv1 metric \"qafv1\" value 50 above max 1",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.462Z",
+        "triggered_at": "2026-07-16T09:54:06.725Z",
+        "resolved_at": null
+      },
+      {
+        "id": "4bc0b2dd-9714-4663-a854-d3df4530b48d",
+        "node_id": "qaprobe",
+        "metric": "qapr",
+        "value": 99,
+        "threshold_value": 1,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qaprobe metric \"qapr\" value 99 above max 1",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.533Z",
+        "triggered_at": "2026-07-16T09:27:07.588Z",
+        "resolved_at": null
+      },
+      {
+        "id": "f600d5a3-d0bd-464c-8a91-c0ba067d8edd",
+        "node_id": "qatrig",
+        "metric": "qat",
+        "value": 99,
+        "threshold_value": 1,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qatrig metric \"qat\" value 99 above max 1",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.606Z",
+        "triggered_at": "2026-07-16T09:04:16.366Z",
+        "resolved_at": null
+      },
+      {
+        "id": "5ec5e5e8-6ea3-49e6-b4c0-fcac87e36858",
+        "node_id": "qa-cache",
+        "metric": "qa-ph",
+        "value": 40,
+        "threshold_value": 30,
+        "severity": "critical",
+        "status": "acked",
+        "message": "[critical] node qa-cache metric \"qa-ph\" value 40 above max 30",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.74Z",
+        "triggered_at": "2026-07-16T08:51:41.879Z",
+        "resolved_at": null
+      },
+      {
+        "id": "d8c4bc8e-ab48-41be-ba69-848371cf939b",
+        "node_id": "qa-node-1",
+        "metric": "qa-temp",
+        "value": 99,
+        "threshold_value": 10,
+        "severity": "warning",
+        "status": "acked",
+        "message": "[warning] node qa-node-1 metric \"qa-temp\" value 99 above max 10",
+        "acked_by": "bd06a219-50dc-410a-a55a-f896185d5680",
+        "acked_at": "2026-07-16T10:03:15.799Z",
+        "triggered_at": "2026-07-16T08:46:22.31Z",
+        "resolved_at": "2026-07-16T08:47:12.201Z"
+      }
+    ],
+    "limit": 50,
+    "offset": 0,
+    "total": 7
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0034s
+- **Payload:**
+```json
+{
+  "data": {
+    "thresholds": [
+      {
+        "id": "00b8dd8c-827f-4a30-a0ea-fcf170c1452c",
+        "node_id": "node-01",
+        "metric": "temperature",
+        "min": 15,
+        "max": 35,
+        "enabled": true,
+        "severity": "warning"
+      },
+      {
+        "id": "a050b0c8-3bdd-4ce5-96fa-a2690deabf0e",
+        "node_id": "node-1",
+        "metric": "temperature",
+        "min": 15,
+        "max": 35,
+        "enabled": true,
+        "severity": "warning"
+      }
+    ],
+    "total": 2
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 201
+- **Duration:** 1.4238s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "0f7eafb5-5483-4597-8c54-0115a9bc4795",
+    "node_id": "node-02",
+    "metric": "temperature",
+    "min": 15,
+    "max": 35,
+    "enabled": true,
+    "severity": "warning"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 0.5917s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "0f7eafb5-5483-4597-8c54-0115a9bc4795",
+    "status": "deleted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 404
+- **Duration:** 0.0032s
+- **Payload:**
+```json
+{
+  "data": {
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "alert not found"
+    },
+    "success": false
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0039s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [
+      {
+        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:16.831Z"
+      },
+      {
+        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
+        "event": "alert.threshold.deleted",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:11.426Z"
+      },
+      {
+        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:09.144Z"
+      },
+      {
+        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
+        "received_at": "2026-07-24T03:56:08.188Z"
+      },
+      {
+        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "event": "control.schedule.created",
+        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T03:56:07.46Z"
+      },
+      {
+        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "event": "node.paired",
+        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:05.309Z"
+      },
+      {
+        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "event": "node.unpaired",
+        "payload": "{\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:04.953Z"
+      },
+      {
+        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
+        "received_at": "2026-07-24T03:56:03.493Z"
+      },
+      {
+        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
+        "received_at": "2026-07-24T03:56:03.14Z"
+      },
+      {
+        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "event": "auth.account.deleted",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:02.208Z"
+      },
+      {
+        "id": "96296e39-4cf1-4929-ab1b-ec7863202862",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:01.915Z"
+      },
+      {
+        "id": "515c53e3-69cb-46c1-aaa5-eccaedbadc01",
+        "event": "auth.logout",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:56:01.629Z"
+      },
+      {
+        "id": "cedf09fe-37bc-4a6c-bf33-d7cd21ef67be",
+        "event": "auth.register",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:01.319Z"
+      },
+      {
+        "id": "c02b3d10-f44d-4406-9f35-477bbf84dcaf",
+        "event": "auth.refresh",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.849Z"
+      },
+      {
+        "id": "0dfa3832-09a5-4669-bd58-b0aae8c7e48c",
+        "event": "auth.profile.updated",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.637Z"
+      },
+      {
+        "id": "0297dab6-8b5c-4680-9e61-482b2b97487b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.371Z"
+      },
+      {
+        "id": "ed8157a0-baf6-4452-9133-4094e923a43e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:48.989Z"
+      },
+      {
+        "id": "4818bf5e-30a5-498b-b747-49cc8b004fee",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:37.563Z"
+      },
+      {
+        "id": "31f2d84f-0f56-427b-8e4f-4363ccf81d08",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:11.087Z"
+      },
+      {
+        "id": "fbb1725f-2787-480e-91d3-603305b65737",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:27.831Z"
+      },
+      {
+        "id": "bfa86419-af0c-45b1-b772-2857897a7a52",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:17.418Z"
+      },
+      {
+        "id": "8b7b87f8-4a89-440a-b3e9-b21d910aa568",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:48:28.346Z"
+      },
+      {
+        "id": "e87ee415-f153-4901-a489-4760e7f20f2f",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:47:42.495Z"
+      },
+      {
+        "id": "9955d069-2c3f-4b59-bb24-cad47e261b6b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"3014ebe0-5eab-45f0-8485-8d8e92d9be80\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:46:37.279Z"
+      },
+      {
+        "id": "eebf0c2e-e643-430c-a0d4-f199d3ce771e",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:46:32.494Z"
+      },
+      {
+        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:45:29.194Z"
+      },
+      {
+        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:43:32.658Z"
+      },
+      {
+        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:42:20.428Z"
+      },
+      {
+        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:41:29.924Z"
+      },
+      {
+        "id": "9c745b07-4c17-49af-b653-79c2ff7c19de",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:36:34.885Z"
+      },
+      {
+        "id": "673aab8e-5ecd-4d2a-a9e9-4833da8db751",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"ed932d1f-e37b-4859-a772-cd6d8c63535d\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:36:34.494Z"
+      },
+      {
+        "id": "5d376cd2-d8a3-431a-bb26-ba91f7fd1402",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"6cc554bf-21ef-420f-8452-c195749e9f15\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:35:33.042Z"
+      },
+      {
+        "id": "96e01b28-e98c-4691-9743-ff4091edba63",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:35:32.54Z"
+      },
+      {
+        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:33:05.931Z"
+      },
+      {
+        "id": "91388fdc-bcfa-401b-80d6-39c9f91202a0",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"21de8410-e55c-4553-9e95-e449e16f2ac5\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:25:32.494Z"
+      },
+      {
+        "id": "88565373-2dbf-40f2-a511-c5b72e7b1130",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:25:30.494Z"
+      },
+      {
+        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:24:54.036Z"
+      },
+      {
+        "id": "a1ecfd60-f1a4-4c76-bdb8-a16915e3617b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"7f6e809f-92c7-459f-994a-aa792a74a6f8\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:24:30.979Z"
+      },
+      {
+        "id": "7de5eedb-7825-4e9d-ba5d-7e734a6beef6",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:24:30.496Z"
+      },
+      {
+        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:22.847Z"
+      },
+      {
+        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:04.66Z"
+      },
+      {
+        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:20:43.662Z"
+      },
+      {
+        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:15:52.376Z"
+      },
+      {
+        "id": "5ab839b8-5ae3-45f4-b9ba-871aa42a0689",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:14:36.494Z"
+      },
+      {
+        "id": "58db2f64-91c9-4cd5-aae1-64b2ba72d172",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d30e66f4-c22b-4694-8937-0d9ab92bff2e\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:13:30.188Z"
+      },
+      {
+        "id": "c1164d82-f2c0-4e71-a634-ea88bee1ebda",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:13:28.494Z"
+      },
+      {
+        "id": "90cd6e66-b9b2-4978-a0dc-8162b7565c70",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"400dc5d2-f666-4900-96b9-127015efe5c9\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:03:28.848Z"
+      },
+      {
+        "id": "58dac530-e0d0-4a96-826d-cd96b2fb27fb",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:03:28.493Z"
+      },
+      {
+        "id": "9389469b-ea04-40fe-85bf-083db610bca8",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"8edd63fe-7dc7-4130-b608-cf21cfd841c4\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:02:29.398Z"
+      },
+      {
+        "id": "e1bb7dde-f824-48d5-b334-df1d2074bf39",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:02:28.494Z"
+      }
+    ],
+    "offset": 0,
+    "total": 1906
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0049s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [
+      {
+        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:16.831Z"
+      },
+      {
+        "id": "96296e39-4cf1-4929-ab1b-ec7863202862",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:01.915Z"
+      },
+      {
+        "id": "0297dab6-8b5c-4680-9e61-482b2b97487b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.371Z"
+      },
+      {
+        "id": "ed8157a0-baf6-4452-9133-4094e923a43e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:48.989Z"
+      },
+      {
+        "id": "4818bf5e-30a5-498b-b747-49cc8b004fee",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:37.563Z"
+      },
+      {
+        "id": "31f2d84f-0f56-427b-8e4f-4363ccf81d08",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:11.087Z"
+      },
+      {
+        "id": "fbb1725f-2787-480e-91d3-603305b65737",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:27.831Z"
+      },
+      {
+        "id": "bfa86419-af0c-45b1-b772-2857897a7a52",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:17.418Z"
+      },
+      {
+        "id": "8b7b87f8-4a89-440a-b3e9-b21d910aa568",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:48:28.346Z"
+      },
+      {
+        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:45:29.194Z"
+      },
+      {
+        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:43:32.658Z"
+      },
+      {
+        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:42:20.428Z"
+      },
+      {
+        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:41:29.924Z"
+      },
+      {
+        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:33:05.931Z"
+      },
+      {
+        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:24:54.036Z"
+      },
+      {
+        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:22.847Z"
+      },
+      {
+        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:04.66Z"
+      },
+      {
+        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:20:43.662Z"
+      },
+      {
+        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:15:52.376Z"
+      },
+      {
+        "id": "4aef9237-6aee-4e38-9881-767d534344d2",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:28:25.063Z"
+      },
+      {
+        "id": "18846e9c-b9ca-426f-854c-c9ef69212550",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"a59331cd-5268-44a4-8c18-4499caf95a85\",\"username\":\"testuser_1784834888\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:28:11.251Z"
+      },
+      {
+        "id": "50c106a3-67c4-4aa0-8e38-7b9806cb32d5",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:28:08.262Z"
+      },
+      {
+        "id": "bd937662-681e-4fab-a37f-64d6578f650d",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-23T19:25:27.24Z"
+      },
+      {
+        "id": "d46bdf76-d57e-41bf-8b2d-ef04f7c1f749",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"48a0b2b4-44ff-4a23-b269-414272d7f85c\",\"username\":\"testuser_1784834712\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:25:13.892Z"
+      },
+      {
+        "id": "0325c6fa-108a-42fa-a42c-35fa0d2d320f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:25:12.295Z"
+      },
+      {
+        "id": "5417675d-42c5-4fd7-b197-759f01a3977f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:22:31.449Z"
+      },
+      {
+        "id": "8d1ae1fd-a2b4-406c-bf50-a2b2bfc043e5",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:22:07.164Z"
+      },
+      {
+        "id": "660667f6-70e9-423a-9ff3-eda7dbd4350f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:17:36.385Z"
+      },
+      {
+        "id": "4648f907-4334-47ee-a194-1fa65c17232f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"3e402f32-d04a-4eb8-ad85-cfd77423d656\",\"username\":\"testuser_1784834241\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T19:17:22.778Z"
+      },
+      {
+        "id": "75e3b1e0-19d1-4564-a897-0eacd29de96f",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-23T19:17:21.2Z"
+      },
+      {
+        "id": "4802a686-df18-4dea-93ab-526955248e99",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-23T18:04:06.705Z"
+      },
+      {
+        "id": "a4198b2b-8559-4681-8cad-499b1d7d178b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"82d6cc7a-cf80-4862-b927-710a41b2994d\",\"username\":\"testuser_1784829835\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:03:56.281Z"
+      },
+      {
+        "id": "396ba4dd-2075-4e5f-9b78-ef0198cdb0e9",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-23T18:03:55.017Z"
+      },
+      {
+        "id": "f2c44a32-4d4c-4632-b459-702a7b84456b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:02:09.825Z"
+      },
+      {
+        "id": "77b2aefc-c512-4768-b2c9-e0b53867b75e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"c1c706eb-f899-4762-b672-4c88eb6023b5\",\"username\":\"testuser_1784829717\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:01:59.814Z"
+      },
+      {
+        "id": "71bf5de9-48e9-499b-888d-26c657574079",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:01:56.913Z"
+      },
+      {
+        "id": "35ed80dd-ffeb-46a2-98fd-45cefaa6dbb1",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:00:16.433Z"
+      },
+      {
+        "id": "3a66493f-1ad1-4a9a-881d-16a5bbeb6039",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"978abb83-d59e-4305-af03-02a92c989ff2\",\"username\":\"testuser_1784829606\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T18:00:07.065Z"
+      },
+      {
+        "id": "c21de734-fbaf-4d0b-b39c-7025cdf32a35",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-23T18:00:05.76Z"
+      },
+      {
+        "id": "150b4640-c878-4071-944f-89861987dd1b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:55:41.619Z"
+      },
+      {
+        "id": "c8a23b3c-d249-4304-a8e9-0b127ac544b1",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:55:33.611Z"
+      },
+      {
+        "id": "c56d50ce-7e38-4407-97cd-a87e6e8d31fd",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-23T17:51:04.174Z"
+      },
+      {
+        "id": "6fd85f84-92d4-488c-a767-c3e7a89bea52",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"5d1b3ad5-fe37-4e60-a011-9e9279d00cdb\",\"username\":\"testuser_1784829047\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:50:49.101Z"
+      },
+      {
+        "id": "e7206ea6-0aad-4069-a2a0-e2179ba7d02f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:50:40.209Z"
+      },
+      {
+        "id": "e54b9395-b403-4602-8742-74cac56ef84f",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-23T17:49:07.058Z"
+      },
+      {
+        "id": "5f76550d-12f3-46f9-a099-6d1c0395f568",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:48:53.465Z"
+      },
+      {
+        "id": "e20b3186-b2a1-4785-8001-f6fd0dd60a34",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:46:34.408Z"
+      },
+      {
+        "id": "e684ed6e-0b49-45ce-a888-e249c35dfb3b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"c4a2889e-fa25-4833-899b-f8e551033955\",\"username\":\"testuser_1784828767\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:46:09.329Z"
+      },
+      {
+        "id": "4d40034b-213d-4c07-a6b9-c4fc48e8bf9b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:46:04.255Z"
+      },
+      {
+        "id": "a1ea35fd-4e6c-4f5c-adad-32b15e0e8ed7",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-23T17:43:30.278Z"
+      }
+    ],
+    "offset": 0,
+    "total": 576
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0045s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 10,
+    "logs": [
+      {
+        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:16.831Z"
+      },
+      {
+        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
+        "event": "alert.threshold.deleted",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:11.426Z"
+      },
+      {
+        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:09.144Z"
+      },
+      {
+        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
+        "received_at": "2026-07-24T03:56:08.188Z"
+      },
+      {
+        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "event": "control.schedule.created",
+        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T03:56:07.46Z"
+      },
+      {
+        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "event": "node.paired",
+        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:05.309Z"
+      },
+      {
+        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "event": "node.unpaired",
+        "payload": "{\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:04.953Z"
+      },
+      {
+        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
+        "received_at": "2026-07-24T03:56:03.493Z"
+      },
+      {
+        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
+        "received_at": "2026-07-24T03:56:03.14Z"
+      },
+      {
+        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "event": "auth.account.deleted",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:02.208Z"
+      }
+    ],
+    "offset": 0,
+    "total": 1906
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0066s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [],
+    "offset": 0,
+    "total": 0
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0045s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [
+      {
+        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:16.831Z"
+      },
+      {
+        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
+        "event": "alert.threshold.deleted",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:11.426Z"
+      },
+      {
+        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
+        "received_at": "2026-07-24T03:56:09.144Z"
+      },
+      {
+        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
+        "received_at": "2026-07-24T03:56:08.188Z"
+      },
+      {
+        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "event": "control.schedule.created",
+        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T03:56:07.46Z"
+      },
+      {
+        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "event": "node.paired",
+        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:05.309Z"
+      },
+      {
+        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "event": "node.unpaired",
+        "payload": "{\"node_id\":\"node-02\"}",
+        "received_at": "2026-07-24T03:56:04.953Z"
+      },
+      {
+        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
+        "received_at": "2026-07-24T03:56:03.493Z"
+      },
+      {
+        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
+        "received_at": "2026-07-24T03:56:03.14Z"
+      },
+      {
+        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "event": "auth.account.deleted",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:02.208Z"
+      },
+      {
+        "id": "96296e39-4cf1-4929-ab1b-ec7863202862",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:01.915Z"
+      },
+      {
+        "id": "515c53e3-69cb-46c1-aaa5-eccaedbadc01",
+        "event": "auth.logout",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:56:01.629Z"
+      },
+      {
+        "id": "cedf09fe-37bc-4a6c-bf33-d7cd21ef67be",
+        "event": "auth.register",
+        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:01.319Z"
+      },
+      {
+        "id": "c02b3d10-f44d-4406-9f35-477bbf84dcaf",
+        "event": "auth.refresh",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.849Z"
+      },
+      {
+        "id": "0dfa3832-09a5-4669-bd58-b0aae8c7e48c",
+        "event": "auth.profile.updated",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.637Z"
+      },
+      {
+        "id": "0297dab6-8b5c-4680-9e61-482b2b97487b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:56:00.371Z"
+      },
+      {
+        "id": "ed8157a0-baf6-4452-9133-4094e923a43e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:48.989Z"
+      },
+      {
+        "id": "4818bf5e-30a5-498b-b747-49cc8b004fee",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:37.563Z"
+      },
+      {
+        "id": "31f2d84f-0f56-427b-8e4f-4363ccf81d08",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:55:11.087Z"
+      },
+      {
+        "id": "fbb1725f-2787-480e-91d3-603305b65737",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:27.831Z"
+      },
+      {
+        "id": "bfa86419-af0c-45b1-b772-2857897a7a52",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:54:17.418Z"
+      },
+      {
+        "id": "8b7b87f8-4a89-440a-b3e9-b21d910aa568",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:48:28.346Z"
+      },
+      {
+        "id": "e87ee415-f153-4901-a489-4760e7f20f2f",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:47:42.495Z"
+      },
+      {
+        "id": "9955d069-2c3f-4b59-bb24-cad47e261b6b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"3014ebe0-5eab-45f0-8485-8d8e92d9be80\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:46:37.279Z"
+      },
+      {
+        "id": "eebf0c2e-e643-430c-a0d4-f199d3ce771e",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:46:32.494Z"
+      },
+      {
+        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:45:29.194Z"
+      },
+      {
+        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:43:32.658Z"
+      },
+      {
+        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:42:20.428Z"
+      },
+      {
+        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:41:29.924Z"
+      },
+      {
+        "id": "9c745b07-4c17-49af-b653-79c2ff7c19de",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:36:34.885Z"
+      },
+      {
+        "id": "673aab8e-5ecd-4d2a-a9e9-4833da8db751",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"ed932d1f-e37b-4859-a772-cd6d8c63535d\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:36:34.494Z"
+      },
+      {
+        "id": "5d376cd2-d8a3-431a-bb26-ba91f7fd1402",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"6cc554bf-21ef-420f-8452-c195749e9f15\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:35:33.042Z"
+      },
+      {
+        "id": "96e01b28-e98c-4691-9743-ff4091edba63",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:35:32.54Z"
+      },
+      {
+        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:33:05.931Z"
+      },
+      {
+        "id": "91388fdc-bcfa-401b-80d6-39c9f91202a0",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"21de8410-e55c-4553-9e95-e449e16f2ac5\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:25:32.494Z"
+      },
+      {
+        "id": "88565373-2dbf-40f2-a511-c5b72e7b1130",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:25:30.494Z"
+      },
+      {
+        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:24:54.036Z"
+      },
+      {
+        "id": "a1ecfd60-f1a4-4c76-bdb8-a16915e3617b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"7f6e809f-92c7-459f-994a-aa792a74a6f8\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:24:30.979Z"
+      },
+      {
+        "id": "7de5eedb-7825-4e9d-ba5d-7e734a6beef6",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:24:30.496Z"
+      },
+      {
+        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:22.847Z"
+      },
+      {
+        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:24:04.66Z"
+      },
+      {
+        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:20:43.662Z"
+      },
+      {
+        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:15:52.376Z"
+      },
+      {
+        "id": "5ab839b8-5ae3-45f4-b9ba-871aa42a0689",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:14:36.494Z"
+      },
+      {
+        "id": "58db2f64-91c9-4cd5-aae1-64b2ba72d172",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d30e66f4-c22b-4694-8937-0d9ab92bff2e\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:13:30.188Z"
+      },
+      {
+        "id": "c1164d82-f2c0-4e71-a634-ea88bee1ebda",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:13:28.494Z"
+      },
+      {
+        "id": "90cd6e66-b9b2-4978-a0dc-8162b7565c70",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"400dc5d2-f666-4900-96b9-127015efe5c9\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:03:28.848Z"
+      },
+      {
+        "id": "58dac530-e0d0-4a96-826d-cd96b2fb27fb",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T03:03:28.493Z"
+      },
+      {
+        "id": "9389469b-ea04-40fe-85bf-083db610bca8",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"8edd63fe-7dc7-4130-b608-cf21cfd841c4\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T03:02:29.398Z"
+      },
+      {
+        "id": "e1bb7dde-f824-48d5-b334-df1d2074bf39",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T03:02:28.494Z"
+      }
+    ],
+    "offset": 0,
+    "total": 1753
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [
+      {
+        "id": "983495cc-afbd-4151-87af-8d33b441a230",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:09.963Z"
+      },
+      {
+        "id": "ddd9dc0c-edb0-4cc9-9f0b-ba1b5ff34f4e",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:28:19.647Z"
+      },
+      {
+        "id": "a12655f8-7a67-4db4-88ca-a286783e118f",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:25:20.489Z"
+      },
+      {
+        "id": "b89f3198-c6d4-4b3c-b569-457a1ca1e5e7",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:22:26.927Z"
+      },
+      {
+        "id": "45bb29c8-7fd9-45ad-9262-b5f1863cc0ea",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:17:31.482Z"
+      },
+      {
+        "id": "40685253-a639-4ba2-8aba-72d80e9f8148",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:04:02.272Z"
+      },
+      {
+        "id": "d4f87f7c-ec59-4226-a926-7e5d95fd3d7a",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:02:04.549Z"
+      },
+      {
+        "id": "abbeae52-d2c8-4bab-833d-f618d06fd4d3",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:00:12.029Z"
+      },
+      {
+        "id": "a6219555-007d-44bb-874c-4940fd67d9f4",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:50:58.821Z"
+      },
+      {
+        "id": "b277010f-c5bd-4700-8be8-813b8fc59d1b",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:46:29.806Z"
+      },
+      {
+        "id": "e9e0f07d-bb4c-4cad-a360-8415de5e7951",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:43:24.781Z"
+      },
+      {
+        "id": "1c948bdf-aef7-4622-9dd9-2c0995950335",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:41:04.664Z"
+      },
+      {
+        "id": "92f16b7d-103f-4461-ab85-393d1de641e8",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:33:21.928Z"
+      },
+      {
+        "id": "bff66611-73a2-4ce0-baf2-725da27b0adb",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:30:23.018Z"
+      },
+      {
+        "id": "c2378cdd-577d-40db-a094-6ddc365fbe66",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:27:09.987Z"
+      },
+      {
+        "id": "35ebe92e-30d4-4fbd-bb19-b48d70059ae6",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:24:57.701Z"
+      },
+      {
+        "id": "9b5d362f-bab7-4512-a3f0-32ac8fc49115",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:22:11.155Z"
+      },
+      {
+        "id": "c5cb952c-4572-46a0-b571-2e57d11d565a",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:20:12.148Z"
+      },
+      {
+        "id": "a167c6c0-81dc-41b4-b85d-46dc8b288884",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:18:00.914Z"
+      },
+      {
+        "id": "1a859e54-2867-4aff-b3bb-1f0d574e6afc",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:13:25.04Z"
+      },
+      {
+        "id": "406599ed-80fd-45f2-92b1-96dae9dd8287",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:11:12.257Z"
+      },
+      {
+        "id": "87527fc2-e164-4770-87bc-be67b9d4816d",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:09:05.266Z"
+      },
+      {
+        "id": "bbd82428-65ee-4dc7-9db9-dc35fce62b01",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:06:59.508Z"
+      },
+      {
+        "id": "4a427989-2a03-4bec-9b99-d2af2b555589",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:04:31.871Z"
+      },
+      {
+        "id": "3a98a6ea-4f6a-4387-8b66-cb737b8a026e",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:55:56.727Z"
+      },
+      {
+        "id": "da98ab59-7950-4d86-89cb-6533c416350c",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:53:59.117Z"
+      },
+      {
+        "id": "6288980e-c59d-4555-ac17-cb00b0e21adc",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:52:04.118Z"
+      },
+      {
+        "id": "5cde336d-b9d6-4d79-992d-0eb24cdec7cf",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:50:02.562Z"
+      },
+      {
+        "id": "d9e3ba20-46f0-40f7-bee9-cbfb13326d68",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:47:48.251Z"
+      },
+      {
+        "id": "18c57506-46d1-4a5d-ab20-8ab590c036b8",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:45:00.944Z"
+      },
+      {
+        "id": "528b860e-52ad-4c11-bf18-2e846cea6907",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:43:00.585Z"
+      },
+      {
+        "id": "c7b08490-1dc8-4093-8e3b-e07052207227",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:40:46.187Z"
+      },
+      {
+        "id": "81ad95a9-91a5-4215-a68f-90784ed87891",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:37:38.927Z"
+      },
+      {
+        "id": "120a0ae8-0860-440e-9b3b-f23fbf18976b",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:37:26.98Z"
+      },
+      {
+        "id": "7658bd19-eb63-466c-8e6b-8e6e9004b4c5",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:32:22.102Z"
+      },
+      {
+        "id": "7dc8eebd-a385-482b-bafa-8fbf5dfafcf0",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:27:52.618Z"
+      },
+      {
+        "id": "88eb6126-c688-48c0-9930-d10df11967da",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:25:30.324Z"
+      },
+      {
+        "id": "63c4d743-83af-4886-ab68-dd441ad5d4aa",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:23:53.661Z"
+      },
+      {
+        "id": "c9893172-b13f-4b3b-bdd9-aed7b09d05ef",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "queued",
+        "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:20:05.005Z"
+      },
+      {
+        "id": "bd2b6258-e231-4928-8723-9321b2958f05",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:15:28.538Z"
+      },
+      {
+        "id": "f1ab1ddf-425f-48f4-8d49-b1a40d157c0c",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T16:02:47.649Z"
+      },
+      {
+        "id": "0bf90f9b-8f53-482e-aa79-fef254918da6",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T15:59:24.106Z"
+      },
+      {
+        "id": "deda1bde-2bb2-4a6f-9e07-ee4b783526c1",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T15:46:31.296Z"
+      },
+      {
+        "id": "884b99db-0508-4c8f-afc8-1c353983199b",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T15:32:31.362Z"
+      },
+      {
+        "id": "b6b41f7d-28ce-455e-bd4e-a91b582751d9",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T15:26:44.893Z"
+      },
+      {
+        "id": "3bbd68c6-f2dd-435c-88ad-7c425f631b57",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T12:45:08.319Z"
+      },
+      {
+        "id": "ac37b4ac-8a77-46a0-8bc1-3a71c955e830",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T12:41:58.618Z"
+      },
+      {
+        "id": "023add77-4183-4872-8a9c-0acbe41dd8a5",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T12:02:35.172Z"
+      },
+      {
+        "id": "8ef54b32-fbe3-4460-b380-1692da906c1f",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T08:55:31.208Z"
+      },
+      {
+        "id": "e69871dc-a0dc-4f19-a485-471038a050c0",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T07:08:54.813Z"
+      }
+    ],
+    "offset": 0,
+    "total": 151
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0022s
+- **Payload:**
+```json
+{
+  "data": {
+    "telegram": {
+      "enabled": true,
+      "target": "1020639196"
+    },
+    "email": {
+      "enabled": true,
+      "target": "albalislavio1@gmail.com"
+    },
+    "push": {
+      "enabled": false,
+      "target": ""
+    }
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 202
+- **Duration:** 0.1808s
+- **Payload:**
+```json
+{
+  "data": {
+    "enqueued": 1,
+    "message": "test notification(s) queued for delivery"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 400
+- **Duration:** 0.0029s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "invalid telegram chat id (must be numeric, e.g. 123456789 or -1001234567890)"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0042s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 10,
+    "logs": [
+      {
+        "id": "de427f4b-6488-452b-8af8-a8d00715af11",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "queued",
+        "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:52.497Z"
+      },
+      {
+        "id": "983495cc-afbd-4151-87af-8d33b441a230",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:09.963Z"
+      },
+      {
+        "id": "ddd9dc0c-edb0-4cc9-9f0b-ba1b5ff34f4e",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:28:19.647Z"
+      },
+      {
+        "id": "a12655f8-7a67-4db4-88ca-a286783e118f",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:25:20.489Z"
+      },
+      {
+        "id": "b89f3198-c6d4-4b3c-b569-457a1ca1e5e7",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:22:26.927Z"
+      },
+      {
+        "id": "45bb29c8-7fd9-45ad-9262-b5f1863cc0ea",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T19:17:31.482Z"
+      },
+      {
+        "id": "40685253-a639-4ba2-8aba-72d80e9f8148",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:04:02.272Z"
+      },
+      {
+        "id": "d4f87f7c-ec59-4226-a926-7e5d95fd3d7a",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:02:04.549Z"
+      },
+      {
+        "id": "abbeae52-d2c8-4bab-833d-f618d06fd4d3",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T18:00:12.029Z"
+      },
+      {
+        "id": "a6219555-007d-44bb-874c-4940fd67d9f4",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-23T17:50:58.821Z"
+      }
+    ],
+    "offset": 0,
+    "total": 107
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0134s
+- **Payload:**
+```json
+{
+  "data": {
+    "limit": 50,
+    "logs": [
+      {
+        "id": "ecee80d7-6bbf-45ff-bd80-238eece41c59",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "queued",
+        "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:51.76Z"
+      },
+      {
+        "id": "cd69e430-8a6c-4469-8b07-3dbd70e54cbe",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:49.326Z"
+      },
+      {
+        "id": "c0a13521-813d-4958-8808-fa0c99a6ee5c",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:47.021Z"
+      },
+      {
+        "id": "5be27f38-076c-4238-b3dd-bcdea1249ace",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:43.992Z"
+      },
+      {
+        "id": "08dbee23-2d02-4579-9fc2-1c06f6b2b041",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:31.18Z"
+      },
+      {
+        "id": "fd269f86-84b8-40c8-9e07-b81eac753413",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:26.944Z"
+      },
+      {
+        "id": "0fd37783-2a1b-49cf-b905-84c6e6a58b50",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:24.834Z"
+      },
+      {
+        "id": "df035782-e758-432f-a3e1-a09a7b8f73ae",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:22.406Z"
+      },
+      {
+        "id": "7a2f4c28-54b1-4bf9-9d6d-65acdfd87ac6",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:20.234Z"
+      },
+      {
+        "id": "40c398a9-ec32-43e9-9afc-90bd6484cd36",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:18.506Z"
+      },
+      {
+        "id": "5afae8d3-f508-4dbb-8082-3b9d24fa397d",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:14.881Z"
+      },
+      {
+        "id": "3b8c430c-386a-483f-accf-18d506812225",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:12.195Z"
+      },
+      {
+        "id": "6301346a-1969-4371-bafa-a67e8f497fd8",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:08.925Z"
+      },
+      {
+        "id": "7beb487f-0587-4caa-ad66-5cde83f3c4ab",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:06.115Z"
+      },
+      {
+        "id": "60992eee-248f-4e14-9b2f-782ddfe2c683",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:03.488Z"
+      },
+      {
+        "id": "45ca831a-0735-4017-8662-366aecbf7aa2",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:01.059Z"
+      },
+      {
+        "id": "02db78ba-5424-4f77-9dc5-0a8bccad67fd",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:58.381Z"
+      },
+      {
+        "id": "ea21d1d9-0941-4243-bc3c-44b68dac8e7a",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:56.23Z"
+      },
+      {
+        "id": "eaa27bc8-c85b-4533-be6a-dbd64bf59de2",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:51.662Z"
+      },
+      {
+        "id": "ae45f3ae-6b22-4317-94bf-bab4a4b66899",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:47.605Z"
+      },
+      {
+        "id": "5edb7c57-bad4-49cd-9f55-3176098f64e1",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:44.509Z"
+      },
+      {
+        "id": "dbb3d24f-830f-4cfb-8cda-eabfb4ac23de",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:41.492Z"
+      },
+      {
+        "id": "6f188873-433a-4539-b2d6-d4d9365aff2f",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:38.325Z"
+      },
+      {
+        "id": "45797959-a534-43ec-aabf-52c193322e34",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:36.544Z"
+      },
+      {
+        "id": "6a71e662-cab9-4bfa-8f24-b02d064acbba",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:34.738Z"
+      },
+      {
+        "id": "281e7d2e-a4b5-4a60-8a4d-7855536d6525",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:32.622Z"
+      },
+      {
+        "id": "6822d70e-1cc4-42f6-b1e7-5ed15ba5b582",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:29.689Z"
+      },
+      {
+        "id": "37764a1c-5559-438e-b278-21ee9de64ce9",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:26.895Z"
+      },
+      {
+        "id": "5858a389-f0e6-428f-8a28-ac6a8df5f3d8",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:24.177Z"
+      },
+      {
+        "id": "110c63d2-0181-48d1-b858-cb3010c8d949",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:22.52Z"
+      },
+      {
+        "id": "55524357-704a-40df-b82b-4853c1f928f6",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:19.661Z"
+      },
+      {
+        "id": "8e6f189f-c69f-4338-bd4e-560874c4aa59",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:17.97Z"
+      },
+      {
+        "id": "0c3ba34e-3108-4e8a-896e-8f28c8ce7ee6",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:16.009Z"
+      },
+      {
+        "id": "d866ecb6-6d35-4628-b2bb-a264a08aceeb",
+        "channel": "telegram",
+        "target": "",
+        "subject": "Telegram Update",
+        "body": "{\"message\":{\"text\":\"unit test\"}}",
+        "status": "queued",
+        "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "",
+        "created_at": "2026-07-24T03:56:11.853Z"
+      },
+      {
+        "id": "1cbf7552-30b1-4e7f-a189-1deec727d12e",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "queued",
+        "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:11.049Z"
+      },
+      {
+        "id": "3a604698-1830-4119-ac3a-b6267aec0625",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:10.733Z"
+      },
+      {
+        "id": "9ead9330-9446-457d-b059-9ce595e4998f",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:08.156Z"
+      },
+      {
+        "id": "c0734202-dc3a-4dfb-8996-f0aa619393b4",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:05.37Z"
+      },
+      {
+        "id": "d1ed2404-b538-4c06-8cd4-d82cf945b80d",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:56:02.674Z"
+      },
+      {
+        "id": "50a4f5b2-e4a9-495e-8e39-82786a533094",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:58.565Z"
+      },
+      {
+        "id": "9f480402-39ce-464a-bb4c-22c3b0c9b5de",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:56.266Z"
+      },
+      {
+        "id": "4ff14fbb-26f8-4699-8847-d471ab1c2ab4",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:54.518Z"
+      },
+      {
+        "id": "eb238102-e90c-4c5a-a13d-eec0a389d384",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:52.39Z"
+      },
+      {
+        "id": "1cbc0231-222c-4d7f-bc6a-4b893aac6b89",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:50.798Z"
+      },
+      {
+        "id": "dff9987b-20fc-48f8-8e78-f2584be03ced",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:48.835Z"
+      },
+      {
+        "id": "ee2c6666-628e-4398-90fe-c47846d863ab",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:47.004Z"
+      },
+      {
+        "id": "e8af0618-f5d7-433d-8ca7-b2b6a9743343",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:45.29Z"
+      },
+      {
+        "id": "fa85b49e-2b35-4391-b9bc-bdc0fbd17685",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:42.003Z"
+      },
+      {
+        "id": "f40a6256-79f2-43c5-9129-9c2b33e86393",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:40.196Z"
+      },
+      {
+        "id": "fddbad75-d014-4967-9fb0-3807e90b781c",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:55:38.63Z"
+      }
+    ],
+    "offset": 0,
+    "total": 21951
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "data": {
+    "telegram": {
+      "enabled": true,
+      "target": "1020639196"
+    },
+    "email": {
+      "enabled": true,
+      "target": "alifmuhammadrizky01@gmail.com"
+    },
+    "webhook": {
+      "enabled": false,
+      "target": ""
+    }
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 202
+- **Duration:** 0.46s
+- **Payload:**
+```json
+{
+  "data": {
+    "enqueued": 1,
+    "message": "test webhook queued for delivery"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 400
+- **Duration:** 0.0029s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "invalid telegram chat id"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 202
+- **Duration:** 0.9768s
+- **Payload:**
+```json
+{
+  "data": {
+    "status": "accepted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0043s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "streams": [
+      {
+        "id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "name": "a",
+        "device_label": "",
+        "location": "",
+        "source_rtsp": "rtsp://192.168.1.110:554/Streaming/Channels/101",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "enabled": true,
+        "status": "waiting",
+        "hls_url": "http://localhost:8000/hls/a/index.m3u8",
+        "webrtc_url": "http://localhost:8889/a/whep",
+        "recording": false,
+        "created_at": "2026-07-23T03:10:35.682Z",
+        "updated_at": "2026-07-23T03:10:35.682Z"
+      },
+      {
+        "id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
+        "name": "cctv-1",
+        "device_label": "",
+        "location": "",
+        "source_rtsp": "rtsp://192.168.1.110/Streaming/Channels/101",
+        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
+        "enabled": true,
+        "status": "waiting",
+        "hls_url": "http://localhost:8000/hls/cctv-1/index.m3u8",
+        "webrtc_url": "http://localhost:8889/cctv-1/whep",
+        "recording": false,
+        "created_at": "2026-07-17T09:17:30.208Z",
+        "updated_at": "2026-07-17T09:17:30.208Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0032s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 7,
+    "snapshots": [
+      {
+        "id": "70ffcc8c-d9a7-47d9-bdf7-a75a2da5e117",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/snapshots/a/303ba13b-3de8-4a5a-8053-0d9fa688f86d.jpg",
+        "kind": "snapshot",
+        "size": 528542,
+        "created_at": "2026-07-23T08:46:12.807Z"
+      },
+      {
+        "id": "0f2a0d2f-cb94-4f1c-bc75-58f8e7ac2460",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/recordings/a/91b9733a-0ca2-47e8-99c4-e8eba6f7ce4f.mp4",
+        "kind": "recording",
+        "size": 5270758,
+        "created_at": "2026-07-23T05:25:09.844Z"
+      },
+      {
+        "id": "643db6f7-4f20-4b12-8eb0-a699ffe6e1f9",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/snapshots/a/7c50795b-f75e-4031-bc55-586b1035d3d2.jpg",
+        "kind": "snapshot",
+        "size": 529618,
+        "created_at": "2026-07-23T05:24:59.138Z"
+      },
+      {
+        "id": "38ad9301-7449-4e75-a2a1-1cb88f339b81",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/recordings/a/07274726-f2b7-4423-8e47-e9326ca24fa7.mp4",
+        "kind": "recording",
+        "size": 11097657,
+        "created_at": "2026-07-23T03:51:39.573Z"
+      },
+      {
+        "id": "ee6809c1-e711-4dfd-820c-725bb13533d4",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/snapshots/a/2abb3c7e-30ec-461f-a82f-0cdc44d4ae04.jpg",
+        "kind": "snapshot",
+        "size": 534083,
+        "created_at": "2026-07-23T03:30:53.305Z"
+      },
+      {
+        "id": "63559bf0-dabb-404c-8f25-4fb00a197de4",
+        "stream_id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
+        "stream_name": "cctv-1",
+        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
+        "url": "/storage/stream/recordings/cctv-1/213d8627-2ba8-4b5c-8d29-ee5aac8a5034.mp4",
+        "kind": "recording",
+        "size": 2813059,
+        "created_at": "2026-07-17T10:26:12.907Z"
+      },
+      {
+        "id": "458b49d8-8ba4-422c-9737-035c6e32ffbf",
+        "stream_id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
+        "stream_name": "cctv-1",
+        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
+        "url": "/storage/stream/snapshots/cctv-1/663b76f9-d514-4c1f-bc7b-f18e0ee5c69c.jpg",
+        "kind": "snapshot",
+        "size": 522608,
+        "created_at": "2026-07-17T10:08:13.63Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 500
+- **Duration:** 0.003s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "ERROR_500",
+    "message": "failed to create stream"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 404
+- **Duration:** 0.0027s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "stream not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 502
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_GATEWAY",
+    "message": "stream not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 502
+- **Duration:** 0.0031s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_GATEWAY",
+    "message": "stream not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 502
+- **Duration:** 0.0026s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "BAD_GATEWAY",
+    "message": "mediamtx operation failed: no active recording for this stream"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "snapshot not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 404
+- **Duration:** 0.0035s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "snapshot not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0044s
+- **Payload:**
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "object not found"
+  },
+  "success": false
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0062s
+- **Payload:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 1,
+    "items": [
+      {
+        "id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "name": "Vision Aeroponik",
+        "slug": "vision-aeroponik",
+        "description": "YOLO model for aeroponic plant/crop detection (user-triggered snapshots).",
+        "model_type": "yolov8",
+        "framework": "ultralytics",
+        "version": null,
+        "file_path": "/app/models/vision-aeroponik-model-test.pt",
+        "class_names": [
+          "Umbi 1.1",
+          "Umbi 1.2",
+          "Umbi 1.3",
+          "Umbi 1.4",
+          "Umbi 1.5",
+          "Umbi 2.1",
+          "Umbi 2.2",
+          "Umbi 3.1",
+          "Umbi 3.2",
+          "Umbi 3.3",
+          "Umbi 3.4",
+          "Umbi 3.5",
+          "Umbi 5.1",
+          "Umbi 5.2",
+          "Umbi 5.3",
+          "Umbi 6.1",
+          "Umbi 6.2",
+          "Umbi 8.1",
+          "Umbi 8.2",
+          "Umbi 8.3",
+          "Umbi 9.1",
+          "Umbi 9.2",
+          "Umbi 9.3",
+          "Umbi 10.1",
+          "Umbi 16.1",
+          "Umbi 16.2",
+          "Umbi 17.1",
+          "Umbi 18.1",
+          "Umbi 19.1"
+        ],
+        "input_size": 640,
+        "confidence_threshold": 0.25,
+        "iou_threshold": 0.45,
+        "status": "active",
+        "is_default": true,
+        "metadata": null,
+        "loaded": true,
+        "num_classes": 29,
+        "created_at": "2026-07-16T03:05:57",
+        "updated_at": "2026-07-16T03:06:35"
+      }
+    ]
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 404
+- **Duration:** 0.0067s
+- **Payload:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Frame not found in stream bucket: S3 operation failed; code: AccessDenied, message: Access Denied., resource: /stream, request_id: 18C51DB130E36124, host_id: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8, bucket_name: stream"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0092s
+- **Payload:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 107,
+    "limit": 50,
+    "offset": 0,
+    "items": [
+      {
+        "id": 109,
+        "detection_uid": "31bade88-600c-4d18-b7ed-6289fa0ccc13",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260724_035613_6a74d3_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260724_035613_gcblr7_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1506.64,
+        "status": "success",
+        "created_at": "2026-07-24T03:56:14"
+      },
+      {
+        "id": 108,
+        "detection_uid": "a62a89fa-6375-4a1a-90ec-12a0fbe50a4d",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_192820_6pw6k2_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_192822_gvpwoa_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1827.55,
+        "status": "success",
+        "created_at": "2026-07-23T19:28:22"
+      },
+      {
+        "id": 107,
+        "detection_uid": "771ef0da-6d86-408d-bb31-171cbcd5c2ce",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_192522_00e6gh_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_192524_4rytej_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2438.32,
+        "status": "success",
+        "created_at": "2026-07-23T19:25:24"
+      },
+      {
+        "id": 106,
+        "detection_uid": "1e7cbc03-dc0f-42db-be46-61b54597e7d5",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_192228_0qb5ni_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_192228_mxnmaj_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1365.42,
+        "status": "success",
+        "created_at": "2026-07-23T19:22:28"
+      },
+      {
+        "id": 105,
+        "detection_uid": "71ad94ad-7483-4a32-b0a2-b53d7c091b47",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_191732_riou9l_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_191733_o7ss8w_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1493.25,
+        "status": "success",
+        "created_at": "2026-07-23T19:17:33"
+      },
+      {
+        "id": 104,
+        "detection_uid": "9d3f1669-3ed2-4cb1-86ad-fd0a82eaf9e1",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_180403_qlekqj_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_180403_ewbwb0_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1238.06,
+        "status": "success",
+        "created_at": "2026-07-23T18:04:04"
+      },
+      {
+        "id": 103,
+        "detection_uid": "c977b4c3-b6d9-4e13-9ff8-367419492d3e",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_180205_h4981m_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_180205_8uhoii_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1498.92,
+        "status": "success",
+        "created_at": "2026-07-23T18:02:06"
+      },
+      {
+        "id": 102,
+        "detection_uid": "d7a0b70b-8707-4be5-87db-05d7e55535a8",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_180013_3sm51z_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_180013_bg26j0_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 985.69,
+        "status": "success",
+        "created_at": "2026-07-23T18:00:13"
+      },
+      {
+        "id": 101,
+        "detection_uid": "5286d7ba-9833-4395-8a44-657c2af35729",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_175100_6h9cnj_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_175100_7hvzdw_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1015.16,
+        "status": "success",
+        "created_at": "2026-07-23T17:51:00"
+      },
+      {
+        "id": 100,
+        "detection_uid": "e6351d07-da6e-4fc4-9f49-682715af0c43",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_174630_0gdpit_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_174631_i5xorn_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1355.23,
+        "status": "success",
+        "created_at": "2026-07-23T17:46:31"
+      },
+      {
+        "id": 99,
+        "detection_uid": "fb636cf2-d1de-45d1-997b-665b8889e576",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_174325_nvrqpx_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_174326_k3q8y4_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2234.95,
+        "status": "success",
+        "created_at": "2026-07-23T17:43:27"
+      },
+      {
+        "id": 98,
+        "detection_uid": "c66de0ee-ab88-4666-99f5-75ea73ea5a7d",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_174106_dl8cnd_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_174107_pf3bpj_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1925.89,
+        "status": "success",
+        "created_at": "2026-07-23T17:41:07"
+      },
+      {
+        "id": 97,
+        "detection_uid": "0115af4d-49a2-41a7-8361-b79fa09e726b",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_173322_jt3022_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_173322_8v5mwh_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 805.38,
+        "status": "success",
+        "created_at": "2026-07-23T17:33:23"
+      },
+      {
+        "id": 96,
+        "detection_uid": "4d31ef07-c01c-4a11-b5e3-6e406f7655b8",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_173025_fgrmpu_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_173026_i7bedh_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1479.91,
+        "status": "success",
+        "created_at": "2026-07-23T17:30:26"
+      },
+      {
+        "id": 95,
+        "detection_uid": "47a85a87-cb05-4313-b0b3-7cd149ed8938",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_172711_7ebhqq_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_172711_hq7t0a_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 978.97,
+        "status": "success",
+        "created_at": "2026-07-23T17:27:11"
+      },
+      {
+        "id": 94,
+        "detection_uid": "11649912-08c4-47bb-a56f-fc12b66f79db",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_172458_76cj71_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_172458_ubu26p_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 932.86,
+        "status": "success",
+        "created_at": "2026-07-23T17:24:58"
+      },
+      {
+        "id": 93,
+        "detection_uid": "2fd616ce-9a7d-416c-97dc-2c74e1200952",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_172212_msdhy5_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_172213_2nr7lp_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2551.81,
+        "status": "success",
+        "created_at": "2026-07-23T17:22:14"
+      },
+      {
+        "id": 92,
+        "detection_uid": "0f401984-c9cf-458f-b301-7c2fa8a2f85c",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_172013_he79fq_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_172013_h9s08o_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 932.97,
+        "status": "success",
+        "created_at": "2026-07-23T17:20:13"
+      },
+      {
+        "id": 91,
+        "detection_uid": "6b2d9473-082f-41a2-92dd-ad6f26a10b87",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_171802_supg8y_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_171802_3e071i_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1243.71,
+        "status": "success",
+        "created_at": "2026-07-23T17:18:02"
+      },
+      {
+        "id": 90,
+        "detection_uid": "393e658b-1d32-452e-8bb6-b8714ad5875b",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_171326_k05hed_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_171328_duvxe3_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 4187.4,
+        "status": "success",
+        "created_at": "2026-07-23T17:13:30"
+      },
+      {
+        "id": 89,
+        "detection_uid": "5314cf1d-fa9f-4584-b013-acd0bbb5cf43",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_171113_4a33f6_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_171113_rmpoia_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1036.02,
+        "status": "success",
+        "created_at": "2026-07-23T17:11:14"
+      },
+      {
+        "id": 88,
+        "detection_uid": "82079f97-fd05-4e62-8e9d-4f57d2b80ddd",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_170906_vt51wt_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_170906_iqtfeq_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1416.87,
+        "status": "success",
+        "created_at": "2026-07-23T17:09:07"
+      },
+      {
+        "id": 87,
+        "detection_uid": "db41a1ae-b83f-4660-91cf-775b8a466a44",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_170700_qwn13a_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_170701_rjgnwv_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1250.77,
+        "status": "success",
+        "created_at": "2026-07-23T17:07:01"
+      },
+      {
+        "id": 86,
+        "detection_uid": "64cad5ad-00bc-4427-a2dc-33cbd92b5bfd",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_170433_klq65c_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_170433_n9a12y_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1044.76,
+        "status": "success",
+        "created_at": "2026-07-23T17:04:34"
+      },
+      {
+        "id": 85,
+        "detection_uid": "b61b8930-d7e5-4c7f-9d18-8171c44a51f0",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_165557_bzb5xh_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_165557_lk4hks_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 922.48,
+        "status": "success",
+        "created_at": "2026-07-23T16:55:58"
+      },
+      {
+        "id": 84,
+        "detection_uid": "ff3988d3-fb53-4471-bc95-8e9db060beb7",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_165400_xzbh5y_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_165400_gbqblw_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1010.27,
+        "status": "success",
+        "created_at": "2026-07-23T16:54:00"
+      },
+      {
+        "id": 83,
+        "detection_uid": "3ce817f0-4f40-4b79-861a-70d3196623bd",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_165205_2clk5x_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_165205_mtythv_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1278.45,
+        "status": "success",
+        "created_at": "2026-07-23T16:52:06"
+      },
+      {
+        "id": 82,
+        "detection_uid": "a2963879-cd42-4de5-a968-916ad87a90c9",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_165003_8rnabl_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_165004_wdhdoz_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2053.24,
+        "status": "success",
+        "created_at": "2026-07-23T16:50:05"
+      },
+      {
+        "id": 81,
+        "detection_uid": "a80d9bdf-6630-47b4-8d19-41a61524fb8e",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_164749_ays8nt_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_164749_k6xn7r_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 813.98,
+        "status": "success",
+        "created_at": "2026-07-23T16:47:49"
+      },
+      {
+        "id": 80,
+        "detection_uid": "2c2e0e96-df7f-43a7-b1ee-94982d86025b",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_164502_mcxy2r_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_164502_47b6dn_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1071.16,
+        "status": "success",
+        "created_at": "2026-07-23T16:45:02"
+      },
+      {
+        "id": 79,
+        "detection_uid": "732282be-0025-4449-8638-74fe8ac668e6",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_164301_9bkuby_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_164301_jm0igx_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1346.71,
+        "status": "success",
+        "created_at": "2026-07-23T16:43:02"
+      },
+      {
+        "id": 78,
+        "detection_uid": "b2ad8dd5-6d89-47d3-8e7b-48d42bc7bba1",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_164047_xc33uk_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_164047_s34l14_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1315.73,
+        "status": "success",
+        "created_at": "2026-07-23T16:40:48"
+      },
+      {
+        "id": 77,
+        "detection_uid": "eccb79f0-90bb-4786-9bad-1690bad12019",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_163740_g77cnt_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_163740_t7vxxx_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1643.75,
+        "status": "success",
+        "created_at": "2026-07-23T16:37:40"
+      },
+      {
+        "id": 76,
+        "detection_uid": "f939d81b-66dc-41db-afbd-77c8a950880d",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_163728_kuk44a_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_163728_3sbunc_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1667.36,
+        "status": "success",
+        "created_at": "2026-07-23T16:37:29"
+      },
+      {
+        "id": 75,
+        "detection_uid": "e4118be0-5c79-4d82-bb5f-d19530f272d7",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_163223_agtakw_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_163223_bd9k04_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1432.77,
+        "status": "success",
+        "created_at": "2026-07-23T16:32:24"
+      },
+      {
+        "id": 74,
+        "detection_uid": "6da6145a-51bf-4d6d-876a-79f58c6d7ac4",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_162754_pe056v_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_162756_fxb23a_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 3698.91,
+        "status": "success",
+        "created_at": "2026-07-23T16:27:57"
+      },
+      {
+        "id": 73,
+        "detection_uid": "d7f5dd83-cf83-4d92-9b1d-a5014fa6d3b4",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_162603_59uvh7_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_162603_1c7k1a_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2218.46,
+        "status": "success",
+        "created_at": "2026-07-23T16:26:04"
+      },
+      {
+        "id": 72,
+        "detection_uid": "2d7be7df-2026-497a-9aa2-3bcbe6e8a29c",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_162532_o845lp_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_162533_jsq9z0_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 3227.95,
+        "status": "success",
+        "created_at": "2026-07-23T16:25:34"
+      },
+      {
+        "id": 71,
+        "detection_uid": "743c81c6-ffa4-482b-9b95-899bb736bb3f",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_162357_iz0u87_base64",
+        "annotated_url": null,
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 38612.1,
+        "status": "success",
+        "created_at": "2026-07-23T16:24:34"
+      },
+      {
+        "id": 70,
+        "detection_uid": "df305681-ffc3-4b63-80e6-f2f7fb304376",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_162019_yqqrsc_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_162025_v5irl9_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 13070.9,
+        "status": "success",
+        "created_at": "2026-07-23T16:20:32"
+      },
+      {
+        "id": 69,
+        "detection_uid": "0e208c5e-d744-44d3-8a73-c5b52d1b278f",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_161529_ehsuq6_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_161530_ipni83_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1108.5,
+        "status": "success",
+        "created_at": "2026-07-23T16:15:30"
+      },
+      {
+        "id": 68,
+        "detection_uid": "6ad0f345-4e5a-4d57-93ba-223c0aa640e0",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_160249_ovk0su_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_160249_lbq3ck_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1914.92,
+        "status": "success",
+        "created_at": "2026-07-23T16:02:50"
+      },
+      {
+        "id": 67,
+        "detection_uid": "1ee705ac-2821-4ba7-a4a6-ceddd6b730d6",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_155925_tftupp_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_155925_laqzpj_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1401.47,
+        "status": "success",
+        "created_at": "2026-07-23T15:59:26"
+      },
+      {
+        "id": 66,
+        "detection_uid": "0efde049-40bb-4f79-8c64-fbae09624135",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_154632_irt0s0_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_154633_c5o1sf_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 3010.0,
+        "status": "success",
+        "created_at": "2026-07-23T15:46:34"
+      },
+      {
+        "id": 65,
+        "detection_uid": "4384264c-1ce3-494a-93ab-fea3960ceb42",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_153235_ymqg6s_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_153236_95c1ve_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 4484.04,
+        "status": "success",
+        "created_at": "2026-07-23T15:32:36"
+      },
+      {
+        "id": 64,
+        "detection_uid": "c812e549-b6c7-4279-94c8-5f95c1259da6",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_152648_ve27sa_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_152648_79srpy_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 3429.01,
+        "status": "success",
+        "created_at": "2026-07-23T15:26:48"
+      },
+      {
+        "id": 63,
+        "detection_uid": "e8f288be-2d83-44ed-92d5-b743f55dc53b",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_124511_ry6yeb_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_124511_j1l1g7_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 2946.77,
+        "status": "success",
+        "created_at": "2026-07-23T12:45:12"
+      },
+      {
+        "id": 62,
+        "detection_uid": "d3d707f2-069a-476d-9f21-5dbb100805f3",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_124200_c47q7u_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_124201_bpx9ro_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1870.07,
+        "status": "success",
+        "created_at": "2026-07-23T12:42:01"
+      },
+      {
+        "id": 61,
+        "detection_uid": "d9f3929b-12ac-4d98-a2f8-991214ab508b",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "upload",
+        "source_ref": "a_ea57fc4d-5258-470f-84ff-2dad1d11a0d7.jpg",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_122815_t9e2ul_a_ea57fc4d-5258-470f-84ff-2dad1d11a0d7.jpg",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_122816_qocve0_a_ea57fc4d-5258-470f-84ff-2dad1d11a0d7.jpg",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 6057.75,
+        "status": "success",
+        "created_at": "2026-07-23T12:28:16"
+      },
+      {
+        "id": 60,
+        "detection_uid": "43201fb5-bb69-4079-a79e-e3ccc339f77c",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "upload",
+        "source_ref": "a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_120302_8hzbwx_a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_120303_1fjye8_a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1888.42,
+        "status": "success",
+        "created_at": "2026-07-23T12:03:03"
+      }
+    ]
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0056s
+- **Payload:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Model not found"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 2.3039s
+- **Payload:**
+```json
+{
+  "success": true,
+  "data": {
+    "count": 1,
+    "results": [
+      {
+        "detection_uid": "f343cb18-1bf1-428b-9b72-efb62ebe0082",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260724_035754_hjhhpt_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260724_035755_ix0xpt_base64",
+        "num_detections": 0,
+        "classes": [],
+        "detections": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1924.02,
+        "status": "success"
+      }
+    ]
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.006s
+- **Payload:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "detection_uid": "f60c0e99-304d-46bb-8ef7-bcb54aa6a0ea",
+    "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+    "model_name": "Vision Aeroponik",
+    "source_type": "upload",
+    "source_ref": "test_frame.jpg",
+    "original_url": "http://localhost:8000/minio/mlbucket/original/20260716_031053_pycgjq_test_frame.jpg",
+    "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260716_031053_a43koi_test_frame.jpg",
+    "num_detections": 0,
+    "classes": [],
+    "confidence_min": null,
+    "confidence_max": null,
+    "confidence_avg": null,
+    "execution_time_ms": 11352.6,
+    "status": "success",
+    "created_at": "2026-07-16T03:10:54"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0076s
+- **Payload:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 0,
+    "items": []
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 404
+- **Duration:** 0.0064s
+- **Payload:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Model not found"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 404
+- **Duration:** 0.0066s
+- **Payload:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Model not found"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 404
+- **Duration:** 0.0062s
+- **Payload:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Model not found"
+  }
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.3448s
+- **Payload:**
+```json
+{
+  "data": {
+    "nodes": [
+      {
+        "node_id": "ECE334219870",
+        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "ECE334219870",
+        "module_id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "ECE334219870",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "metrics": [
+          "device_info.free_heap_kb",
+          "network.wifi_rssi",
+          "telemetry.inputs.input1",
+          "telemetry.inputs.input2",
+          "telemetry.inputs.input3",
+          "telemetry.inputs.input4",
+          "telemetry.modbus.cwt1.hum",
+          "telemetry.modbus.cwt1.temp",
+          "telemetry.modbus.cwt2.hum",
+          "telemetry.modbus.cwt2.temp",
+          "telemetry.outputs.buzzer",
+          "telemetry.outputs.load1",
+          "telemetry.outputs.load2",
+          "telemetry.outputs.load3",
+          "telemetry.outputs.load4"
+        ]
+      },
+      {
+        "node_id": "node-06",
+        "module_id": "",
+        "metrics": [
+          "temperature"
+        ]
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0031s
+- **Payload:**
+```json
+{
+  "data": {
+    "from": "2026-07-23T03:57:56Z",
+    "metrics": [
+      "temperature"
+    ],
+    "node_ids": [
+      "node-02"
+    ],
+    "to": "2026-07-24T03:57:56Z",
+    "total": 0
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0026s
+- **Payload:**
+```json
+{
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Historical telemetry export (CSV) with cursor-based pagination and RBAC.",
+    "title": "Export Service API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/export/v1/nodes": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Node list"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "summary": "List nodes with telemetry and their available metrics"
+      }
+    },
+    "/export/v1/openapi": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OpenAPI JSON"
+          }
+        },
+        "summary": "This OpenAPI specification"
+      }
+    },
+    "/export/v1/telemetry": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Comma-separated node IDs",
+            "in": "query",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated metric names",
+            "in": "query",
+            "name": "metric",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC3339 start (default 24h ago)",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "RFC3339 end (default now)",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Rows per page (max 100000)",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor for the next page",
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file attachment"
+          },
+          "400": {
+            "description": "Bad request (invalid params / window too large)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (insufficient role)"
+          }
+        },
+        "summary": "Stream a paginated CSV export of raw telemetry"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "servers": [
+    {
+      "description": "via Kong gateway",
+      "url": "http://localhost:8000"
+    }
+  ]
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0037s
+- **Payload:**
+```
+time,node_id,module_id
+
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0017s
+- **Payload:**
+```json
+{
+  "message": "no Route matched with those values",
+  "request_id": "3240073404298e3c67caaa594c767e1c"
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 404
+- **Duration:** 0.0023s
+- **Payload:**
+```json
+{
+  "message": "no Route matched with those values",
+  "request_id": "b3bf2b4d0bf46d49db9f0b1c166e8d11"
+}
+```
+

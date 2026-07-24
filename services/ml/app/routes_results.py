@@ -1,6 +1,6 @@
-"""Read-only listing of objects stored in the `ml-result` bucket by the
+"""Read-only listing of objects stored in the `mlbucket` bucket by the
 external CCTV capture cron. Exposes frames / annotated images / result JSON
-so the dashboard gallery can render captures without touching the ML bucket.
+so the dashboard gallery can render captures.
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def list_results(
     prefix: str = Query("frames", description="frames | annotated | results"),
     limit: int = Query(200, ge=1, le=1000),
 ):
-    """List objects under a prefix in the `ml-result` bucket.
+    """List objects under a prefix in the `mlbucket` bucket.
 
     URLs are returned as same-origin `/storage/{bucket}/{key}` paths so the
     dashboard can serve them through its MinIO proxy (the bucket is
@@ -75,7 +75,7 @@ def list_results(
 
 @router.delete("/results", dependencies=[Depends(require_write)])
 def delete_result(key: str = Query(...)):
-    """Delete a single object from the `ml-result` bucket (file management)."""
+    """Delete a single object from the `mlbucket` bucket (file management)."""
     if not storage.is_safe_object_key(key):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

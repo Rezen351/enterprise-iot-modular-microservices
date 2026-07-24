@@ -5,7 +5,7 @@
 > **Port:** 8080 (internal); routed via Kong at `/ml`  
 > **Language / Framework:** Python 3.11 · FastAPI · Ultralytics YOLOv8  
 > **Database:** `mariadb-ml` (schema `ml_db`)  
-> **Object Storage:** MinIO shared instance (buckets `ml`, `stream`, `ml-result`)  
+> **Object Storage:** MinIO shared instance (buckets `ml`, `stream`)  
 > **Messaging:** NATS (subject `detection.result`)  
 > **Status:** Production-ready (Fase 5+)
 
@@ -26,7 +26,7 @@ The ML Service is a YOLOv8-based computer vision microservice. It owns a model r
 | Dependency | Purpose | Notes |
 |---|---|---|
 | `mariadb-ml` | Persistent model registry + detection history | Schema auto-migrates on startup (`CREATE TABLE IF NOT EXISTS`) |
-| `minio` | Object storage | Read from `stream` bucket; write to `ml` bucket and `ml-result` bucket |
+| `minio` | Object storage | Read from `stream` bucket; write to `ml` bucket |
 | `nats` | Event bus | Publish-only (`detection.result`); failures are swallowed (best-effort) |
 | `kong` | API Gateway | External traffic routed through Kong → `/ml` prefix |
 
@@ -199,12 +199,12 @@ All inference endpoints require the `write` role. History listing requires the `
 
 ### 2.4 Results Routes (`/ml/results`)
 
-These endpoints list and manage objects stored in the `ml-result` bucket (written by an external CCTV capture cron, not by the ML inference itself).
+These endpoints list and manage objects stored in the `ml` bucket (written by an external CCTV capture cron, not by the ML inference itself).
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/ml/results` | List objects under a prefix in `ml-result` bucket | read |
-| `DELETE` | `/ml/results` | Delete a single object from `ml-result` bucket | write |
+| `GET` | `/ml/results` | List objects under a prefix in `ml` bucket | read |
+| `DELETE` | `/ml/results` | Delete a single object from `ml` bucket | write |
 
 **`GET /ml/results` query params:**
 - `prefix` (string, default `"frames"`) — one of `frames`, `annotated`, `results`
@@ -217,7 +217,7 @@ These endpoints list and manage objects stored in the `ml-result` bucket (writte
   "items": [
     {
       "key": "frames/20260721_120000_abc123_frame.jpg",
-      "url": "/storage/ml-result/frames/20260721_120000_abc123_frame.jpg",
+      "url": "/storage/ml/frames/20260721_120000_abc123_frame.jpg",
       "size": 245760,
       "last_modified": "2026-07-21T12:00:00",
       "kind": "frame"
@@ -237,7 +237,7 @@ The ML Service receives data from two primary sources:
 The Stream Service writes snapshots and recordings to the `stream` bucket on the shared MinIO instance. The ML Service reads from this bucket in two ways:
 
 1. **Explicit trigger via REST:** A client calls `POST /ml/detect/from-stream` with the `object_key` of a frame stored in the `stream` bucket.
-2. **Implicit:** The external CCTV capture cron writes frames to the `ml-result` bucket, which the ML Service can list via `GET /ml/results?prefix=frames` (read-only listing for dashboard display).
+2. **Implicit:** The external CCTV capture cron writes frames to the `ml` bucket, which the ML Service can list via `GET /ml/results?prefix=frames` (read-only listing for dashboard display).
 
 ### 3.2 From Dashboard / API Gateway (via Kong)
 
@@ -300,9 +300,9 @@ Downstream consumers (e.g., Alert Service, WS-Gateway) should subscribe to `dete
 |--------|--------|---------|-----------|
 | `ml` | `original/` | Original input images (upload or stream frame) | ML Service |
 | `ml` | `detected/` | Annotated images with bounding boxes drawn | ML Service |
-| `ml-result` | `frames/` | Raw frames collected by external CCTV capture cron | External cron |
-| `ml-result` | `annotated/` | Annotated frames from external pipeline | External cron |
-| `ml-result` | `results/` | JSON result files from external pipeline | External cron |
+| `ml` | `frames/` | Raw frames collected by external CCTV capture cron | External cron |
+| `ml` | `annotated/` | Annotated frames from external pipeline | External cron |
+| `ml` | `results/` | JSON result files from external pipeline | External cron |
 
 ### 4.3 MariaDB Persistence
 
@@ -405,9 +405,8 @@ If your service produces frames that should be analyzed by ML:
 | `MINIO_ACCESS_KEY` | `${MINIO_ML_ACCESS_KEY}` | MinIO access key (scoped for ML service) |
 | `MINIO_SECRET_KEY` | `${MINIO_ML_SECRET_KEY}` | MinIO secret key (scoped for ML service) |
 | `MINIO_USE_SSL` | `false` | Use TLS for MinIO connection |
-| `MINIO_ML_BUCKET` | `ml` | Bucket for ML-originated images |
+| `MINIO_ML_BUCKET` | `ml` | Bucket for ML-originated images and external capture results |
 | `MINIO_STREAM_BUCKET` | `stream` | Bucket for stream source frames (read) |
-| `MINIO_RESULT_BUCKET` | `ml-result` | Bucket for external CCTV capture results |
 | `MINIO_ORIGINAL_PREFIX` | `original` | Prefix for original images in `ml` bucket |
 | `MINIO_ANNOTATED_PREFIX` | `detected` | Prefix for annotated images in `ml` bucket |
 | `MINIO_PUBLIC_URL` | `http://localhost:9000` | Public base URL for MinIO object links |
@@ -547,7 +546,7 @@ curl -s http://localhost:8000/ml/detections/1 \
   -H "Authorization: Bearer $TOKEN" | jq
 ```
 
-### 8.11 List Results (ml-result bucket)
+### 8.11 List Results (ml bucket)
 ```bash
 curl -s "http://localhost:8000/ml/results?prefix=frames&limit=50" \
   -H "Authorization: Bearer $TOKEN" | jq
@@ -624,7 +623,7 @@ services/ml/
     ├── routes_system.py      # GET /health
     ├── routes_models.py      # /ml/models CRUD + weights upload + activate
     ├── routes_detect.py      # /ml/detect, /ml/detect/base64, /ml/detect/from-stream, /ml/detections
-    ├── routes_results.py     # /ml/results (list/delete from ml-result bucket)
+    ├── routes_results.py     # /ml/results (list/delete from ml bucket)
     ├── vision_engine.py      # ModelRegistry + YOLO inference engine
     ├── storage.py            # MinIO client wrapper
     ├── messaging.py          # NATS publisher (detection.result)

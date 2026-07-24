@@ -111,9 +111,12 @@ type StreamView struct {
 	NodeID      string    `json:"node_id,omitempty"`
 	ModuleID    string    `json:"module_id,omitempty"`
 	Enabled     bool      `json:"enabled"`
-	Status      string    `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
-	HlsURL      string    `json:"hls_url"`
-	WebRTCURL   string    `json:"webrtc_url"` // playback (WHEP) endpoint, host-direct
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Status         string    `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
+	HlsURL         string    `json:"hls_url"`
+	WebRTCURL      string    `json:"webrtc_url"` // playback (WHEP) endpoint, host-direct
+	Recording      bool      `json:"recording"`
+	RecordingStart int64     `json:"recording_start,omitempty"` // Unix timestamp in milliseconds
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+
 }

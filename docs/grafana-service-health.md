@@ -1,7 +1,7 @@
 # Panduan Membaca Dashboard "Service Health" (Untuk Pemula)
 
 > **Tujuan dokumen ini:** menjelaskan apa arti setiap grafik di dashboard Grafana
-> **Service Health — IOT Modular Microservice** dengan bahasa sehari-hari, lengkap
+> **Service Health — enyx-enterprise** dengan bahasa sehari-hari, lengkap
 > dengan arti tiap angka/parameter yang muncul. Anda tidak perlu paham teknis untuk
 > membaca ini.
 
@@ -12,7 +12,7 @@
 1. Buka browser, kunjungi **http://localhost:3000** (atau **http://<IP-PUBLIC-ATAU-LAN>:3000** jika diakses dari jaringan publik/remote/LAN).
 2. Login dengan user `admin` / password dari `.env` (`GRAFANA_ADMIN_PASSWORD`, default: `admin`).
 3. Di menu kiri, buka **Dashboards** → folder **Service Health** → pilih
-   **Service Health — IOT Modular Microservice**.
+   **Service Health — enyx-enterprise**.
 
 Dashboard akan otomatis refresh setiap **15 detik** (lihat tulisan di kanan atas,
 misal `Last 1h` = data 1 jam terakhir).

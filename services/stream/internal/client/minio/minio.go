@@ -120,7 +120,7 @@ func ValidObjectPath(bucket, key string) bool {
 		return false
 	}
 	switch bucket {
-	case "stream", "ml-result", "mlbucket", "ml":
+	case "stream", "mlbucket":
 		return true
 	}
 	return false
@@ -158,7 +158,7 @@ func (c *Client) UploadObject(key, contentType string, data []byte) (string, err
 }
 
 // UploadObjectToBucket stores data in an arbitrary bucket (e.g. the shared
-// ml-result bucket where both the cron capture job and the live "Capture
+// mlbucket bucket where both the cron capture job and the live "Capture
 // Detect AI" button land their results). Returns a same-origin /storage URL.
 func (c *Client) UploadObjectToBucket(bucket, key, contentType string, data []byte) (string, error) {
 	if bucket == "" {
@@ -191,7 +191,7 @@ func (c *Client) EnsureBucket(bucket string) error {
 }
 
 // ReadObject fetches an object (used to mirror the ML service's annotated
-// image from the ml bucket into the shared ml-result bucket).
+// image from the ml bucket into the shared mlbucket bucket).
 func (c *Client) ReadObject(bucket, key string) ([]byte, error) {
 	obj, err := c.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 	if err != nil {

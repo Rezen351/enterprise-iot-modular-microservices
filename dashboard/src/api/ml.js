@@ -1,6 +1,6 @@
 // ============================================================================
 // ML Results API — read-only listing of captures collected by the external
-// CCTV capture cron (stored in the `ml-result` MinIO bucket).
+// CCTV capture cron (stored in the `mlbucket` MinIO bucket).
 //   List: GET /ml/results?prefix=frames|annotated|results
 // ============================================================================
 

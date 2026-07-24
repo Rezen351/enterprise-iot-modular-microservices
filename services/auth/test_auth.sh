@@ -203,6 +203,15 @@ STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/auth/logout" \
   -H "Authorization: Bearer $LOGOUT_TOKEN")
 [ "$STATUS" = "200" ] && _pass "Logout successful" || _fail "HTTP $STATUS (expected 200)"
 
+# ── 21. Delete logoutuser account (cleanup) ──────────────────────────────────
+echo ""
+echo "21. DELETE /auth/account (cleanup logoutuser)"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE/auth/account" \
+  -H "Authorization: Bearer $LOGOUT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"password":"password123"}')
+[ "$STATUS" = "200" ] && _pass "Logout user account deleted successfully" || _fail "HTTP $STATUS (expected 200)"
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
 echo "=== Test selesai: $PASS passed, $FAIL failed ==="

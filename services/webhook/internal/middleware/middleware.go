@@ -1,12 +1,17 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+type contextKey string
+
+const userIDKey contextKey = "user_id"
 
 func JWTAuth(secret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -25,12 +30,21 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 				respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid Authorization header")
 				return
 			}
-			_, err := jwt.Parse(parts[1], func(t *jwt.Token) (interface{}, error) {
+			token, err := jwt.Parse(parts[1], func(t *jwt.Token) (interface{}, error) {
 				return []byte(secret), nil
 			})
-			if err != nil {
+			if err != nil || !token.Valid {
 				respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid token")
 				return
+			}
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if sub, ok := claims["sub"].(string); ok && sub != "" {
+					ctx := context.WithValue(r.Context(), userIDKey, sub)
+					r = r.WithContext(ctx)
+				} else if uid, ok := claims["user_id"].(string); ok && uid != "" {
+					ctx := context.WithValue(r.Context(), userIDKey, uid)
+					r = r.WithContext(ctx)
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -49,8 +63,8 @@ func RequireRole(secret, role string) func(http.Handler) http.Handler {
 	}
 }
 
-func UserIDFromContext(ctx interface{}) string {
-	v := ctx.(interface{ Get(string) interface{} }).Get("user_id")
+func UserIDFromContext(ctx context.Context) string {
+	v := ctx.Value(userIDKey)
 	if v == nil {
 		return ""
 	}

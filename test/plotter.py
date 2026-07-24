@@ -1,5 +1,5 @@
 """
-Enterprise IoT Modular Microservices - Test Results Chart Generator (Matplotlib)
+enyx-enterprise - Test Results Chart Generator (Matplotlib)
 Generates high-resolution PNG charts in test/results/ summarizing Unit, Stress, and Resilience tests.
 Enhanced with comprehensive multi-chart analytics per test suite.
 """
@@ -20,7 +20,7 @@ def plot_unit_test_results(service_names, pass_counts, skip_counts, fail_counts,
         out_path = RESULTS_DIR / "01_unit_test_summary.png"
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle("Enterprise IoT Microservices - Unit & Feature Test Results", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Unit & Feature Test Results", fontsize=14, fontweight="bold")
 
     y = np.arange(len(service_names))
     width = 0.5
@@ -63,7 +63,7 @@ def plot_unit_test_detailed(service_names, pass_counts, skip_counts, fail_counts
         out_path = RESULTS_DIR / "01_unit_test_detailed.png"
 
     fig = plt.figure(figsize=(16, 12))
-    fig.suptitle("Enterprise IoT Microservices - Detailed Unit & Feature Test Analytics", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Detailed Unit & Feature Test Analytics", fontsize=14, fontweight="bold")
 
     # Subplot 1: Horizontal stacked bar (pass/skip/fail per service)
     ax1 = fig.add_subplot(2, 2, 1)
@@ -132,6 +132,10 @@ def plot_stress_test_results(levels_data, out_path=None):
     if out_path is None:
         out_path = RESULTS_DIR / "02_stress_test_throughput.png"
 
+    if not levels_data:
+        print("[!] Skipping stress test chart: no data available.")
+        return
+
     users = [d["users"] for d in levels_data]
     rps = [d["actual_rps"] for d in levels_data]
     p95 = [d["p95"] for d in levels_data]
@@ -139,7 +143,7 @@ def plot_stress_test_results(levels_data, out_path=None):
     target_rps = [d.get("target_rps", 0) for d in levels_data]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Enterprise IoT Microservices - Stress Test & Throughput Performance", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Stress Test & Throughput Performance", fontsize=14, fontweight="bold")
 
     # Plot 1: Throughput (RPS) & Error Rate
     color1 = "#2980b9"
@@ -187,7 +191,7 @@ def plot_stress_test_detailed(levels_data, out_path=None):
     status_codes = [d.get("status_codes", {}) for d in levels_data]
 
     fig = plt.figure(figsize=(16, 12))
-    fig.suptitle("Enterprise IoT Microservices - Detailed Stress Test Analytics", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Detailed Stress Test Analytics", fontsize=14, fontweight="bold")
 
     # Subplot 1: Target vs Actual RPS
     ax1 = fig.add_subplot(2, 2, 1)
@@ -265,7 +269,7 @@ def plot_resilience_test_results(scenarios_data, out_path=None):
     colors = ["#2ecc71" if sc == 100 else ("#f39c12" if sc == 70 else "#e74c3c") for sc in scores]
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    fig.suptitle("Enterprise IoT Microservices - Chaos & Resilience Audit Results", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Chaos & Resilience Audit Results", fontsize=14, fontweight="bold")
 
     y = np.arange(len(names))
     bars = ax.barh(y, scores, color=colors, height=0.55)
@@ -298,7 +302,7 @@ def plot_resilience_test_detailed(scenarios_data, recovery_times=None, out_path=
     scores = [score_map.get(st, 0) for st in statuses]
 
     fig = plt.figure(figsize=(16, 10))
-    fig.suptitle("Enterprise IoT Microservices - Detailed Chaos & Resilience Analytics", fontsize=14, fontweight="bold")
+    fig.suptitle("enyx-enterprise - Detailed Chaos & Resilience Analytics", fontsize=14, fontweight="bold")
 
     # Subplot 1: Health Score by Scenario
     ax1 = fig.add_subplot(2, 2, 1)
@@ -369,7 +373,7 @@ def plot_master_dashboard(out_path=None):
         out_path = RESULTS_DIR / "04_overall_system_dashboard.png"
 
     fig = plt.figure(figsize=(16, 10))
-    fig.suptitle("Enterprise IoT Microservices Stack - Unified Master Test Dashboard", fontsize=16, fontweight="bold")
+    fig.suptitle("enyx-enterprise Stack - Unified Master Test Dashboard", fontsize=16, fontweight="bold")
 
     # Subplot 1: Unit Test Status
     ax1 = fig.add_subplot(2, 2, 1)
@@ -421,7 +425,7 @@ def plot_master_dashboard_detailed(unit_data, stress_data, resilience_data, out_
         out_path = RESULTS_DIR / "04_overall_system_dashboard_detailed.png"
 
     fig = plt.figure(figsize=(18, 12))
-    fig.suptitle("Enterprise IoT Microservices Stack - Comprehensive Master Analytics Dashboard", fontsize=16, fontweight="bold")
+    fig.suptitle("enyx-enterprise Stack - Comprehensive Master Analytics Dashboard", fontsize=16, fontweight="bold")
 
     # Extract unit data
     svc_names = unit_data.get("service_names", [])

@@ -51,7 +51,7 @@ func main() {
 		log.Printf("[startup] minio unavailable (snapshots disabled): %v", err)
 	}
 	mlClient := mlclient.New(cfg.MLBaseURL, cfg.MLVisionModelID, cfg.JWTSecret)
-	svc := service.New(repo, media, minioClient, mlClient, cfg.KongPublicURL, cfg.CCTVRTSPURL, cfg.MinIOResultBucket)
+	svc := service.New(repo, media, minioClient, mlClient, cfg.KongPublicURL, cfg.CCTVRTSPURL)
 	h := handler.New(svc)
 
 	// ─── MediaMTX path reconciliation ─────────────────────────────────

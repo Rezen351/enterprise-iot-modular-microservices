@@ -197,6 +197,7 @@ function Analytics() {
   const [booleanSet, setBooleanSet] = useState(() => new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [tagsLoaded, setTagsLoaded] = useState(false);
   const trendRef = useRef(null);
   const stateRef = useRef(null);
 
@@ -233,17 +234,24 @@ function Analytics() {
   useEffect(() => {
     if (!nodeId) {
       setTags([]);
+      setTagsLoaded(false);
       return;
     }
     let active = true;
+    setTagsLoaded(false);
     moduleApi
       .getNodeTags(nodeId)
       .then((data) => {
         if (!active) return;
         setTags(Array.isArray(data?.tags) ? data.tags : []);
+        setTagsLoaded(true);
       })
       .catch((err) => {
         console.error('Failed to load node tags for analytics units', err);
+        if (active) {
+          setTags([]);
+          setTagsLoaded(true);
+        }
       });
     return () => { active = false; };
   }, [nodeId]);
@@ -253,24 +261,22 @@ function Analytics() {
   // Only show metrics that are configured (enabled) on the node. Each node tag
   // carries an `enabled` flag; metrics whose tag is disabled or absent are
   // device-internal / not configured and are hidden from charts and legends.
+  // DB Tag (`tag_name`) is the single source of truth for TimescaleDB metrics.
   const enabledKeys = useMemo(
-    () => new Set(tags.filter((t) => t.enabled).map((t) => t.source_key || t.tag_name)),
+    () => new Set(tags.filter((t) => t.enabled).map((t) => t.tag_name).filter(Boolean)),
     [tags]
   );
   const configuredMetrics = useMemo(() => {
+    if (!tagsLoaded) return [];
     const all = nodes.find((n) => n.node_id === nodeId)?.metrics || [];
-    // Until the node's tag configuration has loaded, show everything; once it is
-    // known, restrict to metrics whose tag is enabled (hide unconfigured ones).
-    if (tags.length === 0) return all;
     return all.filter((m) => enabledKeys.has(m));
-  }, [nodes, nodeId, tags, enabledKeys]);
+  }, [nodes, nodeId, tagsLoaded, enabledKeys]);
 
   // Friendly display name for a metric: use the tag's `label` if set, else the
-  // DB tag name (tag_name), else the raw telemetry key. Keeps the dashboard clean.
+  // DB tag name (`tag_name`), else the raw telemetry key. Keeps the dashboard clean.
   const tagByKey = useMemo(() => {
     const m = {};
     for (const t of tags) {
-      if (t.source_key) m[t.source_key] = t;
       if (t.tag_name) m[t.tag_name] = t;
     }
     return m;
@@ -278,14 +284,19 @@ function Analytics() {
   const displayName = useCallback(
     (metric) => {
       const t = tagByKey[metric];
-      if (t && (t.label || t.tag_name)) return t.label || t.tag_name;
+      if (t) {
+        const labelStr = (t.label || '').trim();
+        if (labelStr) return labelStr;
+        const tagNameStr = (t.tag_name || '').trim();
+        if (tagNameStr) return tagNameStr;
+      }
       return metric;
     },
     [tagByKey]
   );
 
   const loadData = useCallback(async () => {
-    if (!nodeId) {
+    if (!nodeId || !tagsLoaded) {
       setSeriesByMetric({});
       return;
     }
@@ -315,7 +326,7 @@ function Analytics() {
     } finally {
       setLoading(false);
     }
-  }, [nodeId, configuredMetrics, range, booleanSet]);
+  }, [nodeId, tagsLoaded, configuredMetrics, range, booleanSet]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -578,7 +589,17 @@ function Analytics() {
         </div>
       )}
 
-      {!loading && nodes.length > 0 && totalPoints === 0 && (
+      {!loading && !error && nodes.length > 0 && tagsLoaded && configuredMetrics.length === 0 && (
+        <div className="flex flex-col items-center justify-center gap-3 min-h-[300px] text-slate-400">
+          <Database className="w-10 h-10 opacity-40 text-amber-400" />
+          <span className="text-sm font-bold text-amber-300">No Configured Telemetry Fields</span>
+          <span className="text-xs text-slate-400 max-w-md text-center">
+            No active sensor tags have been configured for this node. Go to the <strong>Node Configuration</strong> page to enable telemetry fields for this node.
+          </span>
+        </div>
+      )}
+
+      {!loading && nodes.length > 0 && configuredMetrics.length > 0 && totalPoints === 0 && (
         <div className="flex flex-col items-center justify-center gap-2 min-h-[300px] text-slate-400">
           <Activity className="w-10 h-10 opacity-40" />
           <span className="text-sm font-bold">No data for this range</span>

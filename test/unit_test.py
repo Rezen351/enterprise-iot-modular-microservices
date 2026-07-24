@@ -325,6 +325,13 @@ def cleanup_test_data():
         except Exception:
             pass
 
+    # Clear test node tags created by update_node_tags so the database stays clean.
+    if TEST_NODE_ID:
+        try:
+            requests.put(f"{BASE_URL}/v1/nodes/{TEST_NODE_ID}/tags", json=[], headers=headers, timeout=5)
+        except Exception:
+            pass
+
     # Clean up any leftover snapshots/recordings so the gallery
     # does not retain stale DB records pointing to missing MinIO objects.
     try:

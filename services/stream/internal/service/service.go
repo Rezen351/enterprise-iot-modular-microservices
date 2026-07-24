@@ -569,11 +569,13 @@ func (s *StreamService) StartRecording(ctx context.Context, id string) error {
 	}
 	outPath := filepath.Join(os.TempDir(), "rec-"+uuid.New().String()+".mp4")
 	// Pull from the MediaMTX RTSP relay (which triggers the on-demand source).
-	// Transcode to browser-playable H.264 video and AAC audio.
-	cmd := exec.Command("ffmpeg", "-rtsp_transport", "tcp", "-y",
+	// Transcode to browser-playable H.264 video and AAC audio with +faststart.
+	cmd := exec.Command("ffmpeg", "-analyzeduration", "2000000", "-probesize", "32M",
+		"-rtsp_transport", "tcp", "-y",
 		"-i", fmt.Sprintf("rtsp://mediamtx:8554/%s", st.Name),
-		"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-		"-pix_fmt", "yuv420p", "-c:a", "aac", "-map", "0:v?", "-map", "0:a?",
+		"-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+		"-pix_fmt", "yuv420p", "-movflags", "+faststart",
+		"-c:a", "aac", "-map", "0:v?", "-map", "0:a?",
 		outPath)
 	if err := cmd.Start(); err != nil {
 		s.recMu.Unlock()
@@ -660,6 +662,10 @@ func (s *StreamService) StopRecording(ctx context.Context, id string) (*model.Sn
 		os.Remove(job.outPath)
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
 	}
+
+	// Probe duration BEFORE removing the temp file so ffprobe reads the file.
+	dur := probeDuration(job.outPath)
+
 	key := fmt.Sprintf("recordings/%s/%s.mp4", job.name, uuid.New().String())
 	url, uerr := s.minio.UploadFile(key, "video/mp4", job.outPath)
 	os.Remove(job.outPath)
@@ -677,7 +683,7 @@ func (s *StreamService) StopRecording(ctx context.Context, id string) (*model.Sn
 		ContentType: "video/mp4",
 		Size:        info.Size(),
 		Kind:        "recording",
-		Duration:    probeDuration(job.outPath),
+		Duration:    dur,
 		CreatedAt:   time.Now(),
 	}
 	if _, err := s.repo.CreateSnapshot(ctx, snap); err != nil {

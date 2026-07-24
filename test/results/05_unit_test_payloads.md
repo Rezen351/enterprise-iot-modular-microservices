@@ -1,217 +1,6 @@
 # Unit Test Payloads & Responses
 
-Total captured requests: 107
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0036s
-- **Payload:**
-```json
-{
-  "data": {
-    "status": "ok"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0038s
-- **Payload:**
-```json
-{
-  "data": {
-    "count": 2,
-    "nodes": [
-      {
-        "id": "00185995-1847-4aa8-a1d6-09f739787928",
-        "node_id": "ECE334219870",
-        "name": "",
-        "mac": "EC:E3:34:21:98:70",
-        "ip": "192.168.1.100",
-        "fw_version": "",
-        "status": "online",
-        "paired": false,
-        "last_seen_at": "2026-07-24T03:57:06.95Z",
-        "discovered_at": "2026-07-23T19:28:26.373Z",
-        "created_at": "2026-07-23T19:28:26.373Z",
-        "updated_at": "2026-07-24T03:57:06.95Z"
-      },
-      {
-        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-        "node_id": "node-02",
-        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-        "name": "",
-        "mac": "",
-        "ip": "",
-        "fw_version": "",
-        "status": "online",
-        "paired": true,
-        "discovered_at": "2026-07-23T17:46:04Z",
-        "created_at": "2026-07-23T17:46:04Z",
-        "updated_at": "2026-07-24T03:56:03.591Z"
-      }
-    ]
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0036s
-- **Payload:**
-```json
-{
-  "data": {
-    "count": 2,
-    "nodes": [
-      {
-        "id": "00185995-1847-4aa8-a1d6-09f739787928",
-        "node_id": "ECE334219870",
-        "name": "",
-        "mac": "EC:E3:34:21:98:70",
-        "ip": "192.168.1.100",
-        "fw_version": "",
-        "status": "online",
-        "paired": false,
-        "last_seen_at": "2026-07-24T03:57:06.95Z",
-        "discovered_at": "2026-07-23T19:28:26.373Z",
-        "created_at": "2026-07-23T19:28:26.373Z",
-        "updated_at": "2026-07-24T03:57:06.95Z"
-      },
-      {
-        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-        "node_id": "node-02",
-        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-        "name": "",
-        "mac": "",
-        "ip": "",
-        "fw_version": "",
-        "status": "online",
-        "paired": true,
-        "discovered_at": "2026-07-23T17:46:04Z",
-        "created_at": "2026-07-23T17:46:04Z",
-        "updated_at": "2026-07-24T03:56:03.591Z"
-      }
-    ]
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0039s
-- **Payload:**
-```json
-{
-  "data": {
-    "status": "ok"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0052s
-- **Payload:**
-```json
-{
-  "data": {
-    "id": "ed410133-521a-415d-85c6-aea62efacb85",
-    "username": "admin",
-    "email": "admin@smartfarm.local",
-    "roles": [
-      "admin"
-    ],
-    "is_active": true,
-    "last_login_at": "2026-07-24T03:57:24.362Z",
-    "created_at": "2026-07-23T05:05:51.176Z"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** PUT
-- **Status:** 200
-- **Duration:** 0.6124s
-- **Payload:**
-```json
-{
-  "data": {
-    "id": "ed410133-521a-415d-85c6-aea62efacb85",
-    "username": "admin",
-    "email": "admin@smartfarm.local",
-    "roles": [
-      "admin"
-    ],
-    "is_active": true,
-    "last_login_at": "2026-07-24T03:57:24.362Z",
-    "created_at": "2026-07-23T05:05:51.176Z"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0043s
-- **Payload:**
-```json
-{
-  "data": {
-    "count": 2,
-    "sessions": [
-      {
-        "id": "d39e7034-a59b-4310-8449-76dbaa4ca4c4",
-        "user_agent": "python-requests/2.31.0",
-        "ip_address": "172.17.0.1",
-        "issued_at": "2026-07-24T03:57:24.542Z",
-        "expires_at": "2026-07-31T03:57:24.542Z"
-      },
-      {
-        "id": "ce2a3352-402f-4886-b619-2e56f77dfe5a",
-        "user_agent": "python-requests/2.31.0",
-        "ip_address": "172.17.0.1",
-        "issued_at": "2026-07-24T03:56:16.603Z",
-        "expires_at": "2026-07-31T03:56:16.603Z"
-      }
-    ]
-  },
-  "success": true
-}
-```
+Total captured requests: 112
 
 ## unknown
 
@@ -224,44 +13,125 @@ Total captured requests: 107
 ```json
 {
   "data": {
-    "count": 4,
-    "users": [
+    "count": 2,
+    "snapshots": [
       {
-        "id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "username": "admin",
-        "email": "admin@smartfarm.local",
-        "roles": [
-          "admin"
-        ],
-        "is_active": true,
-        "last_login_at": "2026-07-24T03:57:24.362Z",
-        "created_at": "2026-07-23T05:05:51.176Z"
+        "id": "f3bd3c2d-1796-4136-a154-b5f50cb38448",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "b",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/snapshots/b/ad1b8f68-c262-40fa-8475-e0f4fbc08cb7.jpg",
+        "kind": "snapshot",
+        "size": 594758,
+        "created_at": "2026-07-24T12:28:29.747Z"
       },
       {
-        "id": "c94330a4-b2d8-49f1-8cea-120de512af15",
-        "username": "testuser_1784822546",
-        "email": "test_1784822546@example.com",
-        "roles": [
-          "viewer"
-        ],
-        "is_active": true,
-        "created_at": "2026-07-23T16:02:26.093Z"
+        "id": "c81c820c-fbaf-4096-a1ba-11e5c9b17e64",
+        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
+        "stream_name": "a",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "url": "/storage/stream/snapshots/a/b1e6d382-a93b-42d4-adba-271f054271f4.jpg",
+        "kind": "snapshot",
+        "size": 532963,
+        "created_at": "2026-07-24T04:39:47.866Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 0.1747s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "snapshot deleted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 0.1591s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "snapshot deleted"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0036s
+- **Payload:**
+```json
+{
+  "data": {
+    "status": "ok"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0029s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "ECE334219870",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "1.0.0",
+        "status": "online",
+        "paired": true,
+        "last_seen_at": "2026-07-24T13:29:07.616Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T13:29:07.616Z"
       },
       {
-        "id": "aaef0ec4-c799-47c6-a9ea-523c5f037745",
-        "username": "testuser_1784823567",
-        "email": "test_1784823567@example.com",
-        "roles": null,
-        "is_active": true,
-        "created_at": "2026-07-23T16:19:27.938Z"
-      },
-      {
-        "id": "65c2572c-cce8-4463-945d-24db34ac717f",
-        "username": "testuser_1784834532",
-        "email": "test_1784834532@example.com",
-        "roles": null,
-        "is_active": true,
-        "created_at": "2026-07-23T19:22:12.742Z"
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T12:54:25.115Z"
       }
     ]
   },
@@ -275,7 +145,240 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.004s
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 2,
+    "nodes": [
+      {
+        "id": "00185995-1847-4aa8-a1d6-09f739787928",
+        "node_id": "ECE334219870",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "ECE334219870",
+        "mac": "EC:E3:34:21:98:70",
+        "ip": "192.168.1.100",
+        "fw_version": "1.0.0",
+        "status": "online",
+        "paired": true,
+        "last_seen_at": "2026-07-24T13:29:07.616Z",
+        "discovered_at": "2026-07-23T19:28:26.373Z",
+        "created_at": "2026-07-23T19:28:26.373Z",
+        "updated_at": "2026-07-24T13:29:07.616Z"
+      },
+      {
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "fw_version": "",
+        "status": "online",
+        "paired": false,
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T12:54:25.115Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0031s
+- **Payload:**
+```json
+{
+  "data": {
+    "status": "ok"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0051s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "ed410133-521a-415d-85c6-aea62efacb85",
+    "username": "admin",
+    "email": "admin@smartfarm.local",
+    "roles": [
+      "admin"
+    ],
+    "is_active": true,
+    "last_login_at": "2026-07-24T13:29:33.163Z",
+    "created_at": "2026-07-23T05:05:51.176Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** PUT
+- **Status:** 200
+- **Duration:** 0.0774s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "ed410133-521a-415d-85c6-aea62efacb85",
+    "username": "admin",
+    "email": "admin@smartfarm.local",
+    "roles": [
+      "admin"
+    ],
+    "is_active": true,
+    "last_login_at": "2026-07-24T13:29:33.163Z",
+    "created_at": "2026-07-23T05:05:51.176Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0046s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 10,
+    "sessions": [
+      {
+        "id": "af1c0afd-57ca-476d-9790-1f6d622645a6",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T13:29:33.253Z",
+        "expires_at": "2026-07-31T13:29:33.252Z"
+      },
+      {
+        "id": "1270835b-bc7f-4263-b465-18d0986c5810",
+        "user_agent": "curl/8.5.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:55:17.326Z",
+        "expires_at": "2026-07-31T11:55:17.325Z"
+      },
+      {
+        "id": "0ef36236-3b43-4c6c-ac6d-9759f6c8a11f",
+        "user_agent": "curl/8.5.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:24:49.623Z",
+        "expires_at": "2026-07-31T11:24:49.623Z"
+      },
+      {
+        "id": "8560a4c7-3d1e-433e-97d0-fb3293330b8e",
+        "user_agent": "curl/8.5.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:16:26.009Z",
+        "expires_at": "2026-07-31T11:16:26.008Z"
+      },
+      {
+        "id": "e158e5e0-f7ca-44d4-a763-f7506c46cde9",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:09:41.755Z",
+        "expires_at": "2026-07-31T11:09:41.755Z"
+      },
+      {
+        "id": "0785586f-8f32-4ea5-8372-844b3d969361",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:08:48.01Z",
+        "expires_at": "2026-07-31T11:08:48.01Z"
+      },
+      {
+        "id": "6e91d597-c99d-4d70-aa1a-37e132af88fb",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:08:30.675Z",
+        "expires_at": "2026-07-31T11:08:30.675Z"
+      },
+      {
+        "id": "d0bd82f0-0cdc-421e-bfe0-365c6645175a",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1",
+        "issued_at": "2026-07-24T11:08:19.192Z",
+        "expires_at": "2026-07-31T11:08:19.192Z"
+      },
+      {
+        "id": "1cc1ef99-bf62-459b-b054-c241822a1ea6",
+        "user_agent": "python-requests/2.31.0",
+        "ip_address": "172.17.0.1, 172.17.0.35",
+        "issued_at": "2026-07-24T11:02:23.534Z",
+        "expires_at": "2026-07-31T11:02:23.533Z"
+      },
+      {
+        "id": "4bdeaded-467b-4f0a-9ad0-f07404c3a89d",
+        "user_agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36",
+        "ip_address": "172.17.0.1, 172.17.0.35",
+        "issued_at": "2026-07-24T10:58:08.669Z",
+        "expires_at": "2026-07-31T10:58:08.669Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0047s
+- **Payload:**
+```json
+{
+  "data": {
+    "count": 1,
+    "users": [
+      {
+        "id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "username": "admin",
+        "email": "admin@smartfarm.local",
+        "roles": [
+          "admin"
+        ],
+        "is_active": true,
+        "last_login_at": "2026-07-24T13:29:33.163Z",
+        "created_at": "2026-07-23T05:05:51.176Z"
+      }
+    ]
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0049s
 - **Payload:**
 ```json
 {
@@ -311,13 +414,13 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 200
-- **Duration:** 0.587s
+- **Duration:** 0.2604s
 - **Payload:**
 ```json
 {
   "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZXMiOlsiYWRtaW4iXSwiaXNzIjoiYXV0aC1zdmMiLCJzdWIiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJleHAiOjE3ODQ5MDg2NDUsIm5iZiI6MTc4NDg2NTQ0NSwiaWF0IjoxNzg0ODY1NDQ1fQ.ey08BFYXnjigkybqItGiFALXNIXwSlMPW9dDwKU7ZUY",
-    "refresh_token": "tCqRzdz_g627-T6uf-2tpgNr075hZuBCra9gDxvWOwo=",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJ1c2VybmFtZSI6ImFkbWluIiwicm9sZXMiOlsiYWRtaW4iXSwiaXNzIjoiYXV0aC1zdmMiLCJzdWIiOiJlZDQxMDEzMy01MjFhLTQxNWQtODVjNi1hZWE2MmVmYWNiODUiLCJleHAiOjE3ODQ5NDI5NzQsIm5iZiI6MTc4NDg5OTc3NCwiaWF0IjoxNzg0ODk5Nzc0fQ.sYaaVIHLuDtBkOn0D2frjGfv0E9fgidhbhJNaf9PltU",
+    "refresh_token": "YT-aBJkckCTnQ31vuZMdYsS_fGT0aSMFl2zWWHPxYD4=",
     "expires_in": 43200
   },
   "success": true
@@ -329,18 +432,72 @@ Total captured requests: 107
 - **Service:** unknown
 - **Endpoint:** ``
 - **Method:** POST
-- **Status:** None
-- **Duration:** 5.0065s
-- **Error:** HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)
+- **Status:** 201
+- **Duration:** 0.5257s
+- **Payload:**
+```json
+{
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJmZWMwZmU3Zi0zOTQwLTRkNWItYjJlNy1jYzRmNTcyNmM1NDYiLCJ1c2VybmFtZSI6InRlc3R1c2VyXzE3ODQ4OTk3NzQiLCJyb2xlcyI6WyJ2aWV3ZXIiXSwiaXNzIjoiYXV0aC1zdmMiLCJzdWIiOiJmZWMwZmU3Zi0zOTQwLTRkNWItYjJlNy1jYzRmNTcyNmM1NDYiLCJleHAiOjE3ODQ5NDI5NzQsIm5iZiI6MTc4NDg5OTc3NCwiaWF0IjoxNzg0ODk5Nzc0fQ.gPu6-MK4ugc6prelXqSPPybM52A3uYvc3MjGBfX3nuc",
+    "refresh_token": "9Ec-C2UMO7h001BMtuBfSfjuTB6ImS1l5KCd_5fQbRM=",
+    "expires_in": 43200
+  },
+  "success": true
+}
+```
 
 ## unknown
 
 - **Service:** unknown
 - **Endpoint:** ``
 - **Method:** POST
-- **Status:** None
-- **Duration:** 5.0063s
-- **Error:** HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)
+- **Status:** 200
+- **Duration:** 0.2521s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "logged out successfully"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** POST
+- **Status:** 200
+- **Duration:** 0.3792s
+- **Payload:**
+```json
+{
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJmZWMwZmU3Zi0zOTQwLTRkNWItYjJlNy1jYzRmNTcyNmM1NDYiLCJ1c2VybmFtZSI6InRlc3R1c2VyXzE3ODQ4OTk3NzQiLCJyb2xlcyI6WyJ2aWV3ZXIiXSwiaXNzIjoiYXV0aC1zdmMiLCJzdWIiOiJmZWMwZmU3Zi0zOTQwLTRkNWItYjJlNy1jYzRmNTcyNmM1NDYiLCJleHAiOjE3ODQ5NDI5NzUsIm5iZiI6MTc4NDg5OTc3NSwiaWF0IjoxNzg0ODk5Nzc1fQ.Bgsw1ZFGVu3c1JYNGJehB1QajD0dWae-izOWkPFSVI4",
+    "refresh_token": "aXStP6oOUlMQgUJ6g6ej6OQvMYBGPDtrjGQBSTiCMFQ=",
+    "expires_in": 43200
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** DELETE
+- **Status:** 200
+- **Duration:** 0.2448s
+- **Payload:**
+```json
+{
+  "data": {
+    "message": "account deactivated successfully"
+  },
+  "success": true
+}
+```
 
 ## unknown
 
@@ -348,29 +505,13 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0042s
+- **Duration:** 0.0028s
 - **Payload:**
 ```json
 {
   "data": {
-    "count": 3,
+    "count": 1,
     "modules": [
-      {
-        "id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-        "name": "Test Greenhouse 1784823577",
-        "description": "Automated unit test module",
-        "config": "{}",
-        "created_at": "2026-07-23T16:19:37.9Z",
-        "updated_at": "2026-07-23T16:19:37.9Z"
-      },
-      {
-        "id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
-        "name": "Test Greenhouse 1784821577",
-        "description": "Automated unit test module",
-        "config": "{}",
-        "created_at": "2026-07-23T15:46:17.343Z",
-        "updated_at": "2026-07-23T15:46:17.343Z"
-      },
       {
         "id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
         "name": "A",
@@ -391,17 +532,17 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 201
-- **Duration:** 3.3538s
+- **Duration:** 0.3286s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "6912a154-c212-414b-844d-42ca7665512a",
-    "name": "Test Greenhouse 1784865456",
+    "id": "95621a3d-9214-4e5a-8482-848798a93114",
+    "name": "Test Greenhouse 1784899775",
     "description": "Automated unit test module",
     "config": "{}",
-    "created_at": "2026-07-24T03:57:36.150570516Z",
-    "updated_at": "2026-07-24T03:57:36.150570516Z"
+    "created_at": "2026-07-24T13:29:35.591830325Z",
+    "updated_at": "2026-07-24T13:29:35.591830325Z"
   },
   "success": true
 }
@@ -413,7 +554,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 200
-- **Duration:** 2.1088s
+- **Duration:** 0.144s
 - **Payload:**
 ```json
 {
@@ -430,7 +571,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0037s
+- **Duration:** 0.0034s
 - **Payload:**
 ```json
 {
@@ -440,30 +581,30 @@ Total captured requests: 107
       {
         "id": "00185995-1847-4aa8-a1d6-09f739787928",
         "node_id": "ECE334219870",
-        "name": "",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "ECE334219870",
         "mac": "EC:E3:34:21:98:70",
         "ip": "192.168.1.100",
-        "fw_version": "",
+        "fw_version": "1.0.0",
         "status": "online",
-        "paired": false,
-        "last_seen_at": "2026-07-24T03:57:36.951Z",
+        "paired": true,
+        "last_seen_at": "2026-07-24T13:29:07.616Z",
         "discovered_at": "2026-07-23T19:28:26.373Z",
         "created_at": "2026-07-23T19:28:26.373Z",
-        "updated_at": "2026-07-24T03:57:36.951Z"
+        "updated_at": "2026-07-24T13:29:07.616Z"
       },
       {
         "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
         "node_id": "node-02",
-        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
         "name": "",
         "mac": "",
         "ip": "",
         "fw_version": "",
         "status": "online",
-        "paired": true,
+        "paired": false,
         "discovered_at": "2026-07-23T17:46:04Z",
         "created_at": "2026-07-23T17:46:04Z",
-        "updated_at": "2026-07-24T03:56:03.591Z"
+        "updated_at": "2026-07-24T12:54:25.115Z"
       }
     ]
   },
@@ -477,7 +618,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0041s
+- **Duration:** 0.0039s
 - **Payload:**
 ```json
 {
@@ -485,18 +626,17 @@ Total captured requests: 107
     "count": 1,
     "nodes": [
       {
-        "id": "00185995-1847-4aa8-a1d6-09f739787928",
-        "node_id": "ECE334219870",
+        "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
+        "node_id": "node-02",
         "name": "",
-        "mac": "EC:E3:34:21:98:70",
-        "ip": "192.168.1.100",
+        "mac": "",
+        "ip": "",
         "fw_version": "",
         "status": "online",
         "paired": false,
-        "last_seen_at": "2026-07-24T03:57:36.951Z",
-        "discovered_at": "2026-07-23T19:28:26.373Z",
-        "created_at": "2026-07-23T19:28:26.373Z",
-        "updated_at": "2026-07-24T03:57:36.951Z"
+        "discovered_at": "2026-07-23T17:46:04Z",
+        "created_at": "2026-07-23T17:46:04Z",
+        "updated_at": "2026-07-24T12:54:25.115Z"
       }
     ]
   },
@@ -510,26 +650,100 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0055s
+- **Duration:** 0.0056s
 - **Payload:**
 ```json
 {
   "data": {
-    "node_id": "node-02",
+    "node_id": "ECE334219870",
+    "tags": []
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0069s
+- **Payload:**
+```json
+{
+  "data": {
+    "node_id": "ECE334219870",
     "tags": [
       {
-        "id": "3e8a9d81-972a-4d74-bf44-ddf6ed8360fe",
-        "node_id": "node-02",
-        "kind": "sensor",
-        "source_key": "sensor_1",
-        "tag_name": "temperature",
-        "display_name": "Temperature",
-        "label": "C",
-        "unit": "°C",
-        "data_type": "float",
+        "id": "9f6df048-9109-49a9-8d81-32f879c011a0",
+        "node_id": "ECE334219870",
+        "kind": "actuator",
+        "source_key": "buzzer",
+        "tag_name": "buzzer",
+        "display_name": "Alarm",
+        "label": "",
+        "unit": "",
+        "data_type": "int",
         "enabled": true,
-        "created_at": "2026-07-24T03:56:02.811Z",
-        "updated_at": "2026-07-24T03:56:02.811Z"
+        "created_at": "2026-07-17T07:59:29.031Z",
+        "updated_at": "2026-07-24T13:06:17.634Z"
+      },
+      {
+        "id": "93f07c1b-5e28-4fa1-ab6a-d4a9877cc0b1",
+        "node_id": "ECE334219870",
+        "kind": "actuator",
+        "source_key": "load1",
+        "tag_name": "load1",
+        "display_name": "Load 1",
+        "label": "",
+        "unit": "",
+        "data_type": "int",
+        "enabled": true,
+        "created_at": "2026-07-17T07:59:26.066Z",
+        "updated_at": "2026-07-24T13:06:18.486Z"
+      },
+      {
+        "id": "9f74d6b5-1202-4c78-966b-78c7aeeb6663",
+        "node_id": "ECE334219870",
+        "kind": "actuator",
+        "source_key": "load2",
+        "tag_name": "load2",
+        "display_name": "Load 2",
+        "label": "",
+        "unit": "",
+        "data_type": "int",
+        "enabled": true,
+        "created_at": "2026-07-17T07:59:26.523Z",
+        "updated_at": "2026-07-24T13:06:19.091Z"
+      },
+      {
+        "id": "390c701e-c84d-4414-bdf8-7fac7bdca18e",
+        "node_id": "ECE334219870",
+        "kind": "actuator",
+        "source_key": "load3",
+        "tag_name": "load3",
+        "display_name": "Load 3",
+        "label": "",
+        "unit": "",
+        "data_type": "int",
+        "enabled": true,
+        "created_at": "2026-07-17T07:59:27.293Z",
+        "updated_at": "2026-07-24T13:06:19.344Z"
+      },
+      {
+        "id": "f590c14b-3d58-432c-898a-28d8d395fcb9",
+        "node_id": "ECE334219870",
+        "kind": "actuator",
+        "source_key": "load4",
+        "tag_name": "load4",
+        "display_name": "Load 4",
+        "label": "",
+        "unit": "",
+        "data_type": "int",
+        "enabled": true,
+        "created_at": "2026-07-17T07:59:27.907Z",
+        "updated_at": "2026-07-24T13:06:19.43Z"
       }
     ]
   },
@@ -548,36 +762,19 @@ Total captured requests: 107
 ```json
 {
   "data": {
-    "node_id": "node-02",
-    "tags": []
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0042s
-- **Payload:**
-```json
-{
-  "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:56:03.591Z"
+    "last_seen_at": "2026-07-24T13:29:07.616Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:07.616Z"
   },
   "success": true
 }
@@ -589,16 +786,16 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 200
-- **Duration:** 2.0277s
+- **Duration:** 0.1105s
 - **Payload:**
 ```json
 {
   "data": {
-    "node_id": "node-02",
+    "node_id": "ECE334219870",
     "tags": [
       {
-        "id": "89da3ca0-b81a-44a3-8dcc-0e9c9ec0a14d",
-        "node_id": "node-02",
+        "id": "6686feae-069d-4923-936b-084b8ddcb251",
+        "node_id": "ECE334219870",
         "kind": "sensor",
         "source_key": "sensor_1",
         "tag_name": "temperature",
@@ -607,8 +804,8 @@ Total captured requests: 107
         "unit": "°C",
         "data_type": "float",
         "enabled": true,
-        "created_at": "2026-07-24T03:57:42.99Z",
-        "updated_at": "2026-07-24T03:57:42.99Z"
+        "created_at": "2026-07-24T13:29:36.093Z",
+        "updated_at": "2026-07-24T13:29:36.093Z"
       }
     ]
   },
@@ -643,22 +840,23 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 200
-- **Duration:** 1.9737s
+- **Duration:** 1.5157s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": false,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:43.669Z"
+    "last_seen_at": "2026-07-24T13:29:07.616Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:36.206Z"
   },
   "success": true
 }
@@ -670,29 +868,13 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0038s
+- **Duration:** 0.0031s
 - **Payload:**
 ```json
 {
   "data": {
-    "count": 3,
+    "count": 1,
     "modules": [
-      {
-        "id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-        "name": "Test Greenhouse 1784823577",
-        "description": "Automated unit test module",
-        "config": "{}",
-        "created_at": "2026-07-23T16:19:37.9Z",
-        "updated_at": "2026-07-23T16:19:37.9Z"
-      },
-      {
-        "id": "de6ce111-e9bf-4675-a6a3-6759b52d5d56",
-        "name": "Test Greenhouse 1784821577",
-        "description": "Automated unit test module",
-        "config": "{}",
-        "created_at": "2026-07-23T15:46:17.343Z",
-        "updated_at": "2026-07-23T15:46:17.343Z"
-      },
       {
         "id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
         "name": "A",
@@ -713,23 +895,24 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 200
-- **Duration:** 0.9009s
+- **Duration:** 0.665s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -741,7 +924,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0039s
+- **Duration:** 0.0034s
 - **Payload:**
 ```json
 {
@@ -751,30 +934,30 @@ Total captured requests: 107
       {
         "id": "00185995-1847-4aa8-a1d6-09f739787928",
         "node_id": "ECE334219870",
-        "name": "",
+        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+        "name": "ECE334219870",
         "mac": "EC:E3:34:21:98:70",
         "ip": "192.168.1.100",
-        "fw_version": "",
+        "fw_version": "1.0.0",
         "status": "online",
-        "paired": false,
-        "last_seen_at": "2026-07-24T03:57:36.951Z",
+        "paired": true,
+        "last_seen_at": "2026-07-24T13:29:36.987Z",
         "discovered_at": "2026-07-23T19:28:26.373Z",
         "created_at": "2026-07-23T19:28:26.373Z",
-        "updated_at": "2026-07-24T03:57:36.951Z"
+        "updated_at": "2026-07-24T13:29:37.725Z"
       },
       {
         "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
         "node_id": "node-02",
-        "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
         "name": "",
         "mac": "",
         "ip": "",
         "fw_version": "",
         "status": "online",
-        "paired": true,
+        "paired": false,
         "discovered_at": "2026-07-23T17:46:04Z",
         "created_at": "2026-07-23T17:46:04Z",
-        "updated_at": "2026-07-24T03:57:45.648Z"
+        "updated_at": "2026-07-24T12:54:25.115Z"
       }
     ]
   },
@@ -788,13 +971,13 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 201
-- **Duration:** 0.1275s
+- **Duration:** 0.1157s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "158dd7ce-854a-4e09-bcab-3f24ca2d1dcd",
-    "node_id": "node-02",
+    "id": "4af28fe7-1971-4c00-9d05-64394775c20e",
+    "node_id": "ECE334219870",
     "kind": "actuator",
     "source_key": "fan",
     "tag_name": "fan",
@@ -803,8 +986,8 @@ Total captured requests: 107
     "unit": "on/off",
     "data_type": "boolean",
     "enabled": true,
-    "created_at": "2026-07-24T03:57:47.552844353Z",
-    "updated_at": "2026-07-24T03:57:47.552844353Z"
+    "created_at": "2026-07-24T13:29:39.395797158Z",
+    "updated_at": "2026-07-24T13:29:39.395797158Z"
   },
   "success": true
 }
@@ -816,7 +999,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 200
-- **Duration:** 0.3444s
+- **Duration:** 0.1271s
 - **Payload:**
 ```json
 {
@@ -833,7 +1016,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0158s
+- **Duration:** 0.0166s
 - **Payload:**
 ```json
 {
@@ -885,7 +1068,12 @@ Total captured requests: 107
         "node_id": "ECE334219870",
         "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
         "metrics": [
+          "connection_stats.mqtt_connected",
+          "connection_stats.uptime_s",
+          "device_info.cpu_freq_mhz",
+          "device_info.flash_size_mb",
           "device_info.free_heap_kb",
+          "device_info.uptime_s",
           "network.wifi_rssi",
           "telemetry.inputs.input1",
           "telemetry.inputs.input2",
@@ -921,14 +1109,14 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0065s
+- **Duration:** 0.0059s
 - **Payload:**
 ```json
 {
   "data": {
     "interval": "1h",
     "series": {
-      "node-02": {
+      "ECE334219870": {
         "temperature": []
       }
     }
@@ -943,12 +1131,12 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.005s
+- **Duration:** 0.0062s
 - **Payload:**
 ```json
 {
   "data": {
-    "node_id": "node-02",
+    "node_id": "ECE334219870",
     "metric": "temperature",
     "count": 0,
     "min": 0,
@@ -968,7 +1156,7 @@ Total captured requests: 107
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0054s
+- **Duration:** 0.0051s
 - **Payload:**
 ```
 bucket,node_id,metric,count,sum,min,max,avg,last
@@ -981,14 +1169,14 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0051s
+- **Duration:** 0.0055s
 - **Payload:**
 ```json
 {
   "data": {
     "interval": "1h",
     "series": {
-      "node-02": {
+      "ECE334219870": {
         "temperature": []
       }
     }
@@ -1003,14 +1191,14 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0076s
+- **Duration:** 0.0067s
 - **Payload:**
 ```json
 {
   "data": {
     "interval": "1h",
     "series": {
-      "node-02": {
+      "ECE334219870": {
         "humidity": [],
         "temperature": []
       }
@@ -1026,23 +1214,1485 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0039s
+- **Duration:** 0.0031s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0064s
+- **Payload:**
+```json
+{
+  "data": {
+    "commands": [
+      {
+        "id": "2d5ef95d-14b6-412d-b35f-5742edb1724c",
+        "req_id": "9c6a3518-1d02-4d01-b90d-68b8ec19f924",
+        "node_id": "ECE334219870",
+        "target": "load3",
+        "tag_name": "load3",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:57:21.452Z",
+        "acked_at": "2026-07-24T12:57:22.123Z"
+      },
+      {
+        "id": "4fe5780a-5b47-49db-ab09-f6708fc03182",
+        "req_id": "d41c9a85-191b-4121-8ebe-949bd8b49d62",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "load1",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:57:19.686Z",
+        "acked_at": "2026-07-24T12:57:20.204Z"
+      },
+      {
+        "id": "af1bd345-fef1-4cff-951d-9fb72ccea765",
+        "req_id": "c188328e-3a12-4aed-a13f-f1a98d4309e2",
+        "node_id": "ECE334219870",
+        "target": "buzzer",
+        "tag_name": "buzzer",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:57:17.22Z",
+        "acked_at": "2026-07-24T12:57:18.183Z"
+      },
+      {
+        "id": "0cebca39-14ec-420c-8eb6-f12e5b295de2",
+        "req_id": "e27a012c-5da3-4193-9872-7be55079beff",
+        "node_id": "ECE334219870",
+        "target": "load2",
+        "tag_name": "load2",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:57:16.103Z",
+        "acked_at": "2026-07-24T12:57:16.664Z"
+      },
+      {
+        "id": "c5899e5c-92db-444f-9ed8-719ed31c29fe",
+        "req_id": "d0a87b22-2cce-4939-96ce-dabac96795f8",
+        "node_id": "ECE334219870",
+        "target": "load4",
+        "tag_name": "load4",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:57:14.008Z",
+        "acked_at": "2026-07-24T12:57:14.327Z"
+      },
+      {
+        "id": "63eadc2d-3216-45de-9b4b-3f668e40150f",
+        "req_id": "adf54ad8-b571-40bf-aec1-a3b752226dfc",
+        "node_id": "ECE334219870",
+        "target": "load4",
+        "tag_name": "load4",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:45.839Z",
+        "acked_at": "2026-07-24T12:56:46.522Z"
+      },
+      {
+        "id": "55dea790-a275-4af2-943e-1d8f0ea21528",
+        "req_id": "f09e35cc-cf6f-48e0-b3a8-e4e8522c3018",
+        "node_id": "ECE334219870",
+        "target": "load3",
+        "tag_name": "load3",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:44.547Z",
+        "acked_at": "2026-07-24T12:56:46.029Z"
+      },
+      {
+        "id": "d71eefc8-8a56-4ace-a54f-5bf761a2e14d",
+        "req_id": "296b7ea7-c876-4f32-8677-b6a86264de5b",
+        "node_id": "ECE334219870",
+        "target": "load2",
+        "tag_name": "load2",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:43.374Z",
+        "acked_at": "2026-07-24T12:56:45.388Z"
+      },
+      {
+        "id": "6906021f-f1c4-4ecc-b707-27462de61f1d",
+        "req_id": "f62c5bcc-5814-404f-98c7-e79a0482e776",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "load1",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:41.895Z",
+        "acked_at": "2026-07-24T12:56:42.374Z"
+      },
+      {
+        "id": "b75b8de7-b589-4a2b-ae9f-bcadd70213e7",
+        "req_id": "0cb463d1-3dfe-42bf-b23b-76a56a228458",
+        "node_id": "ECE334219870",
+        "target": "buzzer",
+        "tag_name": "buzzer",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:37.067Z",
+        "acked_at": "2026-07-24T12:56:37.689Z"
+      },
+      {
+        "id": "daaca932-afb0-49eb-b86b-08d9f4801126",
+        "req_id": "87e00aa9-514e-4fb8-96df-5dfcf7fbadb2",
+        "node_id": "ECE334219870",
+        "target": "buzzer",
+        "tag_name": "buzzer",
+        "control_type": "set_state",
+        "value": 0,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:36.042Z",
+        "acked_at": "2026-07-24T12:56:36.251Z"
+      },
+      {
+        "id": "e38515a7-1e6a-42f6-adeb-db3be3d186e5",
+        "req_id": "42aca0c0-744d-4d93-9b26-de7e829a9ae9",
+        "node_id": "ECE334219870",
+        "target": "buzzer",
+        "tag_name": "buzzer",
+        "control_type": "set_state",
+        "value": 1,
+        "source": "manual",
+        "status": "acked",
+        "issued_by": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T12:56:35.154Z",
+        "acked_at": "2026-07-24T12:56:35.362Z"
+      },
+      {
+        "id": "55f8dccb-a6c5-476b-b275-dfc8ba2f9d7a",
+        "req_id": "383c6cb3-786e-4185-aa24-ec8eb50f552a",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T11:00:00.207Z",
+        "acked_at": "2026-07-24T11:00:00.455Z"
+      },
+      {
+        "id": "510ee471-e454-4463-8fea-b7df70418333",
+        "req_id": "22c60cdc-fcac-40ff-8a0f-76300ac0c2b7",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:59:33.785Z",
+        "acked_at": "2026-07-24T10:59:34.638Z"
+      },
+      {
+        "id": "45b6484b-15c0-4fcb-946b-d11d7ee23334",
+        "req_id": "e1ad38a9-1e56-4e64-a204-e97dfa38f5a0",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:49:33.026Z",
+        "acked_at": "2026-07-24T10:49:33.266Z"
+      },
+      {
+        "id": "b03d99d0-c322-4e14-a203-6d05eb0c9979",
+        "req_id": "308ffd1c-27b3-4739-ad6a-0d25dd203019",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:48:32.314Z",
+        "acked_at": "2026-07-24T10:48:32.518Z"
+      },
+      {
+        "id": "c6542252-abaf-451d-add7-4f39a1f8ac67",
+        "req_id": "47d0d982-19fa-4d05-8071-12cddcd73766",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:38:31.634Z",
+        "acked_at": "2026-07-24T10:38:31.942Z"
+      },
+      {
+        "id": "5e623a7e-cae1-40df-8c29-970a0adf28f6",
+        "req_id": "364a0ee2-a19d-40f3-aa1b-6f2ea11b740e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:37:30.905Z",
+        "acked_at": "2026-07-24T10:37:31.056Z"
+      },
+      {
+        "id": "c8e2b9cd-03d0-4d3d-8b34-cbd85072874b",
+        "req_id": "07ed26f9-4cff-42f2-ab6b-fa9cfc645195",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:27:30.266Z",
+        "acked_at": "2026-07-24T10:27:31.584Z"
+      },
+      {
+        "id": "908ac7d9-bff3-427b-b96a-3f6342f4a67f",
+        "req_id": "dd7cebfc-c576-4f6d-8a08-2e78a3d1d6ff",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:26:29.655Z",
+        "acked_at": "2026-07-24T10:26:29.915Z"
+      },
+      {
+        "id": "a2b07fee-9569-4ee0-a44b-4cfa343d069c",
+        "req_id": "ace7dbb9-b3c0-493d-aa74-519d6a7ad038",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:16:29.364Z",
+        "acked_at": "2026-07-24T10:16:30.84Z"
+      },
+      {
+        "id": "b1ce1640-3fa9-4c00-985a-554bcd87985c",
+        "req_id": "5dd10710-5fdc-48dd-9557-b82e012fcc1e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:15:28.641Z",
+        "acked_at": "2026-07-24T10:15:28.902Z"
+      },
+      {
+        "id": "655c65f3-e082-40ea-9dfc-bacbf6e412eb",
+        "req_id": "faa6ccc2-2d68-4741-8b37-4f941e9cb38c",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:05:28.535Z",
+        "acked_at": "2026-07-24T10:05:28.802Z"
+      },
+      {
+        "id": "0bf16fa8-790f-431d-9fd3-45711fb7fc4c",
+        "req_id": "3df29475-5ab9-4351-a670-721a39278bb7",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T10:04:27.903Z",
+        "acked_at": "2026-07-24T10:04:28.332Z"
+      },
+      {
+        "id": "d2fea1c1-037e-4d6f-b0c7-28ba8162cc70",
+        "req_id": "ec731fb1-1dbc-4ff5-8752-1f4a41b94619",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:54:27.515Z",
+        "acked_at": "2026-07-24T09:54:29.513Z"
+      },
+      {
+        "id": "033435d9-75ff-428c-b585-4527b164f4d8",
+        "req_id": "a50f418d-219e-4e06-ac48-389ebdca7362",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:53:26.718Z",
+        "acked_at": "2026-07-24T09:53:26.962Z"
+      },
+      {
+        "id": "d19b454d-832c-45bd-a306-38a5073ec868",
+        "req_id": "9368c091-ca2d-498a-84eb-2750386150e4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:43:26.325Z",
+        "acked_at": "2026-07-24T09:43:26.608Z"
+      },
+      {
+        "id": "cff73569-4ef2-459f-9cb5-a5b5542b6669",
+        "req_id": "07051a4d-e4f6-490e-b5ea-cee2f57c1bd6",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:42:25.491Z",
+        "acked_at": "2026-07-24T09:42:25.638Z"
+      },
+      {
+        "id": "14ad3ac2-7e4b-4e44-a700-f49161018d8d",
+        "req_id": "44de4386-90a9-45e3-b197-cee3cae4c1e5",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:32:24.834Z",
+        "acked_at": "2026-07-24T09:32:25.182Z"
+      },
+      {
+        "id": "dbe60ed0-bbb8-4f5f-9c82-bb800736f92c",
+        "req_id": "04ac8f3d-64ce-401d-a276-54604ff759a4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:31:23.995Z",
+        "acked_at": "2026-07-24T09:31:24.388Z"
+      },
+      {
+        "id": "6fb3645d-2dbf-4fd7-b8a7-0ed585b83dde",
+        "req_id": "871a2feb-7fc6-48df-b9dd-cfb0178dfe54",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:21:23.064Z",
+        "acked_at": "2026-07-24T09:21:23.301Z"
+      },
+      {
+        "id": "aeb04018-d75d-489e-9797-4d5e49345ca5",
+        "req_id": "467494ad-120c-4841-b3b5-5979ad3f568d",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:20:22.215Z",
+        "acked_at": "2026-07-24T09:20:24.569Z"
+      },
+      {
+        "id": "0b0fa6e7-7aad-4cc9-bda0-9b011d7ac108",
+        "req_id": "063291d5-b2ef-4fbc-a0bf-ba2de8a981d2",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:10:21.625Z",
+        "acked_at": "2026-07-24T09:10:22.235Z"
+      },
+      {
+        "id": "84b1e97a-2a6c-4973-901b-8e327ba88c32",
+        "req_id": "e432e256-2640-4855-8566-2eaf6b340266",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T09:09:20.824Z",
+        "acked_at": "2026-07-24T09:09:20.93Z"
+      },
+      {
+        "id": "231ba36d-aced-4e8c-90fc-93309a457a19",
+        "req_id": "8c6de6f7-9828-4ec0-b231-838019b18083",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:59:20.2Z",
+        "acked_at": "2026-07-24T08:59:20.526Z"
+      },
+      {
+        "id": "b4ba1e0f-12bb-45b8-a32c-543a00eb86da",
+        "req_id": "f538a4cd-4a39-4b95-bb3a-4048cc22ac07",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:58:19.366Z",
+        "acked_at": "2026-07-24T08:58:19.555Z"
+      },
+      {
+        "id": "40c5e3e4-f6e2-4c11-aee0-e14c74308fb4",
+        "req_id": "ec44c5e6-092c-477f-9b4c-af29d5c1ff9e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:48:18.829Z",
+        "acked_at": "2026-07-24T08:48:19.132Z"
+      },
+      {
+        "id": "ae6b52f4-b5ba-4981-b531-48dd335f8310",
+        "req_id": "00a80a29-f59c-4a0e-b156-f3aebd07c7b5",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:47:18.047Z",
+        "acked_at": "2026-07-24T08:47:18.368Z"
+      },
+      {
+        "id": "a78b0d8a-2396-4ed3-af4d-765c7ace2f34",
+        "req_id": "02715597-aa07-42da-ad1d-5611bc9a6800",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:37:17.785Z",
+        "acked_at": "2026-07-24T08:37:18.322Z"
+      },
+      {
+        "id": "de5c77d8-0e96-4089-9328-26721c12eb28",
+        "req_id": "c410a68b-7f11-43e3-a39f-f7cd19c48888",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:36:16.988Z",
+        "acked_at": "2026-07-24T08:36:17.37Z"
+      },
+      {
+        "id": "68ef8ebf-c573-4e68-a378-1de2a44f3b5a",
+        "req_id": "52f6b0b9-3460-4cda-ac7f-808243906485",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:26:16.109Z",
+        "acked_at": "2026-07-24T08:26:16.522Z"
+      },
+      {
+        "id": "1b1ffacc-46bb-4ba0-b888-c8031a39f52e",
+        "req_id": "a34b85bf-e2ce-4432-bff7-177ec3a0f9fb",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:25:15.289Z",
+        "acked_at": "2026-07-24T08:25:15.619Z"
+      },
+      {
+        "id": "928758be-d96f-4f1e-8d10-04bf92f87372",
+        "req_id": "2a70aa4f-6b97-4e9c-a81e-21a32e204919",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:15:14.504Z",
+        "acked_at": "2026-07-24T08:15:14.741Z"
+      },
+      {
+        "id": "9e7cf056-61db-47c7-8359-a171e5556539",
+        "req_id": "18d214c0-90fd-495a-89f0-a1aa6096aa2c",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:14:13.735Z",
+        "acked_at": "2026-07-24T08:14:14.056Z"
+      },
+      {
+        "id": "a0f07d11-5497-44e9-8b11-4f8d8b489b32",
+        "req_id": "b238e7b9-9d8c-4ad9-8373-e83eab8a0c8e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:04:13.13Z",
+        "acked_at": "2026-07-24T08:04:13.352Z"
+      },
+      {
+        "id": "fee45aa1-e381-4119-bcb0-c02ad2884140",
+        "req_id": "45509cf8-abf0-4041-a017-9db84306b2cd",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T08:03:12.321Z",
+        "acked_at": "2026-07-24T08:03:18.722Z"
+      },
+      {
+        "id": "1cb0436a-bdd0-4f3c-ad60-2df29968c3c7",
+        "req_id": "f05e4c77-6d16-4ec5-a9f6-03fe0e67fb1c",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:53:12.304Z",
+        "acked_at": "2026-07-24T07:53:12.729Z"
+      },
+      {
+        "id": "1d2aa0a7-af77-4cec-9522-677a4f9e525b",
+        "req_id": "96e1df93-3b32-4ea5-9849-0bcf852e19ef",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:52:11.422Z",
+        "acked_at": "2026-07-24T07:52:11.618Z"
+      },
+      {
+        "id": "a1990d99-0183-4dc8-9c11-2f7b64db81b3",
+        "req_id": "9a5708a8-950e-4ad2-8d81-4df3279e024e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:42:10.845Z",
+        "acked_at": "2026-07-24T07:42:11.081Z"
+      },
+      {
+        "id": "14494f25-6a6a-4c40-a80e-ad1991e3807f",
+        "req_id": "7479c663-c80a-43ea-8e41-a0630ba7ec41",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:41:10.357Z",
+        "acked_at": "2026-07-24T07:41:10.628Z"
+      },
+      {
+        "id": "7d1d31bf-ae03-48f7-8013-83a49fca4462",
+        "req_id": "7703d3ea-306a-472a-b79d-b2b9ab899323",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:31:09.785Z",
+        "acked_at": "2026-07-24T07:31:10.028Z"
+      },
+      {
+        "id": "14e06a8f-b0df-409e-a541-c1a7574da4b2",
+        "req_id": "1da588ab-782a-4f53-9eae-ef6aa45fe791",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:30:08.87Z",
+        "acked_at": "2026-07-24T07:30:09.125Z"
+      },
+      {
+        "id": "cd431725-3889-4ea0-b12a-812258861724",
+        "req_id": "a7b63d5b-870e-4061-acba-a42daa17a744",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:20:07.961Z",
+        "acked_at": "2026-07-24T07:20:08.602Z"
+      },
+      {
+        "id": "63ad7341-efbd-40e4-b903-c28245c522a0",
+        "req_id": "ccd9b5bb-961b-411a-9786-cc02a7f47f0a",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:19:07.004Z",
+        "acked_at": "2026-07-24T07:19:07.845Z"
+      },
+      {
+        "id": "33d6e204-cfa0-4015-b268-88ef86ff04e6",
+        "req_id": "975f4b64-74a5-44cd-beec-12c5a3cc56ee",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:09:06.013Z",
+        "acked_at": "2026-07-24T07:09:06.306Z"
+      },
+      {
+        "id": "ce9a1bf8-2f62-4810-8399-38079addbd7c",
+        "req_id": "42e8b6c0-abea-4e56-a90a-27063ad91572",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T07:08:05.992Z",
+        "acked_at": "2026-07-24T07:08:06.31Z"
+      },
+      {
+        "id": "aefc650e-fe41-4eb9-b816-29cfe098f9eb",
+        "req_id": "e1504b50-da63-4d5a-94ef-2e4c4188dbbd",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:58:05.955Z",
+        "acked_at": "2026-07-24T06:58:06.398Z"
+      },
+      {
+        "id": "46f87f25-305a-4dbd-9bf0-35febbf19719",
+        "req_id": "69a79ce0-cc0a-46ea-a804-fa2b41801a76",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:57:04.975Z",
+        "acked_at": "2026-07-24T06:57:05.595Z"
+      },
+      {
+        "id": "423207f2-6fff-4a36-8d38-4d71dfc5fc98",
+        "req_id": "873c3cc2-0693-4951-accd-cc0ba27db022",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:47:04.646Z",
+        "acked_at": "2026-07-24T06:47:05.212Z"
+      },
+      {
+        "id": "76fd0338-a0fb-495c-9a8e-b95bfff4baee",
+        "req_id": "f06386e7-1ef9-4888-b12e-b015f09c0ee4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:46:04.535Z",
+        "acked_at": "2026-07-24T06:46:06.335Z"
+      },
+      {
+        "id": "a4cecdc4-b7f6-461e-b68f-34280b3b8eb7",
+        "req_id": "63201dbc-8c9e-42b2-aa57-322054b12409",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:36:03.585Z",
+        "acked_at": "2026-07-24T06:36:03.905Z"
+      },
+      {
+        "id": "465c4986-3404-4094-b007-b79504ba1193",
+        "req_id": "f1449aeb-9491-4d99-b5ae-35077db8e92a",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:35:03.585Z",
+        "acked_at": "2026-07-24T06:35:03.766Z"
+      },
+      {
+        "id": "c4973013-0dbc-4c4e-a0a5-c793b4d31550",
+        "req_id": "3279eaf4-7aed-4f73-a7a1-df6cb7f93b26",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:25:03.549Z",
+        "acked_at": "2026-07-24T06:25:04.095Z"
+      },
+      {
+        "id": "19083488-ad60-4194-9249-704e52eea039",
+        "req_id": "7c1a80b1-c745-4325-bf7a-fb53ea31bd73",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T06:24:03.358Z"
+      },
+      {
+        "id": "e2d4572c-3e62-4d1c-99f8-8ecdc0f98533",
+        "req_id": "57dc550a-2e5b-41bb-8d83-8494077b5bb1",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:14:02.55Z",
+        "acked_at": "2026-07-24T06:14:04.228Z"
+      },
+      {
+        "id": "02811112-3ec9-4a8c-908d-676000cb911f",
+        "req_id": "a239a530-5029-4f80-bf73-ba5913e87bbc",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:13:01.549Z",
+        "acked_at": "2026-07-24T06:13:02.476Z"
+      },
+      {
+        "id": "81c816f7-0fc2-4bc2-98ab-013835c6e056",
+        "req_id": "fd044cdb-d41d-4c80-94ad-75404a863ce8",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:03:01.46Z",
+        "acked_at": "2026-07-24T06:03:01.833Z"
+      },
+      {
+        "id": "8a18733c-6189-4fa7-b080-2cd815f6d82c",
+        "req_id": "ef62b4e5-98ea-4ff3-9a93-6114125ccf08",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T06:02:01.46Z",
+        "acked_at": "2026-07-24T06:02:01.981Z"
+      },
+      {
+        "id": "af579755-5a54-4615-b630-f16ada32b27b",
+        "req_id": "f5275d74-2ea9-4562-9b73-3ca05de63a5b",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T05:52:00.677Z",
+        "acked_at": "2026-07-24T05:52:00.875Z"
+      },
+      {
+        "id": "6b449c85-aea4-4569-aa57-3b4d4b134c75",
+        "req_id": "b2c25242-61cb-4cdb-8159-9470f79c2108",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:51:00.677Z",
+        "acked_at": "2026-07-24T05:51:01.878Z"
+      },
+      {
+        "id": "ae96a681-b848-45af-a446-884545edfb14",
+        "req_id": "30d185f3-629f-4546-81da-6d64d75aa888",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:40:59.677Z",
+        "acked_at": "2026-07-24T05:41:03.32Z"
+      },
+      {
+        "id": "0aecc410-8017-4cef-81af-2e855f4f8a35",
+        "req_id": "d39212b4-1da7-4f52-8f4b-2d662c4617e1",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:39:59.081Z",
+        "acked_at": "2026-07-24T05:39:59.856Z"
+      },
+      {
+        "id": "0ad2f463-92f8-4372-ad1e-07acea085da4",
+        "req_id": "0c29750d-55c0-4fa2-a1b5-bfb8e01e0226",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:29:58.08Z",
+        "acked_at": "2026-07-24T05:29:58.279Z"
+      },
+      {
+        "id": "6094c9cb-1755-43be-9d7c-8129a9f71e99",
+        "req_id": "7fb959ce-cafe-42dd-9e05-e5914736962e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:28:57.081Z",
+        "acked_at": "2026-07-24T05:28:57.371Z"
+      },
+      {
+        "id": "6bafa702-9f0e-4b3e-91bc-86cd4f92916b",
+        "req_id": "76843374-76cc-4c52-a1d9-e3cb3b0ab45e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:18:56.081Z",
+        "acked_at": "2026-07-24T05:18:56.487Z"
+      },
+      {
+        "id": "210d64ce-43e9-4835-bb12-480c67207550",
+        "req_id": "6e366e02-8203-4c0b-94e5-66809b027b75",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:17:56.081Z",
+        "acked_at": "2026-07-24T05:17:56.246Z"
+      },
+      {
+        "id": "d82b938d-2ce0-47bb-8952-0ca6297de885",
+        "req_id": "c14a67f1-cdd4-4e25-b929-e80a43e968fa",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:07:55.482Z",
+        "acked_at": "2026-07-24T05:07:55.811Z"
+      },
+      {
+        "id": "d236b49f-2426-41ef-a6ca-80bfb315b09d",
+        "req_id": "060dd6f3-66ef-4d01-83c1-2955867547f1",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T05:06:54.482Z",
+        "acked_at": "2026-07-24T05:06:54.881Z"
+      },
+      {
+        "id": "b250c2af-25db-42cc-8573-8933e278af73",
+        "req_id": "e82b6a9a-4c0c-4bd0-95cb-00634c825f02",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:56:54.482Z",
+        "acked_at": "2026-07-24T04:56:54.693Z"
+      },
+      {
+        "id": "be2633ce-0114-49a6-8a17-2334d559ded0",
+        "req_id": "50dcee37-0f27-4ac5-ae4d-ba04ccb57472",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:55:53.482Z",
+        "acked_at": "2026-07-24T04:55:53.976Z"
+      },
+      {
+        "id": "c0ed0305-30f3-49ee-b82b-0b1c67162933",
+        "req_id": "10e851c3-5d98-47c5-81f3-c3ac27ea16c4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:45:52.482Z",
+        "acked_at": "2026-07-24T04:45:53.848Z"
+      },
+      {
+        "id": "17347271-9484-4c40-918d-fdc9570771a5",
+        "req_id": "8711589b-b07d-4e26-a914-7236a2918865",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:44:51.482Z",
+        "acked_at": "2026-07-24T04:44:51.701Z"
+      },
+      {
+        "id": "3519d0e0-db0c-4cef-8f8e-46f0f0c3d52b",
+        "req_id": "9cc52df3-b2f9-4bf1-92d7-a1ace3dab0da",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:34:50.482Z",
+        "acked_at": "2026-07-24T04:34:50.891Z"
+      },
+      {
+        "id": "986c79da-e4cf-43e4-80cb-8f038b0ef022",
+        "req_id": "8b851fdd-c08f-41d2-80e7-cf115f57011a",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:33:50.481Z",
+        "acked_at": "2026-07-24T04:33:50.855Z"
+      },
+      {
+        "id": "6ac7f0a8-8707-4588-b0a8-8e634df39ea2",
+        "req_id": "b211465a-068e-4b58-8e08-b4b9241c4d4c",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T04:23:49.482Z",
+        "acked_at": "2026-07-24T04:23:49.823Z"
+      },
+      {
+        "id": "c65b5042-3edb-40d4-b30e-cacfd76392da",
+        "req_id": "9f779515-6dbc-4f04-a546-b30e60aa8181",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T04:08:34.482Z"
+      },
+      {
+        "id": "4073f60c-d8f4-437a-a650-dc67d94c807a",
+        "req_id": "9cd251b4-3c2f-47b4-a2cf-68485afa7f89",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T03:58:33.886Z"
+      },
+      {
+        "id": "b1122345-258c-4cf0-9055-9a0fab6d68a9",
+        "req_id": "d9c570e9-a1c6-4bb9-a9d1-046815243cd5",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T03:57:32.886Z"
+      },
+      {
+        "id": "c26898c6-6065-4020-ae1f-cf1d441b369c",
+        "req_id": "cdcf3c1a-0ba8-4a8a-896a-4ae268450dc4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:47:31.922Z",
+        "acked_at": "2026-07-24T03:47:37.159Z"
+      },
+      {
+        "id": "893ec54e-b16c-42f4-ac44-52de1756a5cf",
+        "req_id": "3014ebe0-5eab-45f0-8485-8d8e92d9be80",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:46:30.922Z",
+        "acked_at": "2026-07-24T03:46:31.199Z"
+      },
+      {
+        "id": "354d1c6a-2b5c-443e-ad17-77c9e48bf3ed",
+        "req_id": "ed932d1f-e37b-4859-a772-cd6d8c63535d",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:36:30.921Z",
+        "acked_at": "2026-07-24T03:36:32.936Z"
+      },
+      {
+        "id": "9b33c69c-2508-4ebf-96bf-01cee9610258",
+        "req_id": "6cc554bf-21ef-420f-8452-c195749e9f15",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:35:29.922Z",
+        "acked_at": "2026-07-24T03:35:30.453Z"
+      },
+      {
+        "id": "03283540-4bbd-4724-a575-bb8c64928160",
+        "req_id": "21de8410-e55c-4553-9e95-e449e16f2ac5",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:25:29.922Z",
+        "acked_at": "2026-07-24T03:25:30.319Z"
+      },
+      {
+        "id": "37fa0df4-0e02-4854-971b-a2a7e8863e63",
+        "req_id": "7f6e809f-92c7-459f-994a-aa792a74a6f8",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:24:28.922Z",
+        "acked_at": "2026-07-24T03:24:29.966Z"
+      },
+      {
+        "id": "8c08fd9b-ce95-4a3c-8ff7-384b0a6c2aea",
+        "req_id": "243f3dfd-2b83-4273-aae1-733407f48462",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "timeout",
+        "created_at": "2026-07-24T03:14:27.921Z"
+      },
+      {
+        "id": "4cd1e058-4b5d-4016-9f55-42b5f7e2eb87",
+        "req_id": "d30e66f4-c22b-4694-8937-0d9ab92bff2e",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:13:26.922Z",
+        "acked_at": "2026-07-24T03:13:27.506Z"
+      },
+      {
+        "id": "7a1a5b6c-3d53-407f-897f-61f5e48ff7c2",
+        "req_id": "400dc5d2-f666-4900-96b9-127015efe5c9",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:03:26.922Z",
+        "acked_at": "2026-07-24T03:03:27.425Z"
+      },
+      {
+        "id": "2397c7e4-d998-48c2-8930-0792e3d3ab0e",
+        "req_id": "8edd63fe-7dc7-4130-b608-cf21cfd841c4",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T03:02:26.922Z",
+        "acked_at": "2026-07-24T03:02:27.703Z"
+      },
+      {
+        "id": "c85cda66-7fe1-4b7a-bd01-0d133c174d9e",
+        "req_id": "c0ae73cc-dbba-45b8-98d1-99ef9531f1c9",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 0,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T02:52:25.922Z",
+        "acked_at": "2026-07-24T02:52:27.132Z"
+      },
+      {
+        "id": "fd79adcf-fda8-4358-aea2-28ccba0bb65e",
+        "req_id": "f11fad76-59d4-4f27-8b55-b8aeda4c8c01",
+        "node_id": "ECE334219870",
+        "target": "load1",
+        "tag_name": "",
+        "control_type": "window_pulse",
+        "value": 1,
+        "source": "schedule",
+        "schedule_id": "20472c04-acdc-45bc-87ba-c57df48c6890",
+        "status": "acked",
+        "created_at": "2026-07-24T02:51:25.922Z",
+        "acked_at": "2026-07-24T02:51:27.515Z"
+      }
+    ],
+    "count": 100
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0033s
+- **Payload:**
+```json
+{
+  "data": {
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
+    "status": "online",
+    "paired": true,
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
+  },
+  "success": true
+}
+```
+
+## unknown
+
+- **Service:** unknown
+- **Endpoint:** ``
+- **Method:** GET
+- **Status:** 200
+- **Duration:** 0.0041s
+- **Payload:**
+```json
+{
+  "data": {
+    "mode": "MANUAL",
+    "node_id": "ECE334219870"
   },
   "success": true
 }
@@ -1059,82 +2709,19 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 ```json
 {
   "data": {
-    "commands": [],
-    "count": 0
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0034s
-- **Payload:**
-```json
-{
-  "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0034s
-- **Payload:**
-```json
-{
-  "data": {
-    "mode": "AUTO",
-    "node_id": "node-02"
-  },
-  "success": true
-}
-```
-
-## unknown
-
-- **Service:** unknown
-- **Endpoint:** ``
-- **Method:** GET
-- **Status:** 200
-- **Duration:** 0.0037s
-- **Payload:**
-```json
-{
-  "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
-    "status": "online",
-    "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1146,13 +2733,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 200
-- **Duration:** 0.2016s
+- **Duration:** 0.216s
 - **Payload:**
 ```json
 {
   "data": {
     "mode": "MANUAL",
-    "node_id": "node-02"
+    "node_id": "ECE334219870"
   },
   "success": true
 }
@@ -1164,23 +2751,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0028s
+- **Duration:** 0.0045s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1192,13 +2780,69 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0044s
+- **Duration:** 0.0105s
 - **Payload:**
 ```json
 {
   "data": {
-    "count": 0,
-    "targets": []
+    "count": 5,
+    "targets": [
+      {
+        "id": "9f6df048-9109-49a9-8d81-32f879c011a0",
+        "node_id": "ECE334219870",
+        "source_key": "buzzer",
+        "tag_name": "buzzer",
+        "label": "Alarm",
+        "output_type": "PWM",
+        "last_value": 0,
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      },
+      {
+        "id": "93f07c1b-5e28-4fa1-ab6a-d4a9877cc0b1",
+        "node_id": "ECE334219870",
+        "source_key": "load1",
+        "tag_name": "load1",
+        "label": "Load 1",
+        "output_type": "PWM",
+        "last_value": 0,
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      },
+      {
+        "id": "9f74d6b5-1202-4c78-966b-78c7aeeb6663",
+        "node_id": "ECE334219870",
+        "source_key": "load2",
+        "tag_name": "load2",
+        "label": "Load 2",
+        "output_type": "PWM",
+        "last_value": 0,
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      },
+      {
+        "id": "390c701e-c84d-4414-bdf8-7fac7bdca18e",
+        "node_id": "ECE334219870",
+        "source_key": "load3",
+        "tag_name": "load3",
+        "label": "Load 3",
+        "output_type": "PWM",
+        "last_value": 0,
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      },
+      {
+        "id": "f590c14b-3d58-432c-898a-28d8d395fcb9",
+        "node_id": "ECE334219870",
+        "source_key": "load4",
+        "tag_name": "load4",
+        "label": "Load 4",
+        "output_type": "PWM",
+        "last_value": 0,
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z"
+      }
+    ]
   },
   "success": true
 }
@@ -1210,23 +2854,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0027s
+- **Duration:** 0.0053s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1238,13 +2883,39 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.002s
+- **Duration:** 0.0046s
 - **Payload:**
 ```json
 {
   "data": {
-    "count": 0,
-    "outputs": []
+    "count": 5,
+    "outputs": [
+      {
+        "name": "load4",
+        "type": "DIGITAL",
+        "value": 0
+      },
+      {
+        "name": "buzzer",
+        "type": "DIGITAL",
+        "value": 0
+      },
+      {
+        "name": "load1",
+        "type": "DIGITAL",
+        "value": 0
+      },
+      {
+        "name": "load2",
+        "type": "DIGITAL",
+        "value": 0
+      },
+      {
+        "name": "load3",
+        "type": "DIGITAL",
+        "value": 0
+      }
+    ]
   },
   "success": true
 }
@@ -1256,23 +2927,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.003s
+- **Duration:** 0.0047s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1284,7 +2956,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 400
-- **Duration:** 0.004s
+- **Duration:** 0.0083s
 - **Payload:**
 ```json
 {
@@ -1302,23 +2974,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0029s
+- **Duration:** 0.0276s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1330,13 +3003,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 200
-- **Duration:** 0.1112s
+- **Duration:** 0.0758s
 - **Payload:**
 ```json
 {
   "data": {
     "mode": "AUTO",
-    "node_id": "node-02"
+    "node_id": "ECE334219870"
   },
   "success": true
 }
@@ -1348,23 +3021,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0038s
+- **Duration:** 0.0083s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1376,7 +3050,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0038s
+- **Duration:** 0.0453s
 - **Payload:**
 ```json
 {
@@ -1394,23 +3068,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0044s
+- **Duration:** 0.0139s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1422,13 +3097,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 201
-- **Duration:** 0.3114s
+- **Duration:** 0.3804s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "277b5b9e-ac34-4152-8245-473d241450cf",
-    "node_id": "node-02",
+    "id": "ae9e913e-047d-4d53-92fa-5db970912610",
+    "node_id": "ECE334219870",
     "output_name": "pump",
     "tag_name": "",
     "type": "interval",
@@ -1439,8 +3114,8 @@ bucket,node_id,metric,count,sum,min,max,avg,last
       "value_off": 0
     },
     "enabled": false,
-    "created_at": "2026-07-24T03:57:48.443713032Z",
-    "updated_at": "2026-07-24T03:57:48.443713032Z"
+    "created_at": "2026-07-24T13:29:40.142917329Z",
+    "updated_at": "2026-07-24T13:29:40.142917329Z"
   },
   "success": true
 }
@@ -1452,7 +3127,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 200
-- **Duration:** 1.2755s
+- **Duration:** 0.1952s
 - **Payload:**
 ```json
 {
@@ -1469,23 +3144,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0027s
+- **Duration:** 0.0045s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1497,23 +3173,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.003s
+- **Duration:** 0.0045s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1525,23 +3202,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0037s
+- **Duration:** 0.0049s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1553,23 +3231,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0031s
+- **Duration:** 0.0103s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1581,23 +3260,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.003s
+- **Duration:** 0.0056s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1609,13 +3289,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 200
-- **Duration:** 0.3858s
+- **Duration:** 0.0617s
 - **Payload:**
 ```json
 {
   "data": {
     "mode": "AUTO",
-    "node_id": "node-02",
+    "node_id": "ECE334219870",
     "output": "pump"
   },
   "success": true
@@ -1628,23 +3308,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0032s
+- **Duration:** 0.005s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "60b2ec88-86be-11f1-b1d7-4a0a213eecf0",
-    "node_id": "node-02",
-    "module_id": "bd950361-afcb-42f1-ae53-6f685e005b0d",
-    "name": "",
-    "mac": "",
-    "ip": "",
-    "fw_version": "",
+    "id": "00185995-1847-4aa8-a1d6-09f739787928",
+    "node_id": "ECE334219870",
+    "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
+    "name": "ECE334219870",
+    "mac": "EC:E3:34:21:98:70",
+    "ip": "192.168.1.100",
+    "fw_version": "1.0.0",
     "status": "online",
     "paired": true,
-    "discovered_at": "2026-07-23T17:46:04Z",
-    "created_at": "2026-07-23T17:46:04Z",
-    "updated_at": "2026-07-24T03:57:45.648Z"
+    "last_seen_at": "2026-07-24T13:29:36.987Z",
+    "discovered_at": "2026-07-23T19:28:26.373Z",
+    "created_at": "2026-07-23T19:28:26.373Z",
+    "updated_at": "2026-07-24T13:29:37.725Z"
   },
   "success": true
 }
@@ -1656,7 +3337,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0039s
+- **Duration:** 0.0048s
 - **Payload:**
 ```json
 {
@@ -1674,7 +3355,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0047s
+- **Duration:** 0.0061s
 - **Payload:**
 ```json
 {
@@ -1793,7 +3474,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0034s
+- **Duration:** 0.004s
 - **Payload:**
 ```json
 {
@@ -1830,13 +3511,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 201
-- **Duration:** 1.4238s
+- **Duration:** 0.3311s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "0f7eafb5-5483-4597-8c54-0115a9bc4795",
-    "node_id": "node-02",
+    "id": "dc25f3ff-747a-407a-a6d0-585ea085be4a",
+    "node_id": "ECE334219870",
     "metric": "temperature",
     "min": 15,
     "max": 35,
@@ -1853,12 +3534,12 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 200
-- **Duration:** 0.5917s
+- **Duration:** 1.6356s
 - **Payload:**
 ```json
 {
   "data": {
-    "id": "0f7eafb5-5483-4597-8c54-0115a9bc4795",
+    "id": "dc25f3ff-747a-407a-a6d0-585ea085be4a",
     "status": "deleted"
   },
   "success": true
@@ -1871,7 +3552,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 404
-- **Duration:** 0.0032s
+- **Duration:** 0.0037s
 - **Payload:**
 ```json
 {
@@ -1892,7 +3573,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0039s
+- **Duration:** 0.0112s
 - **Payload:**
 ```json
 {
@@ -1900,308 +3581,308 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "limit": 50,
     "logs": [
       {
-        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:16.831Z"
-      },
-      {
-        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
-        "event": "alert.threshold.deleted",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:11.426Z"
-      },
-      {
-        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
-        "event": "alert.threshold.created",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:09.144Z"
-      },
-      {
-        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
-        "event": "control.schedule.deleted",
-        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
-        "received_at": "2026-07-24T03:56:08.188Z"
-      },
-      {
-        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "id": "d5bae922-d584-4a8c-8a5b-4748b193787c",
         "event": "control.schedule.created",
-        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
-        "received_at": "2026-07-24T03:56:07.46Z"
+        "payload": "{\"node_id\":\"ECE334219870\",\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T13:29:42.716Z"
       },
       {
-        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "id": "492e3076-4de6-4949-a8d6-f51b1fc850af",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\"}",
+        "received_at": "2026-07-24T13:29:42.36Z"
+      },
+      {
+        "id": "15b09813-d804-4eb3-aaef-5b213313275f",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"ECE334219870\",\"severity\":\"warning\",\"threshold_id\":\"dc25f3ff-747a-407a-a6d0-585ea085be4a\"}",
+        "received_at": "2026-07-24T13:29:41.183Z"
+      },
+      {
+        "id": "610db132-1be8-4ebc-bd31-d7615edf39fc",
         "event": "node.paired",
-        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:05.309Z"
+        "payload": "{\"module_id\":\"ee8831ff-c2dd-45c9-abb6-fb3def8fd513\",\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:39.235Z"
       },
       {
-        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "id": "e24b1b47-8ec6-4b42-8e38-858227c3f498",
         "event": "node.unpaired",
-        "payload": "{\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:04.953Z"
+        "payload": "{\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:38.99Z"
       },
       {
-        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
-        "event": "module.created",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
-        "received_at": "2026-07-24T03:56:03.493Z"
-      },
-      {
-        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "id": "a157433e-7623-45ad-a9f1-f9b0faa8dc34",
         "event": "module.deleted",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
-        "received_at": "2026-07-24T03:56:03.14Z"
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\"}",
+        "received_at": "2026-07-24T13:29:37.72Z"
       },
       {
-        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "id": "8b590eb7-74a3-4a3c-9dd4-a2c949d41510",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\",\"name\":\"Test Greenhouse 1784899775\"}",
+        "received_at": "2026-07-24T13:29:36.99Z"
+      },
+      {
+        "id": "9788510c-ee74-4696-96c8-2bc3b8d35f3b",
         "event": "auth.account.deleted",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:02.208Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.586Z"
       },
       {
-        "id": "96296e39-4cf1-4929-ab1b-ec7863202862",
+        "id": "9e780252-9ac8-4e2d-b5cf-29fc900fbf3f",
         "event": "auth.login",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:01.915Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.344Z"
       },
       {
-        "id": "515c53e3-69cb-46c1-aaa5-eccaedbadc01",
+        "id": "440db5f9-fbb5-45c4-901b-a1b2a333d17e",
         "event": "auth.logout",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:56:01.629Z"
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:34.962Z"
       },
       {
-        "id": "cedf09fe-37bc-4a6c-bf33-d7cd21ef67be",
+        "id": "6b5485da-5167-4c96-9011-9a4c3ac77e0f",
         "event": "auth.register",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:01.319Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:34.71Z"
       },
       {
-        "id": "c02b3d10-f44d-4406-9f35-477bbf84dcaf",
+        "id": "477bbcd6-e5c6-4ffd-808d-114408761ac7",
         "event": "auth.refresh",
         "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.849Z"
+        "received_at": "2026-07-24T13:29:34.183Z"
       },
       {
-        "id": "0dfa3832-09a5-4669-bd58-b0aae8c7e48c",
+        "id": "8c1fe5b7-bb95-43ae-a6ad-209146a332a0",
         "event": "auth.profile.updated",
         "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.637Z"
+        "received_at": "2026-07-24T13:29:33.907Z"
       },
       {
-        "id": "0297dab6-8b5c-4680-9e61-482b2b97487b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.371Z"
-      },
-      {
-        "id": "ed8157a0-baf6-4452-9133-4094e923a43e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:48.989Z"
-      },
-      {
-        "id": "4818bf5e-30a5-498b-b747-49cc8b004fee",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:37.563Z"
-      },
-      {
-        "id": "31f2d84f-0f56-427b-8e4f-4363ccf81d08",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:11.087Z"
-      },
-      {
-        "id": "fbb1725f-2787-480e-91d3-603305b65737",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:54:27.831Z"
-      },
-      {
-        "id": "bfa86419-af0c-45b1-b772-2857897a7a52",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:54:17.418Z"
-      },
-      {
-        "id": "8b7b87f8-4a89-440a-b3e9-b21d910aa568",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:48:28.346Z"
-      },
-      {
-        "id": "e87ee415-f153-4901-a489-4760e7f20f2f",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:47:42.495Z"
-      },
-      {
-        "id": "9955d069-2c3f-4b59-bb24-cad47e261b6b",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"3014ebe0-5eab-45f0-8485-8d8e92d9be80\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:46:37.279Z"
-      },
-      {
-        "id": "eebf0c2e-e643-430c-a0d4-f199d3ce771e",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:46:32.494Z"
-      },
-      {
-        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:45:29.194Z"
-      },
-      {
-        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:43:32.658Z"
-      },
-      {
-        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:42:20.428Z"
-      },
-      {
-        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:41:29.924Z"
-      },
-      {
-        "id": "9c745b07-4c17-49af-b653-79c2ff7c19de",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:36:34.885Z"
-      },
-      {
-        "id": "673aab8e-5ecd-4d2a-a9e9-4833da8db751",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"ed932d1f-e37b-4859-a772-cd6d8c63535d\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:36:34.494Z"
-      },
-      {
-        "id": "5d376cd2-d8a3-431a-bb26-ba91f7fd1402",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"6cc554bf-21ef-420f-8452-c195749e9f15\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:35:33.042Z"
-      },
-      {
-        "id": "96e01b28-e98c-4691-9743-ff4091edba63",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:35:32.54Z"
-      },
-      {
-        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:33:05.931Z"
-      },
-      {
-        "id": "91388fdc-bcfa-401b-80d6-39c9f91202a0",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"21de8410-e55c-4553-9e95-e449e16f2ac5\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:25:32.494Z"
-      },
-      {
-        "id": "88565373-2dbf-40f2-a511-c5b72e7b1130",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:25:30.494Z"
-      },
-      {
-        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:24:54.036Z"
-      },
-      {
-        "id": "a1ecfd60-f1a4-4c76-bdb8-a16915e3617b",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"7f6e809f-92c7-459f-994a-aa792a74a6f8\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:24:30.979Z"
-      },
-      {
-        "id": "7de5eedb-7825-4e9d-ba5d-7e734a6beef6",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:24:30.496Z"
-      },
-      {
-        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
+        "id": "8e987418-2f88-49d5-8749-cc8d305e9fdc",
         "event": "auth.login",
         "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:22.847Z"
+        "received_at": "2026-07-24T13:29:33.462Z"
       },
       {
-        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
+        "id": "aa028ecf-2794-49e7-9dbe-cb3348e3ed23",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"a984773d-bc61-469d-9b03-d08b39d63dd0\"}",
+        "received_at": "2026-07-24T12:59:00.784Z"
+      },
+      {
+        "id": "99f33497-9fce-4dc5-8bd9-66f7004b226f",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"65c2572c-cce8-4463-945d-24db34ac717f\"}",
+        "received_at": "2026-07-24T12:58:53.159Z"
+      },
+      {
+        "id": "6961bfe5-f004-45f1-9a12-4266b2904f98",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"target_id\":\"aaef0ec4-c799-47c6-a9ea-523c5f037745\",\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T12:58:44.601Z"
+      },
+      {
+        "id": "c3995b35-8bae-4818-a587-0fd59615cc26",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"c94330a4-b2d8-49f1-8cea-120de512af15\"}",
+        "received_at": "2026-07-24T12:58:37.572Z"
+      },
+      {
+        "id": "36b87ae2-a9b6-49a3-a2ea-5fd7c5149a1e",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"20472c04-acdc-45bc-87ba-c57df48c6890\"}",
+        "received_at": "2026-07-24T12:57:44.436Z"
+      },
+      {
+        "id": "b941b1fb-7242-4ea6-bdc1-0ac106fcd8d3",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load3\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:23.614Z"
+      },
+      {
+        "id": "68f65ed1-c51d-4960-8f6a-7b311205ac0d",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"9c6a3518-1d02-4d01-b90d-68b8ec19f924\",\"target\":\"load3\"}",
+        "received_at": "2026-07-24T12:57:22.908Z"
+      },
+      {
+        "id": "9d320f44-5ba9-43a4-b509-390572477d15",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d41c9a85-191b-4121-8ebe-949bd8b49d62\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T12:57:21.134Z"
+      },
+      {
+        "id": "d68e27b6-bb61-4603-8d82-67e92ef81306",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load1\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:20.907Z"
+      },
+      {
+        "id": "71725dd2-a99c-4dcd-86e1-466a63eed7aa",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:20.04Z"
+      },
+      {
+        "id": "a20e54c8-20ef-4f23-a05f-c3aed6e93550",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"c188328e-3a12-4aed-a13f-f1a98d4309e2\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:57:19.706Z"
+      },
+      {
+        "id": "446d7966-a958-48f5-93f8-e70b8db563e3",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"e27a012c-5da3-4193-9872-7be55079beff\",\"target\":\"load2\"}",
+        "received_at": "2026-07-24T12:57:19.475Z"
+      },
+      {
+        "id": "afbc8bbc-5fb6-41be-bd23-0e0ab6868f1c",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load2\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:18.907Z"
+      },
+      {
+        "id": "d5e5ec43-ee8c-44a8-b2c4-726a82c9700b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d0a87b22-2cce-4939-96ce-dabac96795f8\",\"target\":\"load4\"}",
+        "received_at": "2026-07-24T12:57:16.907Z"
+      },
+      {
+        "id": "877cbcd2-53d8-4e4e-9a60-25531108294b",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load4\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:14.907Z"
+      },
+      {
+        "id": "d10d8ee7-3cb4-4d14-8a3d-e919880f5f13",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"adf54ad8-b571-40bf-aec1-a3b752226dfc\",\"target\":\"load4\"}",
+        "received_at": "2026-07-24T12:56:50.189Z"
+      },
+      {
+        "id": "17b88df0-2c5b-4c86-8d69-f953070d5c40",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load4\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:50.004Z"
+      },
+      {
+        "id": "2eff3e3c-6697-430e-9fab-3356bf7b729d",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"f09e35cc-cf6f-48e0-b3a8-e4e8522c3018\",\"target\":\"load3\"}",
+        "received_at": "2026-07-24T12:56:49.703Z"
+      },
+      {
+        "id": "3bcdb611-3fe0-416c-b316-f59f56829ea7",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load3\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:48.341Z"
+      },
+      {
+        "id": "ea0165d3-8533-45af-9b00-aa31c0d00b79",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load2\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:47.821Z"
+      },
+      {
+        "id": "69ee0364-8f2c-45f3-8319-c597936b60db",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"296b7ea7-c876-4f32-8677-b6a86264de5b\",\"target\":\"load2\"}",
+        "received_at": "2026-07-24T12:56:47.355Z"
+      },
+      {
+        "id": "f68d976c-0fc3-46dd-a706-c29d2323d7d3",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load1\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:44.544Z"
+      },
+      {
+        "id": "c47eccfb-18ef-4d62-b1b8-1f4fa387ba42",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"f62c5bcc-5814-404f-98c7-e79a0482e776\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T12:56:43.354Z"
+      },
+      {
+        "id": "a2d98511-72fa-4b7d-ad3c-3bfeaf388558",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"0cb463d1-3dfe-42bf-b23b-76a56a228458\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:40.879Z"
+      },
+      {
+        "id": "939d131e-34cf-4a6c-a6ec-9005ecf92668",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:40.547Z"
+      },
+      {
+        "id": "899b45bf-b5b9-4f7a-832c-5763db5c56b6",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"87e00aa9-514e-4fb8-96df-5dfcf7fbadb2\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:39.94Z"
+      },
+      {
+        "id": "b6d68778-9c24-429d-b12b-ae2d74f73fa4",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:56:38.79Z"
+      },
+      {
+        "id": "b30b90fe-268e-435f-84f4-08df2015289e",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"42aca0c0-744d-4d93-9b26-de7e829a9ae9\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:37.355Z"
+      },
+      {
+        "id": "0f9cfbf4-aff3-4d96-b381-ae355ecb1442",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:35.355Z"
+      },
+      {
+        "id": "be5f8b4c-23d2-4c45-b86a-c42268fff1ad",
+        "event": "node.paired",
+        "payload": "{\"module_id\":\"ee8831ff-c2dd-45c9-abb6-fb3def8fd513\",\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T12:54:31.986Z"
+      },
+      {
+        "id": "9f4ff888-b1e8-4837-8075-dd5f530b3216",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\"}",
+        "received_at": "2026-07-24T12:54:25.987Z"
+      },
+      {
+        "id": "c37ac1b7-7091-43e1-88a3-0c5688333df0",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"de6ce111-e9bf-4675-a6a3-6759b52d5d56\"}",
+        "received_at": "2026-07-24T12:54:22.807Z"
+      },
+      {
+        "id": "02b720d1-adae-41c2-a216-78b38fc5bcd5",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:55:17.395Z"
+      },
+      {
+        "id": "64b985c6-ecfd-4add-9ed4-50dab3032eae",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:24:49.693Z"
+      },
+      {
+        "id": "2d3da7aa-2cc5-4738-9e55-1eebb3bf13f4",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T11:16:26.272Z"
+      },
+      {
+        "id": "bb588b69-db6c-444a-ae10-8dfe05cf4eaf",
         "event": "auth.login",
         "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:04.66Z"
-      },
-      {
-        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:20:43.662Z"
-      },
-      {
-        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:15:52.376Z"
-      },
-      {
-        "id": "5ab839b8-5ae3-45f4-b9ba-871aa42a0689",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:14:36.494Z"
-      },
-      {
-        "id": "58db2f64-91c9-4cd5-aae1-64b2ba72d172",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d30e66f4-c22b-4694-8937-0d9ab92bff2e\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:13:30.188Z"
-      },
-      {
-        "id": "c1164d82-f2c0-4e71-a634-ea88bee1ebda",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:13:28.494Z"
-      },
-      {
-        "id": "90cd6e66-b9b2-4978-a0dc-8162b7565c70",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"400dc5d2-f666-4900-96b9-127015efe5c9\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:03:28.848Z"
-      },
-      {
-        "id": "58dac530-e0d0-4a96-826d-cd96b2fb27fb",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:03:28.493Z"
-      },
-      {
-        "id": "9389469b-ea04-40fe-85bf-083db610bca8",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"8edd63fe-7dc7-4130-b608-cf21cfd841c4\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:02:29.398Z"
-      },
-      {
-        "id": "e1bb7dde-f824-48d5-b334-df1d2074bf39",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:02:28.494Z"
+        "received_at": "2026-07-24T11:09:41.895Z"
       }
     ],
     "offset": 0,
-    "total": 1906
+    "total": 2143
   },
   "success": true
 }
@@ -2213,13 +3894,259 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0049s
+- **Duration:** 0.0053s
 - **Payload:**
 ```json
 {
   "data": {
     "limit": 50,
     "logs": [
+      {
+        "id": "9e780252-9ac8-4e2d-b5cf-29fc900fbf3f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.344Z"
+      },
+      {
+        "id": "8e987418-2f88-49d5-8749-cc8d305e9fdc",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T13:29:33.462Z"
+      },
+      {
+        "id": "02b720d1-adae-41c2-a216-78b38fc5bcd5",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:55:17.395Z"
+      },
+      {
+        "id": "64b985c6-ecfd-4add-9ed4-50dab3032eae",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:24:49.693Z"
+      },
+      {
+        "id": "2d3da7aa-2cc5-4738-9e55-1eebb3bf13f4",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T11:16:26.272Z"
+      },
+      {
+        "id": "bb588b69-db6c-444a-ae10-8dfe05cf4eaf",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T11:09:41.895Z"
+      },
+      {
+        "id": "65b93063-c492-49db-a536-2c8cc9502426",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:08:48.071Z"
+      },
+      {
+        "id": "e96f6a79-b0a9-498d-8fd7-593cc1a11343",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:08:30.744Z"
+      },
+      {
+        "id": "9085720d-751d-42ed-844a-9ee61b0f9ae9",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:08:19.338Z"
+      },
+      {
+        "id": "f58ddf41-bf7c-4df0-8e72-210dc339ff8f",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.35\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T11:02:23.843Z"
+      },
+      {
+        "id": "c8970671-1312-4c4e-a80e-489602da9991",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.35\"}",
+        "received_at": "2026-07-24T10:58:08.738Z"
+      },
+      {
+        "id": "b527eec3-15fb-4e87-875e-cd53efedc99c",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.35\"}",
+        "received_at": "2026-07-24T10:55:55.325Z"
+      },
+      {
+        "id": "00c01abb-5cba-4db9-a745-c29791c58b9d",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T06:27:05.302Z"
+      },
+      {
+        "id": "be96a0da-bc96-4d27-ba19-817b9dca8c89",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1, 172.17.0.43\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T06:26:17.493Z"
+      },
+      {
+        "id": "d897c54e-1011-4975-98f7-0b6b68788060",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:45:40.066Z"
+      },
+      {
+        "id": "9d9578eb-7188-4eeb-96de-48065cd5e91a",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T04:39:58.43Z"
+      },
+      {
+        "id": "61653188-41df-4845-899b-b721a9539a35",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T04:39:17.234Z"
+      },
+      {
+        "id": "0849c004-8510-4b84-85f8-c2979e77daa9",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:38:51.718Z"
+      },
+      {
+        "id": "bb9099cb-3036-431c-81e2-b5f64a86bd50",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:33:51.777Z"
+      },
+      {
+        "id": "3a47b3d9-3bc2-4021-9fd5-4b7047d950de",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:33:43.088Z"
+      },
+      {
+        "id": "a5186b48-df18-4162-981f-bfd461075c27",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:31:33.904Z"
+      },
+      {
+        "id": "3f0db188-3671-4281-b73b-6f0f21c6e3ab",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T04:31:21.497Z"
+      },
+      {
+        "id": "63f50e42-29b9-47f3-9d81-6d091783f1ea",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:31:21.084Z"
+      },
+      {
+        "id": "4d1cab86-8cf5-4196-90e9-1a59f742abd4",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:31:10.123Z"
+      },
+      {
+        "id": "00b31884-8a6c-4245-ac06-4160e2654b0e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.43\"}",
+        "received_at": "2026-07-24T04:25:36.177Z"
+      },
+      {
+        "id": "93aae973-b054-4726-a1ca-adbca3bed0b9",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1, 172.17.0.43\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T04:25:26.475Z"
+      },
+      {
+        "id": "5814b675-4096-4add-abfb-fd4f1fb06917",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\"}",
+        "received_at": "2026-07-24T04:23:00.931Z"
+      },
+      {
+        "id": "36f845c4-2902-4104-8f83-cba044329075",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:22:29.962Z"
+      },
+      {
+        "id": "44b24805-a5d1-4f67-96d5-7e7c053bbfa9",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:19:18.244Z"
+      },
+      {
+        "id": "e24de7ac-d4c8-4d0f-a64b-3ff7020de215",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T04:16:37.942Z"
+      },
+      {
+        "id": "94a8af9f-1995-449c-aebd-324786b0af4d",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\"}",
+        "received_at": "2026-07-24T04:14:19.164Z"
+      },
+      {
+        "id": "7231c6e2-8fb1-4599-a46a-5427e1a0854e",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:13:50.742Z"
+      },
+      {
+        "id": "3e5f7294-e235-4af9-a78f-8933793c6c0a",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:06:10.822Z"
+      },
+      {
+        "id": "57f82f70-bca1-4aea-b0bb-0f525efcb727",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:03:56.799Z"
+      },
+      {
+        "id": "ed8a971b-08dd-4723-a36d-44b2d121a173",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:03:44.176Z"
+      },
+      {
+        "id": "887dc6be-32f2-4a35-b388-9e174dbca608",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:01:05.257Z"
+      },
+      {
+        "id": "414d38a7-6a5c-43ad-98b8-cd298751ba55",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:00:53.436Z"
+      },
+      {
+        "id": "2a4e8359-f70a-48ad-8dc1-ccd845abbc3d",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T04:00:21.899Z"
+      },
+      {
+        "id": "17bab8bb-a065-413d-9e95-2711e0776bbe",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T04:00:11.588Z"
+      },
+      {
+        "id": "076d9b5f-dbb1-46ae-aa73-5788fc8b023e",
+        "event": "auth.login",
+        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T03:58:26.902Z"
+      },
+      {
+        "id": "d6313d4d-9272-434a-8dfc-18f9a53b6c6b",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T03:58:14.523Z"
+      },
       {
         "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
         "event": "auth.login",
@@ -2273,256 +4200,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "event": "auth.login",
         "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
         "received_at": "2026-07-24T03:48:28.346Z"
-      },
-      {
-        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:45:29.194Z"
-      },
-      {
-        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:43:32.658Z"
-      },
-      {
-        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:42:20.428Z"
-      },
-      {
-        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:41:29.924Z"
-      },
-      {
-        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:33:05.931Z"
-      },
-      {
-        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:24:54.036Z"
-      },
-      {
-        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:22.847Z"
-      },
-      {
-        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:04.66Z"
-      },
-      {
-        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:20:43.662Z"
-      },
-      {
-        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:15:52.376Z"
-      },
-      {
-        "id": "4aef9237-6aee-4e38-9881-767d534344d2",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:28:25.063Z"
-      },
-      {
-        "id": "18846e9c-b9ca-426f-854c-c9ef69212550",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"a59331cd-5268-44a4-8c18-4499caf95a85\",\"username\":\"testuser_1784834888\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:28:11.251Z"
-      },
-      {
-        "id": "50c106a3-67c4-4aa0-8e38-7b9806cb32d5",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:28:08.262Z"
-      },
-      {
-        "id": "bd937662-681e-4fab-a37f-64d6578f650d",
-        "event": "auth.login",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
-        "received_at": "2026-07-23T19:25:27.24Z"
-      },
-      {
-        "id": "d46bdf76-d57e-41bf-8b2d-ef04f7c1f749",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"48a0b2b4-44ff-4a23-b269-414272d7f85c\",\"username\":\"testuser_1784834712\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:25:13.892Z"
-      },
-      {
-        "id": "0325c6fa-108a-42fa-a42c-35fa0d2d320f",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:25:12.295Z"
-      },
-      {
-        "id": "5417675d-42c5-4fd7-b197-759f01a3977f",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:22:31.449Z"
-      },
-      {
-        "id": "8d1ae1fd-a2b4-406c-bf50-a2b2bfc043e5",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:22:07.164Z"
-      },
-      {
-        "id": "660667f6-70e9-423a-9ff3-eda7dbd4350f",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:17:36.385Z"
-      },
-      {
-        "id": "4648f907-4334-47ee-a194-1fa65c17232f",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"3e402f32-d04a-4eb8-ad85-cfd77423d656\",\"username\":\"testuser_1784834241\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T19:17:22.778Z"
-      },
-      {
-        "id": "75e3b1e0-19d1-4564-a897-0eacd29de96f",
-        "event": "auth.login",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
-        "received_at": "2026-07-23T19:17:21.2Z"
-      },
-      {
-        "id": "4802a686-df18-4dea-93ab-526955248e99",
-        "event": "auth.login",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
-        "received_at": "2026-07-23T18:04:06.705Z"
-      },
-      {
-        "id": "a4198b2b-8559-4681-8cad-499b1d7d178b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"82d6cc7a-cf80-4862-b927-710a41b2994d\",\"username\":\"testuser_1784829835\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:03:56.281Z"
-      },
-      {
-        "id": "396ba4dd-2075-4e5f-9b78-ef0198cdb0e9",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-23T18:03:55.017Z"
-      },
-      {
-        "id": "f2c44a32-4d4c-4632-b459-702a7b84456b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:02:09.825Z"
-      },
-      {
-        "id": "77b2aefc-c512-4768-b2c9-e0b53867b75e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"c1c706eb-f899-4762-b672-4c88eb6023b5\",\"username\":\"testuser_1784829717\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:01:59.814Z"
-      },
-      {
-        "id": "71bf5de9-48e9-499b-888d-26c657574079",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:01:56.913Z"
-      },
-      {
-        "id": "35ed80dd-ffeb-46a2-98fd-45cefaa6dbb1",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:00:16.433Z"
-      },
-      {
-        "id": "3a66493f-1ad1-4a9a-881d-16a5bbeb6039",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"978abb83-d59e-4305-af03-02a92c989ff2\",\"username\":\"testuser_1784829606\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T18:00:07.065Z"
-      },
-      {
-        "id": "c21de734-fbaf-4d0b-b39c-7025cdf32a35",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-23T18:00:05.76Z"
-      },
-      {
-        "id": "150b4640-c878-4071-944f-89861987dd1b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:55:41.619Z"
-      },
-      {
-        "id": "c8a23b3c-d249-4304-a8e9-0b127ac544b1",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:55:33.611Z"
-      },
-      {
-        "id": "c56d50ce-7e38-4407-97cd-a87e6e8d31fd",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-23T17:51:04.174Z"
-      },
-      {
-        "id": "6fd85f84-92d4-488c-a767-c3e7a89bea52",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"5d1b3ad5-fe37-4e60-a011-9e9279d00cdb\",\"username\":\"testuser_1784829047\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:50:49.101Z"
-      },
-      {
-        "id": "e7206ea6-0aad-4069-a2a0-e2179ba7d02f",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:50:40.209Z"
-      },
-      {
-        "id": "e54b9395-b403-4602-8742-74cac56ef84f",
-        "event": "auth.login",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
-        "received_at": "2026-07-23T17:49:07.058Z"
-      },
-      {
-        "id": "5f76550d-12f3-46f9-a099-6d1c0395f568",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:48:53.465Z"
-      },
-      {
-        "id": "e20b3186-b2a1-4785-8001-f6fd0dd60a34",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:46:34.408Z"
-      },
-      {
-        "id": "e684ed6e-0b49-45ce-a888-e249c35dfb3b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"c4a2889e-fa25-4833-899b-f8e551033955\",\"username\":\"testuser_1784828767\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:46:09.329Z"
-      },
-      {
-        "id": "4d40034b-213d-4c07-a6b9-c4fc48e8bf9b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:46:04.255Z"
-      },
-      {
-        "id": "a1ea35fd-4e6c-4f5c-adad-32b15e0e8ed7",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-23T17:43:30.278Z"
       }
     ],
     "offset": 0,
-    "total": 576
+    "total": 617
   },
   "success": true
 }
@@ -2534,7 +4215,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0045s
+- **Duration:** 0.0039s
 - **Payload:**
 ```json
 {
@@ -2542,68 +4223,68 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "limit": 10,
     "logs": [
       {
-        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:16.831Z"
-      },
-      {
-        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
-        "event": "alert.threshold.deleted",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:11.426Z"
-      },
-      {
-        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
-        "event": "alert.threshold.created",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:09.144Z"
-      },
-      {
-        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
-        "event": "control.schedule.deleted",
-        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
-        "received_at": "2026-07-24T03:56:08.188Z"
-      },
-      {
-        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "id": "d5bae922-d584-4a8c-8a5b-4748b193787c",
         "event": "control.schedule.created",
-        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
-        "received_at": "2026-07-24T03:56:07.46Z"
+        "payload": "{\"node_id\":\"ECE334219870\",\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T13:29:42.716Z"
       },
       {
-        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "id": "492e3076-4de6-4949-a8d6-f51b1fc850af",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\"}",
+        "received_at": "2026-07-24T13:29:42.36Z"
+      },
+      {
+        "id": "15b09813-d804-4eb3-aaef-5b213313275f",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"ECE334219870\",\"severity\":\"warning\",\"threshold_id\":\"dc25f3ff-747a-407a-a6d0-585ea085be4a\"}",
+        "received_at": "2026-07-24T13:29:41.183Z"
+      },
+      {
+        "id": "610db132-1be8-4ebc-bd31-d7615edf39fc",
         "event": "node.paired",
-        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:05.309Z"
+        "payload": "{\"module_id\":\"ee8831ff-c2dd-45c9-abb6-fb3def8fd513\",\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:39.235Z"
       },
       {
-        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "id": "e24b1b47-8ec6-4b42-8e38-858227c3f498",
         "event": "node.unpaired",
-        "payload": "{\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:04.953Z"
+        "payload": "{\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:38.99Z"
       },
       {
-        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
-        "event": "module.created",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
-        "received_at": "2026-07-24T03:56:03.493Z"
-      },
-      {
-        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "id": "a157433e-7623-45ad-a9f1-f9b0faa8dc34",
         "event": "module.deleted",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
-        "received_at": "2026-07-24T03:56:03.14Z"
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\"}",
+        "received_at": "2026-07-24T13:29:37.72Z"
       },
       {
-        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "id": "8b590eb7-74a3-4a3c-9dd4-a2c949d41510",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\",\"name\":\"Test Greenhouse 1784899775\"}",
+        "received_at": "2026-07-24T13:29:36.99Z"
+      },
+      {
+        "id": "9788510c-ee74-4696-96c8-2bc3b8d35f3b",
         "event": "auth.account.deleted",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:02.208Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.586Z"
+      },
+      {
+        "id": "9e780252-9ac8-4e2d-b5cf-29fc900fbf3f",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.344Z"
+      },
+      {
+        "id": "440db5f9-fbb5-45c4-901b-a1b2a333d17e",
+        "event": "auth.logout",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:34.962Z"
       }
     ],
     "offset": 0,
-    "total": 1906
+    "total": 2143
   },
   "success": true
 }
@@ -2615,7 +4296,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0066s
+- **Duration:** 0.0079s
 - **Payload:**
 ```json
 {
@@ -2635,7 +4316,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0045s
+- **Duration:** 0.0053s
 - **Payload:**
 ```json
 {
@@ -2643,308 +4324,308 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "limit": 50,
     "logs": [
       {
-        "id": "71292b1a-2c4c-46c5-ad17-dbcbb5912834",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:16.831Z"
-      },
-      {
-        "id": "264a1909-4e62-495b-b1f6-48d7ae9d4fda",
-        "event": "alert.threshold.deleted",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:11.426Z"
-      },
-      {
-        "id": "2bd0e0eb-0c2c-4723-a131-7b15c7448764",
-        "event": "alert.threshold.created",
-        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"node-02\",\"severity\":\"warning\",\"threshold_id\":\"6985b303-7a3b-456b-87e4-5df5415ae716\"}",
-        "received_at": "2026-07-24T03:56:09.144Z"
-      },
-      {
-        "id": "cfd743c2-c414-4f82-aade-5cb66b0a566e",
-        "event": "control.schedule.deleted",
-        "payload": "{\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\"}",
-        "received_at": "2026-07-24T03:56:08.188Z"
-      },
-      {
-        "id": "f9f8a5ca-2421-4123-b3c9-b2595bbe9f4f",
+        "id": "d5bae922-d584-4a8c-8a5b-4748b193787c",
         "event": "control.schedule.created",
-        "payload": "{\"node_id\":\"node-02\",\"schedule_id\":\"afbaa50d-7980-4513-bf48-4be91275fd1d\",\"type\":\"interval\"}",
-        "received_at": "2026-07-24T03:56:07.46Z"
+        "payload": "{\"node_id\":\"ECE334219870\",\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\",\"type\":\"interval\"}",
+        "received_at": "2026-07-24T13:29:42.716Z"
       },
       {
-        "id": "7032283e-d1f1-4316-8666-be92ab543636",
+        "id": "492e3076-4de6-4949-a8d6-f51b1fc850af",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"ae9e913e-047d-4d53-92fa-5db970912610\"}",
+        "received_at": "2026-07-24T13:29:42.36Z"
+      },
+      {
+        "id": "15b09813-d804-4eb3-aaef-5b213313275f",
+        "event": "alert.threshold.created",
+        "payload": "{\"by\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"metric\":\"temperature\",\"node_id\":\"ECE334219870\",\"severity\":\"warning\",\"threshold_id\":\"dc25f3ff-747a-407a-a6d0-585ea085be4a\"}",
+        "received_at": "2026-07-24T13:29:41.183Z"
+      },
+      {
+        "id": "610db132-1be8-4ebc-bd31-d7615edf39fc",
         "event": "node.paired",
-        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\",\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:05.309Z"
+        "payload": "{\"module_id\":\"ee8831ff-c2dd-45c9-abb6-fb3def8fd513\",\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:39.235Z"
       },
       {
-        "id": "c0ec0b5e-3119-434b-8f71-2a823363852f",
+        "id": "e24b1b47-8ec6-4b42-8e38-858227c3f498",
         "event": "node.unpaired",
-        "payload": "{\"node_id\":\"node-02\"}",
-        "received_at": "2026-07-24T03:56:04.953Z"
+        "payload": "{\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T13:29:38.99Z"
       },
       {
-        "id": "5354b455-5738-46e5-8f52-bfb37ca36270",
-        "event": "module.created",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\",\"name\":\"Test Greenhouse 1784865362\"}",
-        "received_at": "2026-07-24T03:56:03.493Z"
-      },
-      {
-        "id": "0762b3c2-9789-492f-be23-ddaba925e9b1",
+        "id": "a157433e-7623-45ad-a9f1-f9b0faa8dc34",
         "event": "module.deleted",
-        "payload": "{\"module_id\":\"622cc8fb-f5bb-42a0-93bb-57c2b49540b7\"}",
-        "received_at": "2026-07-24T03:56:03.14Z"
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\"}",
+        "received_at": "2026-07-24T13:29:37.72Z"
       },
       {
-        "id": "9c66ef9e-384d-407f-b573-15efd1d81ce6",
+        "id": "8b590eb7-74a3-4a3c-9dd4-a2c949d41510",
+        "event": "module.created",
+        "payload": "{\"module_id\":\"95621a3d-9214-4e5a-8482-848798a93114\",\"name\":\"Test Greenhouse 1784899775\"}",
+        "received_at": "2026-07-24T13:29:36.99Z"
+      },
+      {
+        "id": "9788510c-ee74-4696-96c8-2bc3b8d35f3b",
         "event": "auth.account.deleted",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:02.208Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.586Z"
       },
       {
-        "id": "96296e39-4cf1-4929-ab1b-ec7863202862",
+        "id": "9e780252-9ac8-4e2d-b5cf-29fc900fbf3f",
         "event": "auth.login",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:01.915Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:35.344Z"
       },
       {
-        "id": "515c53e3-69cb-46c1-aaa5-eccaedbadc01",
+        "id": "440db5f9-fbb5-45c4-901b-a1b2a333d17e",
         "event": "auth.logout",
-        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:56:01.629Z"
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:34.962Z"
       },
       {
-        "id": "cedf09fe-37bc-4a6c-bf33-d7cd21ef67be",
+        "id": "6b5485da-5167-4c96-9011-9a4c3ac77e0f",
         "event": "auth.register",
-        "payload": "{\"user_id\":\"a708f398-ac38-44d2-bb8d-a8c8ffddb795\",\"username\":\"testuser_1784865360\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:01.319Z"
+        "payload": "{\"user_id\":\"fec0fe7f-3940-4d5b-b2e7-cc4f5726c546\",\"username\":\"testuser_1784899774\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T13:29:34.71Z"
       },
       {
-        "id": "c02b3d10-f44d-4406-9f35-477bbf84dcaf",
+        "id": "477bbcd6-e5c6-4ffd-808d-114408761ac7",
         "event": "auth.refresh",
         "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.849Z"
+        "received_at": "2026-07-24T13:29:34.183Z"
       },
       {
-        "id": "0dfa3832-09a5-4669-bd58-b0aae8c7e48c",
+        "id": "8c1fe5b7-bb95-43ae-a6ad-209146a332a0",
         "event": "auth.profile.updated",
         "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.637Z"
+        "received_at": "2026-07-24T13:29:33.907Z"
       },
       {
-        "id": "0297dab6-8b5c-4680-9e61-482b2b97487b",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:56:00.371Z"
-      },
-      {
-        "id": "ed8157a0-baf6-4452-9133-4094e923a43e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:48.989Z"
-      },
-      {
-        "id": "4818bf5e-30a5-498b-b747-49cc8b004fee",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:37.563Z"
-      },
-      {
-        "id": "31f2d84f-0f56-427b-8e4f-4363ccf81d08",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:55:11.087Z"
-      },
-      {
-        "id": "fbb1725f-2787-480e-91d3-603305b65737",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:54:27.831Z"
-      },
-      {
-        "id": "bfa86419-af0c-45b1-b772-2857897a7a52",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:54:17.418Z"
-      },
-      {
-        "id": "8b7b87f8-4a89-440a-b3e9-b21d910aa568",
-        "event": "auth.login",
-        "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1, 172.17.0.3\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:48:28.346Z"
-      },
-      {
-        "id": "e87ee415-f153-4901-a489-4760e7f20f2f",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:47:42.495Z"
-      },
-      {
-        "id": "9955d069-2c3f-4b59-bb24-cad47e261b6b",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"3014ebe0-5eab-45f0-8485-8d8e92d9be80\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:46:37.279Z"
-      },
-      {
-        "id": "eebf0c2e-e643-430c-a0d4-f199d3ce771e",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:46:32.494Z"
-      },
-      {
-        "id": "1eae2138-3c77-4baa-95ee-57fd72a9eacc",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:45:29.194Z"
-      },
-      {
-        "id": "7f07c36b-6916-458f-829e-0109cdcbd641",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:43:32.658Z"
-      },
-      {
-        "id": "472156a4-2bc5-40a0-acba-6c1acf6216c8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:42:20.428Z"
-      },
-      {
-        "id": "31476a31-d82d-4e22-af57-a695bddd1047",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:41:29.924Z"
-      },
-      {
-        "id": "9c745b07-4c17-49af-b653-79c2ff7c19de",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:36:34.885Z"
-      },
-      {
-        "id": "673aab8e-5ecd-4d2a-a9e9-4833da8db751",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"ed932d1f-e37b-4859-a772-cd6d8c63535d\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:36:34.494Z"
-      },
-      {
-        "id": "5d376cd2-d8a3-431a-bb26-ba91f7fd1402",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"6cc554bf-21ef-420f-8452-c195749e9f15\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:35:33.042Z"
-      },
-      {
-        "id": "96e01b28-e98c-4691-9743-ff4091edba63",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:35:32.54Z"
-      },
-      {
-        "id": "35ba8113-c695-4bf7-bf75-24dbf59e37a8",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:33:05.931Z"
-      },
-      {
-        "id": "91388fdc-bcfa-401b-80d6-39c9f91202a0",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"21de8410-e55c-4553-9e95-e449e16f2ac5\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:25:32.494Z"
-      },
-      {
-        "id": "88565373-2dbf-40f2-a511-c5b72e7b1130",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:25:30.494Z"
-      },
-      {
-        "id": "72e09d0d-e0b3-46cd-bc97-ab74bf181009",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:24:54.036Z"
-      },
-      {
-        "id": "a1ecfd60-f1a4-4c76-bdb8-a16915e3617b",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"7f6e809f-92c7-459f-994a-aa792a74a6f8\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:24:30.979Z"
-      },
-      {
-        "id": "7de5eedb-7825-4e9d-ba5d-7e734a6beef6",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:24:30.496Z"
-      },
-      {
-        "id": "bcf00ffc-d60b-4ffd-bae5-8c0a7d3ba947",
+        "id": "8e987418-2f88-49d5-8749-cc8d305e9fdc",
         "event": "auth.login",
         "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:22.847Z"
+        "received_at": "2026-07-24T13:29:33.462Z"
       },
       {
-        "id": "8b5ff605-bd84-4a21-8e73-e398b7ed812b",
+        "id": "aa028ecf-2794-49e7-9dbe-cb3348e3ed23",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"a984773d-bc61-469d-9b03-d08b39d63dd0\"}",
+        "received_at": "2026-07-24T12:59:00.784Z"
+      },
+      {
+        "id": "99f33497-9fce-4dc5-8bd9-66f7004b226f",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"65c2572c-cce8-4463-945d-24db34ac717f\"}",
+        "received_at": "2026-07-24T12:58:53.159Z"
+      },
+      {
+        "id": "6961bfe5-f004-45f1-9a12-4266b2904f98",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"target_id\":\"aaef0ec4-c799-47c6-a9ea-523c5f037745\",\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
+        "received_at": "2026-07-24T12:58:44.601Z"
+      },
+      {
+        "id": "c3995b35-8bae-4818-a587-0fd59615cc26",
+        "event": "auth.admin.user.deleted",
+        "payload": "{\"actor_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"target_id\":\"c94330a4-b2d8-49f1-8cea-120de512af15\"}",
+        "received_at": "2026-07-24T12:58:37.572Z"
+      },
+      {
+        "id": "36b87ae2-a9b6-49a3-a2ea-5fd7c5149a1e",
+        "event": "control.schedule.deleted",
+        "payload": "{\"schedule_id\":\"20472c04-acdc-45bc-87ba-c57df48c6890\"}",
+        "received_at": "2026-07-24T12:57:44.436Z"
+      },
+      {
+        "id": "b941b1fb-7242-4ea6-bdc1-0ac106fcd8d3",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load3\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:23.614Z"
+      },
+      {
+        "id": "68f65ed1-c51d-4960-8f6a-7b311205ac0d",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"9c6a3518-1d02-4d01-b90d-68b8ec19f924\",\"target\":\"load3\"}",
+        "received_at": "2026-07-24T12:57:22.908Z"
+      },
+      {
+        "id": "9d320f44-5ba9-43a4-b509-390572477d15",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d41c9a85-191b-4121-8ebe-949bd8b49d62\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T12:57:21.134Z"
+      },
+      {
+        "id": "d68e27b6-bb61-4603-8d82-67e92ef81306",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load1\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:20.907Z"
+      },
+      {
+        "id": "71725dd2-a99c-4dcd-86e1-466a63eed7aa",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:20.04Z"
+      },
+      {
+        "id": "a20e54c8-20ef-4f23-a05f-c3aed6e93550",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"c188328e-3a12-4aed-a13f-f1a98d4309e2\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:57:19.706Z"
+      },
+      {
+        "id": "446d7966-a958-48f5-93f8-e70b8db563e3",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"e27a012c-5da3-4193-9872-7be55079beff\",\"target\":\"load2\"}",
+        "received_at": "2026-07-24T12:57:19.475Z"
+      },
+      {
+        "id": "afbc8bbc-5fb6-41be-bd23-0e0ab6868f1c",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load2\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:18.907Z"
+      },
+      {
+        "id": "d5e5ec43-ee8c-44a8-b2c4-726a82c9700b",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d0a87b22-2cce-4939-96ce-dabac96795f8\",\"target\":\"load4\"}",
+        "received_at": "2026-07-24T12:57:16.907Z"
+      },
+      {
+        "id": "877cbcd2-53d8-4e4e-9a60-25531108294b",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load4\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:57:14.907Z"
+      },
+      {
+        "id": "d10d8ee7-3cb4-4d14-8a3d-e919880f5f13",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"adf54ad8-b571-40bf-aec1-a3b752226dfc\",\"target\":\"load4\"}",
+        "received_at": "2026-07-24T12:56:50.189Z"
+      },
+      {
+        "id": "17b88df0-2c5b-4c86-8d69-f953070d5c40",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load4\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:50.004Z"
+      },
+      {
+        "id": "2eff3e3c-6697-430e-9fab-3356bf7b729d",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"f09e35cc-cf6f-48e0-b3a8-e4e8522c3018\",\"target\":\"load3\"}",
+        "received_at": "2026-07-24T12:56:49.703Z"
+      },
+      {
+        "id": "3bcdb611-3fe0-416c-b316-f59f56829ea7",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load3\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:48.341Z"
+      },
+      {
+        "id": "ea0165d3-8533-45af-9b00-aa31c0d00b79",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load2\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:47.821Z"
+      },
+      {
+        "id": "69ee0364-8f2c-45f3-8319-c597936b60db",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"296b7ea7-c876-4f32-8677-b6a86264de5b\",\"target\":\"load2\"}",
+        "received_at": "2026-07-24T12:56:47.355Z"
+      },
+      {
+        "id": "f68d976c-0fc3-46dd-a706-c29d2323d7d3",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"load1\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:44.544Z"
+      },
+      {
+        "id": "c47eccfb-18ef-4d62-b1b8-1f4fa387ba42",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"f62c5bcc-5814-404f-98c7-e79a0482e776\",\"target\":\"load1\"}",
+        "received_at": "2026-07-24T12:56:43.354Z"
+      },
+      {
+        "id": "a2d98511-72fa-4b7d-ad3c-3bfeaf388558",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"0cb463d1-3dfe-42bf-b23b-76a56a228458\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:40.879Z"
+      },
+      {
+        "id": "939d131e-34cf-4a6c-a6ec-9005ecf92668",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:40.547Z"
+      },
+      {
+        "id": "899b45bf-b5b9-4f7a-832c-5763db5c56b6",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"87e00aa9-514e-4fb8-96df-5dfcf7fbadb2\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:39.94Z"
+      },
+      {
+        "id": "b6d68778-9c24-429d-b12b-ae2d74f73fa4",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"0\"}",
+        "received_at": "2026-07-24T12:56:38.79Z"
+      },
+      {
+        "id": "b30b90fe-268e-435f-84f4-08df2015289e",
+        "event": "control.command.acked",
+        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"42aca0c0-744d-4d93-9b26-de7e829a9ae9\",\"target\":\"buzzer\"}",
+        "received_at": "2026-07-24T12:56:37.355Z"
+      },
+      {
+        "id": "0f9cfbf4-aff3-4d96-b381-ae355ecb1442",
+        "event": "control.command.sent",
+        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"manual\",\"target\":\"buzzer\",\"type\":\"set_state\",\"value\":\"1\"}",
+        "received_at": "2026-07-24T12:56:35.355Z"
+      },
+      {
+        "id": "be5f8b4c-23d2-4c45-b86a-c42268fff1ad",
+        "event": "node.paired",
+        "payload": "{\"module_id\":\"ee8831ff-c2dd-45c9-abb6-fb3def8fd513\",\"node_id\":\"ECE334219870\"}",
+        "received_at": "2026-07-24T12:54:31.986Z"
+      },
+      {
+        "id": "9f4ff888-b1e8-4837-8075-dd5f530b3216",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"bd950361-afcb-42f1-ae53-6f685e005b0d\"}",
+        "received_at": "2026-07-24T12:54:25.987Z"
+      },
+      {
+        "id": "c37ac1b7-7091-43e1-88a3-0c5688333df0",
+        "event": "module.deleted",
+        "payload": "{\"module_id\":\"de6ce111-e9bf-4675-a6a3-6759b52d5d56\"}",
+        "received_at": "2026-07-24T12:54:22.807Z"
+      },
+      {
+        "id": "02b720d1-adae-41c2-a216-78b38fc5bcd5",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:55:17.395Z"
+      },
+      {
+        "id": "64b985c6-ecfd-4add-9ed4-50dab3032eae",
+        "event": "auth.login",
+        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
+        "received_at": "2026-07-24T11:24:49.693Z"
+      },
+      {
+        "id": "2d3da7aa-2cc5-4738-9e55-1eebb3bf13f4",
+        "event": "auth.login",
+        "payload": "{\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\"}",
+        "received_at": "2026-07-24T11:16:26.272Z"
+      },
+      {
+        "id": "bb588b69-db6c-444a-ae10-8dfe05cf4eaf",
         "event": "auth.login",
         "payload": "{\"username\":\"admin\",\"ip\":\"172.17.0.1\",\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\"}",
-        "received_at": "2026-07-24T03:24:04.66Z"
-      },
-      {
-        "id": "e9104cd6-5419-4578-adbb-887847d18a6e",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:20:43.662Z"
-      },
-      {
-        "id": "a2665fb7-2f73-43a5-aebf-ab249d194831",
-        "event": "auth.login",
-        "payload": "{\"user_id\":\"ed410133-521a-415d-85c6-aea62efacb85\",\"username\":\"admin\",\"ip\":\"172.17.0.1\"}",
-        "received_at": "2026-07-24T03:15:52.376Z"
-      },
-      {
-        "id": "5ab839b8-5ae3-45f4-b9ba-871aa42a0689",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:14:36.494Z"
-      },
-      {
-        "id": "58db2f64-91c9-4cd5-aae1-64b2ba72d172",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"d30e66f4-c22b-4694-8937-0d9ab92bff2e\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:13:30.188Z"
-      },
-      {
-        "id": "c1164d82-f2c0-4e71-a634-ea88bee1ebda",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:13:28.494Z"
-      },
-      {
-        "id": "90cd6e66-b9b2-4978-a0dc-8162b7565c70",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"400dc5d2-f666-4900-96b9-127015efe5c9\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:03:28.848Z"
-      },
-      {
-        "id": "58dac530-e0d0-4a96-826d-cd96b2fb27fb",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"0\"}",
-        "received_at": "2026-07-24T03:03:28.493Z"
-      },
-      {
-        "id": "9389469b-ea04-40fe-85bf-083db610bca8",
-        "event": "control.command.acked",
-        "payload": "{\"node_id\":\"ECE334219870\",\"req_id\":\"8edd63fe-7dc7-4130-b608-cf21cfd841c4\",\"target\":\"load1\"}",
-        "received_at": "2026-07-24T03:02:29.398Z"
-      },
-      {
-        "id": "e1bb7dde-f824-48d5-b334-df1d2074bf39",
-        "event": "control.command.sent",
-        "payload": "{\"node_id\":\"ECE334219870\",\"source\":\"schedule\",\"target\":\"load1\",\"type\":\"window_pulse\",\"value\":\"1\"}",
-        "received_at": "2026-07-24T03:02:28.494Z"
+        "received_at": "2026-07-24T11:09:41.895Z"
       }
     ],
     "offset": 0,
-    "total": 1753
+    "total": 1852
   },
   "success": true
 }
@@ -2956,13 +4637,25 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0033s
+- **Duration:** 0.0454s
 - **Payload:**
 ```json
 {
   "data": {
     "limit": 50,
     "logs": [
+      {
+        "id": "de427f4b-6488-452b-8af8-a8d00715af11",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T03:57:52.497Z"
+      },
       {
         "id": "983495cc-afbd-4151-87af-8d33b441a230",
         "channel": "telegram",
@@ -3550,22 +5243,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
         "created_at": "2026-07-23T08:55:31.208Z"
-      },
-      {
-        "id": "e69871dc-a0dc-4f19-a485-471038a050c0",
-        "channel": "telegram",
-        "target": "1020639196",
-        "subject": "SmartFarm Test Notification",
-        "status": "sent",
-        "attempts": 1,
-        "error": "",
-        "alert_id": "",
-        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-23T07:08:54.813Z"
       }
     ],
     "offset": 0,
-    "total": 151
+    "total": 152
   },
   "success": true
 }
@@ -3577,7 +5258,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0022s
+- **Duration:** 0.0037s
 - **Payload:**
 ```json
 {
@@ -3605,7 +5286,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 202
-- **Duration:** 0.1808s
+- **Duration:** 0.443s
 - **Payload:**
 ```json
 {
@@ -3623,7 +5304,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 400
-- **Duration:** 0.0029s
+- **Duration:** 0.0039s
 - **Payload:**
 ```json
 {
@@ -3641,7 +5322,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0042s
+- **Duration:** 0.006s
 - **Payload:**
 ```json
 {
@@ -3649,12 +5330,24 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "limit": 10,
     "logs": [
       {
-        "id": "de427f4b-6488-452b-8af8-a8d00715af11",
+        "id": "8b863180-ada4-458a-a1ef-a8cb8e386299",
         "channel": "telegram",
         "target": "1020639196",
         "subject": "SmartFarm Test Notification",
         "status": "queued",
         "attempts": 0,
+        "error": "",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T13:29:42.883Z"
+      },
+      {
+        "id": "de427f4b-6488-452b-8af8-a8d00715af11",
+        "channel": "telegram",
+        "target": "1020639196",
+        "subject": "SmartFarm Test Notification",
+        "status": "sent",
+        "attempts": 1,
         "error": "",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
@@ -3755,22 +5448,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
         "created_at": "2026-07-23T18:00:12.029Z"
-      },
-      {
-        "id": "a6219555-007d-44bb-874c-4940fd67d9f4",
-        "channel": "telegram",
-        "target": "1020639196",
-        "subject": "SmartFarm Test Notification",
-        "status": "sent",
-        "attempts": 1,
-        "error": "",
-        "alert_id": "",
-        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-23T17:50:58.821Z"
       }
     ],
     "offset": 0,
-    "total": 107
+    "total": 108
   },
   "success": true
 }
@@ -3782,7 +5463,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0134s
+- **Duration:** 0.0553s
 - **Payload:**
 ```json
 {
@@ -3790,7 +5471,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "limit": 50,
     "logs": [
       {
-        "id": "ecee80d7-6bbf-45ff-bd80-238eece41c59",
+        "id": "7ceda4c4-289f-4c4e-a7d2-9f32fca8ffcd",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3800,10 +5481,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:51.76Z"
+        "created_at": "2026-07-24T13:29:43.274Z"
       },
       {
-        "id": "cd69e430-8a6c-4469-8b07-3dbd70e54cbe",
+        "id": "f82bdcac-a22b-4d78-ad3e-e6f2b15275b7",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3813,10 +5494,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:49.326Z"
+        "created_at": "2026-07-24T13:29:39.32Z"
       },
       {
-        "id": "c0a13521-813d-4958-8808-fa0c99a6ee5c",
+        "id": "c0e87e62-3811-4f43-b134-552a674c5850",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3826,10 +5507,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:47.021Z"
+        "created_at": "2026-07-24T13:29:36.643Z"
       },
       {
-        "id": "5be27f38-076c-4238-b3dd-bcdea1249ace",
+        "id": "bdbf54f6-09b2-472d-985e-d6cb63c73731",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3839,10 +5520,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:43.992Z"
+        "created_at": "2026-07-24T13:29:35.012Z"
       },
       {
-        "id": "08dbee23-2d02-4579-9fc2-1c06f6b2b041",
+        "id": "8bc1d8f1-de10-4c43-861a-a1912dbd1cb1",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3852,10 +5533,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:31.18Z"
+        "created_at": "2026-07-24T13:29:32.988Z"
       },
       {
-        "id": "fd269f86-84b8-40c8-9e07-b81eac753413",
+        "id": "fe19b34d-b204-41b3-8251-27f7904f7e8a",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3865,10 +5546,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:26.944Z"
+        "created_at": "2026-07-24T13:29:30.425Z"
       },
       {
-        "id": "0fd37783-2a1b-49cf-b905-84c6e6a58b50",
+        "id": "116c20e7-3b97-4b2a-97e3-f39edeaf29ed",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3878,10 +5559,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:24.834Z"
+        "created_at": "2026-07-24T13:29:28.627Z"
       },
       {
-        "id": "df035782-e758-432f-a3e1-a09a7b8f73ae",
+        "id": "742b3025-3538-4ea0-becc-a0147768b5e3",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3891,10 +5572,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:22.406Z"
+        "created_at": "2026-07-24T13:29:26.897Z"
       },
       {
-        "id": "7a2f4c28-54b1-4bf9-9d6d-65acdfd87ac6",
+        "id": "3aa1f2c4-0284-4d9e-a219-9dd9f7ea6b04",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3904,10 +5585,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:20.234Z"
+        "created_at": "2026-07-24T13:29:25.203Z"
       },
       {
-        "id": "40c398a9-ec32-43e9-9afc-90bd6484cd36",
+        "id": "14e532eb-faea-47ba-94da-66f8dc656526",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3917,10 +5598,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:18.506Z"
+        "created_at": "2026-07-24T13:29:23.325Z"
       },
       {
-        "id": "5afae8d3-f508-4dbb-8082-3b9d24fa397d",
+        "id": "d193a816-5923-4a1e-9e11-0e67fa2c9f0f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3930,10 +5611,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:14.881Z"
+        "created_at": "2026-07-24T13:29:21.765Z"
       },
       {
-        "id": "3b8c430c-386a-483f-accf-18d506812225",
+        "id": "7df93f4b-1bf4-49d0-b9f1-f1371f92a8a4",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3943,10 +5624,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:12.195Z"
+        "created_at": "2026-07-24T13:29:20.06Z"
       },
       {
-        "id": "6301346a-1969-4371-bafa-a67e8f497fd8",
+        "id": "6289c208-e43b-4b38-b41d-dd0c88883468",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3956,10 +5637,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:08.925Z"
+        "created_at": "2026-07-24T13:29:18.136Z"
       },
       {
-        "id": "7beb487f-0587-4caa-ad66-5cde83f3c4ab",
+        "id": "a93c283f-cf5b-40c0-bc7b-a68751d4c0ed",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3969,10 +5650,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:06.115Z"
+        "created_at": "2026-07-24T13:29:16.257Z"
       },
       {
-        "id": "60992eee-248f-4e14-9b2f-782ddfe2c683",
+        "id": "de217842-1f61-435e-a808-894d15add36c",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3982,10 +5663,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:03.488Z"
+        "created_at": "2026-07-24T13:29:14.464Z"
       },
       {
-        "id": "45ca831a-0735-4017-8662-366aecbf7aa2",
+        "id": "1b788e37-7f34-4b08-a3cf-65c32636092f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -3995,10 +5676,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:57:01.059Z"
+        "created_at": "2026-07-24T13:29:12.844Z"
       },
       {
-        "id": "02db78ba-5424-4f77-9dc5-0a8bccad67fd",
+        "id": "a540b3d6-4fd0-42d4-ac1c-26e3ab997bae",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4008,10 +5689,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:58.381Z"
+        "created_at": "2026-07-24T13:29:11.337Z"
       },
       {
-        "id": "ea21d1d9-0941-4243-bc3c-44b68dac8e7a",
+        "id": "0b02c27c-da56-4320-b941-ce05af0d8b5f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4021,10 +5702,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:56.23Z"
+        "created_at": "2026-07-24T13:29:09.61Z"
       },
       {
-        "id": "eaa27bc8-c85b-4533-be6a-dbd64bf59de2",
+        "id": "0fec6c0b-b911-49dd-a850-294452f93185",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4034,10 +5715,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:51.662Z"
+        "created_at": "2026-07-24T13:29:07.921Z"
       },
       {
-        "id": "ae45f3ae-6b22-4317-94bf-bab4a4b66899",
+        "id": "7b1c06f3-2791-4a8a-b5e2-8c2726d42ff6",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4047,10 +5728,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:47.605Z"
+        "created_at": "2026-07-24T13:29:06.089Z"
       },
       {
-        "id": "5edb7c57-bad4-49cd-9f55-3176098f64e1",
+        "id": "8f7f367c-1654-4844-9c7c-a67433e31064",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4060,10 +5741,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:44.509Z"
+        "created_at": "2026-07-24T13:29:03.917Z"
       },
       {
-        "id": "dbb3d24f-830f-4cfb-8cda-eabfb4ac23de",
+        "id": "85cb0709-97a8-40b0-8994-f579656090d8",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4073,10 +5754,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:41.492Z"
+        "created_at": "2026-07-24T13:29:02.289Z"
       },
       {
-        "id": "6f188873-433a-4539-b2d6-d4d9365aff2f",
+        "id": "20d921a3-d3ef-430f-9d08-075ee5d69a35",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4086,10 +5767,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:38.325Z"
+        "created_at": "2026-07-24T13:29:00.221Z"
       },
       {
-        "id": "45797959-a534-43ec-aabf-52c193322e34",
+        "id": "d82cae82-39e5-4e16-9051-39241bb67e50",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4099,10 +5780,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:36.544Z"
+        "created_at": "2026-07-24T13:28:58.519Z"
       },
       {
-        "id": "6a71e662-cab9-4bfa-8f24-b02d064acbba",
+        "id": "46125a04-c5ae-4621-98dd-a1f924b4467f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4112,10 +5793,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:34.738Z"
+        "created_at": "2026-07-24T13:28:56.919Z"
       },
       {
-        "id": "281e7d2e-a4b5-4a60-8a4d-7855536d6525",
+        "id": "bdac3c55-c521-46ed-bd17-7f35aa4adfc5",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4125,10 +5806,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:32.622Z"
+        "created_at": "2026-07-24T13:28:55.165Z"
       },
       {
-        "id": "6822d70e-1cc4-42f6-b1e7-5ed15ba5b582",
+        "id": "e3f81120-a1ab-47e6-a732-ab748b8ca0c0",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4138,10 +5819,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:29.689Z"
+        "created_at": "2026-07-24T13:28:53.562Z"
       },
       {
-        "id": "37764a1c-5559-438e-b278-21ee9de64ce9",
+        "id": "e14de971-a431-4f7e-930d-4d0b2bba7154",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4151,10 +5832,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:26.895Z"
+        "created_at": "2026-07-24T13:28:51.096Z"
       },
       {
-        "id": "5858a389-f0e6-428f-8a28-ac6a8df5f3d8",
+        "id": "2422a2c3-ec02-460b-aa96-7a24bdfcb92e",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4164,10 +5845,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:24.177Z"
+        "created_at": "2026-07-24T13:28:49.15Z"
       },
       {
-        "id": "110c63d2-0181-48d1-b858-cb3010c8d949",
+        "id": "693d95e9-8633-4a11-8e16-e2d79e4cc4d4",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4177,10 +5858,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:22.52Z"
+        "created_at": "2026-07-24T13:28:47.562Z"
       },
       {
-        "id": "55524357-704a-40df-b82b-4853c1f928f6",
+        "id": "71781033-364c-4414-8acb-cc4c5e272edc",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4190,10 +5871,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:19.661Z"
+        "created_at": "2026-07-24T13:28:45.459Z"
       },
       {
-        "id": "8e6f189f-c69f-4338-bd4e-560874c4aa59",
+        "id": "478ea3eb-d346-44e2-8477-67099631ef7d",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4203,10 +5884,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:17.97Z"
+        "created_at": "2026-07-24T13:28:43.49Z"
       },
       {
-        "id": "0c3ba34e-3108-4e8a-896e-8f28c8ce7ee6",
+        "id": "e15773c6-ccc9-48e3-8245-e70798933265",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4216,36 +5897,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:16.009Z"
+        "created_at": "2026-07-24T13:28:41.754Z"
       },
       {
-        "id": "d866ecb6-6d35-4628-b2bb-a264a08aceeb",
-        "channel": "telegram",
-        "target": "",
-        "subject": "Telegram Update",
-        "body": "{\"message\":{\"text\":\"unit test\"}}",
-        "status": "queued",
-        "attempts": 0,
-        "error": "",
-        "alert_id": "",
-        "user_id": "",
-        "created_at": "2026-07-24T03:56:11.853Z"
-      },
-      {
-        "id": "1cbf7552-30b1-4e7f-a189-1deec727d12e",
-        "channel": "telegram",
-        "target": "1020639196",
-        "subject": "Webhook Test",
-        "body": "webhook test from iot platform",
-        "status": "queued",
-        "attempts": 0,
-        "error": "",
-        "alert_id": "",
-        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:11.049Z"
-      },
-      {
-        "id": "3a604698-1830-4119-ac3a-b6267aec0625",
+        "id": "bd432b89-bf6e-4017-90f8-a20df67a77b3",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4255,10 +5910,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:10.733Z"
+        "created_at": "2026-07-24T13:28:40.112Z"
       },
       {
-        "id": "9ead9330-9446-457d-b059-9ce595e4998f",
+        "id": "996b6a64-3f1b-44f2-a006-aaaa30e96bf9",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4268,10 +5923,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:08.156Z"
+        "created_at": "2026-07-24T13:28:38.973Z"
       },
       {
-        "id": "c0734202-dc3a-4dfb-8996-f0aa619393b4",
+        "id": "cbfae12d-446b-47b9-8325-a71dc08c08f9",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4281,10 +5936,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:05.37Z"
+        "created_at": "2026-07-24T13:28:37.249Z"
       },
       {
-        "id": "d1ed2404-b538-4c06-8cd4-d82cf945b80d",
+        "id": "078fea1d-d0d6-4a40-a30e-5f23295353b6",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4294,10 +5949,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:56:02.674Z"
+        "created_at": "2026-07-24T13:28:35.61Z"
       },
       {
-        "id": "50a4f5b2-e4a9-495e-8e39-82786a533094",
+        "id": "cf29676a-4c29-4b21-bce2-fde2edb4403f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4307,10 +5962,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:58.565Z"
+        "created_at": "2026-07-24T13:28:33.351Z"
       },
       {
-        "id": "9f480402-39ce-464a-bb4c-22c3b0c9b5de",
+        "id": "a1ed52d0-ceb4-47f1-8b1a-2eca5b380033",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4320,10 +5975,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:56.266Z"
+        "created_at": "2026-07-24T13:28:31.152Z"
       },
       {
-        "id": "4ff14fbb-26f8-4699-8847-d471ab1c2ab4",
+        "id": "3b994346-26b1-4624-8eb1-9cd6bc980a8e",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4333,10 +5988,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:54.518Z"
+        "created_at": "2026-07-24T13:28:28.955Z"
       },
       {
-        "id": "eb238102-e90c-4c5a-a13d-eec0a389d384",
+        "id": "02ba9361-f797-4fa9-8241-4525b6c9a3ec",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4346,10 +6001,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:52.39Z"
+        "created_at": "2026-07-24T13:28:26.776Z"
       },
       {
-        "id": "1cbc0231-222c-4d7f-bc6a-4b893aac6b89",
+        "id": "d89d9476-50ee-4680-9477-9c42bcb02980",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4359,10 +6014,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:50.798Z"
+        "created_at": "2026-07-24T13:28:25.111Z"
       },
       {
-        "id": "dff9987b-20fc-48f8-8e78-f2584be03ced",
+        "id": "21e9522d-66fe-4b16-bea5-d62990c05d1f",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4372,10 +6027,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:48.835Z"
+        "created_at": "2026-07-24T13:28:23.394Z"
       },
       {
-        "id": "ee2c6666-628e-4398-90fe-c47846d863ab",
+        "id": "fe944bf9-8d5c-4725-9a9a-2aa9882211f7",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4385,10 +6040,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:47.004Z"
+        "created_at": "2026-07-24T13:28:21.583Z"
       },
       {
-        "id": "e8af0618-f5d7-433d-8ca7-b2b6a9743343",
+        "id": "613298cf-2ffe-4ef4-a4c2-eb2ec47020fe",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4398,10 +6053,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:45.29Z"
+        "created_at": "2026-07-24T13:28:19.823Z"
       },
       {
-        "id": "fa85b49e-2b35-4391-b9bc-bdc0fbd17685",
+        "id": "32f70be8-17af-4674-8272-ee97805c137b",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4411,10 +6066,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:42.003Z"
+        "created_at": "2026-07-24T13:28:18.055Z"
       },
       {
-        "id": "f40a6256-79f2-43c5-9129-9c2b33e86393",
+        "id": "24d68154-6375-4803-a873-30944cd783e2",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4424,10 +6079,10 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:40.196Z"
+        "created_at": "2026-07-24T13:28:16.131Z"
       },
       {
-        "id": "fddbad75-d014-4967-9fb0-3807e90b781c",
+        "id": "b907b33f-f0d2-4bd5-9a80-03059fd08a29",
         "channel": "email",
         "target": "alifmuhammadrizky01@gmail.com",
         "subject": "Webhook Test",
@@ -4437,11 +6092,37 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "error": "smtp auth failed",
         "alert_id": "",
         "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
-        "created_at": "2026-07-24T03:55:38.63Z"
+        "created_at": "2026-07-24T13:28:13.936Z"
+      },
+      {
+        "id": "0c7a17af-e9a0-474b-b9ef-c7f7baa2aa04",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T13:28:12.059Z"
+      },
+      {
+        "id": "9a3970f7-8441-4e8f-8bfb-b4d93618ef70",
+        "channel": "email",
+        "target": "alifmuhammadrizky01@gmail.com",
+        "subject": "Webhook Test",
+        "body": "webhook test from iot platform",
+        "status": "retrying",
+        "attempts": 1,
+        "error": "smtp auth failed",
+        "alert_id": "",
+        "user_id": "ed410133-521a-415d-85c6-aea62efacb85",
+        "created_at": "2026-07-24T13:28:10.271Z"
       }
     ],
     "offset": 0,
-    "total": 21951
+    "total": 39110
   },
   "success": true
 }
@@ -4453,7 +6134,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0033s
+- **Duration:** 0.0049s
 - **Payload:**
 ```json
 {
@@ -4481,7 +6162,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 202
-- **Duration:** 0.46s
+- **Duration:** 0.1189s
 - **Payload:**
 ```json
 {
@@ -4499,7 +6180,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 400
-- **Duration:** 0.0029s
+- **Duration:** 0.0053s
 - **Payload:**
 ```json
 {
@@ -4517,7 +6198,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 202
-- **Duration:** 0.9768s
+- **Duration:** -0.4372s
 - **Payload:**
 ```json
 {
@@ -4534,7 +6215,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0043s
+- **Duration:** 0.0056s
 - **Payload:**
 ```json
 {
@@ -4543,25 +6224,25 @@ bucket,node_id,metric,count,sum,min,max,avg,last
     "streams": [
       {
         "id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "name": "a",
+        "name": "b",
         "device_label": "",
         "location": "",
         "source_rtsp": "rtsp://192.168.1.110:554/Streaming/Channels/101",
         "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
         "enabled": true,
         "status": "waiting",
-        "hls_url": "http://localhost:8000/hls/a/index.m3u8",
-        "webrtc_url": "http://localhost:8889/a/whep",
+        "hls_url": "http://localhost:8000/hls/b/index.m3u8",
+        "webrtc_url": "http://localhost:8889/b/whep",
         "recording": false,
         "created_at": "2026-07-23T03:10:35.682Z",
-        "updated_at": "2026-07-23T03:10:35.682Z"
+        "updated_at": "2026-07-24T11:17:19Z"
       },
       {
         "id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
         "name": "cctv-1",
         "device_label": "",
         "location": "",
-        "source_rtsp": "rtsp://192.168.1.110/Streaming/Channels/101",
+        "source_rtsp": "rtsp://192.168.1.110:554/Streaming/Channels/101",
         "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
         "enabled": true,
         "status": "waiting",
@@ -4569,7 +6250,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "webrtc_url": "http://localhost:8889/cctv-1/whep",
         "recording": false,
         "created_at": "2026-07-17T09:17:30.208Z",
-        "updated_at": "2026-07-17T09:17:30.208Z"
+        "updated_at": "2026-07-24T11:17:19Z"
       }
     ]
   },
@@ -4583,84 +6264,13 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0032s
+- **Duration:** 0.0036s
 - **Payload:**
 ```json
 {
   "data": {
-    "count": 7,
-    "snapshots": [
-      {
-        "id": "70ffcc8c-d9a7-47d9-bdf7-a75a2da5e117",
-        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "stream_name": "a",
-        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
-        "url": "/storage/stream/snapshots/a/303ba13b-3de8-4a5a-8053-0d9fa688f86d.jpg",
-        "kind": "snapshot",
-        "size": 528542,
-        "created_at": "2026-07-23T08:46:12.807Z"
-      },
-      {
-        "id": "0f2a0d2f-cb94-4f1c-bc75-58f8e7ac2460",
-        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "stream_name": "a",
-        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
-        "url": "/storage/stream/recordings/a/91b9733a-0ca2-47e8-99c4-e8eba6f7ce4f.mp4",
-        "kind": "recording",
-        "size": 5270758,
-        "created_at": "2026-07-23T05:25:09.844Z"
-      },
-      {
-        "id": "643db6f7-4f20-4b12-8eb0-a699ffe6e1f9",
-        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "stream_name": "a",
-        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
-        "url": "/storage/stream/snapshots/a/7c50795b-f75e-4031-bc55-586b1035d3d2.jpg",
-        "kind": "snapshot",
-        "size": 529618,
-        "created_at": "2026-07-23T05:24:59.138Z"
-      },
-      {
-        "id": "38ad9301-7449-4e75-a2a1-1cb88f339b81",
-        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "stream_name": "a",
-        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
-        "url": "/storage/stream/recordings/a/07274726-f2b7-4423-8e47-e9326ca24fa7.mp4",
-        "kind": "recording",
-        "size": 11097657,
-        "created_at": "2026-07-23T03:51:39.573Z"
-      },
-      {
-        "id": "ee6809c1-e711-4dfd-820c-725bb13533d4",
-        "stream_id": "7856f899-64d4-4227-b28d-e403d386e10a",
-        "stream_name": "a",
-        "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
-        "url": "/storage/stream/snapshots/a/2abb3c7e-30ec-461f-a82f-0cdc44d4ae04.jpg",
-        "kind": "snapshot",
-        "size": 534083,
-        "created_at": "2026-07-23T03:30:53.305Z"
-      },
-      {
-        "id": "63559bf0-dabb-404c-8f25-4fb00a197de4",
-        "stream_id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
-        "stream_name": "cctv-1",
-        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
-        "url": "/storage/stream/recordings/cctv-1/213d8627-2ba8-4b5c-8d29-ee5aac8a5034.mp4",
-        "kind": "recording",
-        "size": 2813059,
-        "created_at": "2026-07-17T10:26:12.907Z"
-      },
-      {
-        "id": "458b49d8-8ba4-422c-9737-035c6e32ffbf",
-        "stream_id": "e8d68827-2dd6-4152-bb9f-9482cf62b675",
-        "stream_name": "cctv-1",
-        "module_id": "b4964112-6bf0-4202-b938-01c5f285234f",
-        "url": "/storage/stream/snapshots/cctv-1/663b76f9-d514-4c1f-bc7b-f18e0ee5c69c.jpg",
-        "kind": "snapshot",
-        "size": 522608,
-        "created_at": "2026-07-17T10:08:13.63Z"
-      }
-    ]
+    "count": 0,
+    "snapshots": []
   },
   "success": true
 }
@@ -4672,7 +6282,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 500
-- **Duration:** 0.003s
+- **Duration:** 0.0281s
 - **Payload:**
 ```json
 {
@@ -4690,7 +6300,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 404
-- **Duration:** 0.0027s
+- **Duration:** 0.0046s
 - **Payload:**
 ```json
 {
@@ -4708,7 +6318,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 502
-- **Duration:** 0.0033s
+- **Duration:** 0.0041s
 - **Payload:**
 ```json
 {
@@ -4726,7 +6336,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 502
-- **Duration:** 0.0031s
+- **Duration:** 0.0047s
 - **Payload:**
 ```json
 {
@@ -4744,7 +6354,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 502
-- **Duration:** 0.0026s
+- **Duration:** 0.0041s
 - **Payload:**
 ```json
 {
@@ -4762,7 +6372,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0033s
+- **Duration:** 0.005s
 - **Payload:**
 ```json
 {
@@ -4780,7 +6390,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 404
-- **Duration:** 0.0035s
+- **Duration:** 0.0051s
 - **Payload:**
 ```json
 {
@@ -4798,7 +6408,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0044s
+- **Duration:** 0.0056s
 - **Payload:**
 ```json
 {
@@ -4816,7 +6426,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0062s
+- **Duration:** 0.0875s
 - **Payload:**
 ```json
 {
@@ -4886,14 +6496,14 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 404
-- **Duration:** 0.0067s
+- **Duration:** 0.0813s
 - **Payload:**
 ```json
 {
   "success": false,
   "error": {
     "code": "NOT_FOUND",
-    "message": "Frame not found in stream bucket: S3 operation failed; code: AccessDenied, message: Access Denied., resource: /stream, request_id: 18C51DB130E36124, host_id: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8, bucket_name: stream"
+    "message": "Frame not found in stream bucket: S3 operation failed; code: AccessDenied, message: Access Denied., resource: /stream, request_id: 18C53CE5681E84A3, host_id: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8, bucket_name: stream"
   }
 }
 ```
@@ -4904,16 +6514,34 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0092s
+- **Duration:** 0.0476s
 - **Payload:**
 ```json
 {
   "success": true,
   "data": {
-    "total": 107,
+    "total": 108,
     "limit": 50,
     "offset": 0,
     "items": [
+      {
+        "id": 110,
+        "detection_uid": "f343cb18-1bf1-428b-9b72-efb62ebe0082",
+        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
+        "model_name": "Vision Aeroponik",
+        "source_type": "base64",
+        "source_ref": "base64",
+        "original_url": "http://localhost:8000/minio/mlbucket/original/20260724_035754_hjhhpt_base64",
+        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260724_035755_ix0xpt_base64",
+        "num_detections": 0,
+        "classes": [],
+        "confidence_min": null,
+        "confidence_max": null,
+        "confidence_avg": null,
+        "execution_time_ms": 1924.02,
+        "status": "success",
+        "created_at": "2026-07-24T03:57:56"
+      },
       {
         "id": 109,
         "detection_uid": "31bade88-600c-4d18-b7ed-6289fa0ccc13",
@@ -5795,24 +7423,6 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "execution_time_ms": 6057.75,
         "status": "success",
         "created_at": "2026-07-23T12:28:16"
-      },
-      {
-        "id": 60,
-        "detection_uid": "43201fb5-bb69-4079-a79e-e3ccc339f77c",
-        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
-        "model_name": "Vision Aeroponik",
-        "source_type": "upload",
-        "source_ref": "a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
-        "original_url": "http://localhost:8000/minio/mlbucket/original/20260723_120302_8hzbwx_a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
-        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260723_120303_1fjye8_a_2ca561f3-e5cf-439d-8d49-af40eadff913.jpg",
-        "num_detections": 0,
-        "classes": [],
-        "confidence_min": null,
-        "confidence_max": null,
-        "confidence_avg": null,
-        "execution_time_ms": 1888.42,
-        "status": "success",
-        "created_at": "2026-07-23T12:03:03"
       }
     ]
   }
@@ -5825,7 +7435,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0056s
+- **Duration:** 0.0136s
 - **Payload:**
 ```json
 {
@@ -5842,36 +7452,9 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Service:** unknown
 - **Endpoint:** ``
 - **Method:** POST
-- **Status:** 200
-- **Duration:** 2.3039s
-- **Payload:**
-```json
-{
-  "success": true,
-  "data": {
-    "count": 1,
-    "results": [
-      {
-        "detection_uid": "f343cb18-1bf1-428b-9b72-efb62ebe0082",
-        "model_id": "ea00c0fc-6c5d-44ac-8bb0-6cb00ae66c7d",
-        "model_name": "Vision Aeroponik",
-        "source_type": "base64",
-        "source_ref": "base64",
-        "original_url": "http://localhost:8000/minio/mlbucket/original/20260724_035754_hjhhpt_base64",
-        "annotated_url": "http://localhost:8000/minio/mlbucket/detected/20260724_035755_ix0xpt_base64",
-        "num_detections": 0,
-        "classes": [],
-        "detections": [],
-        "confidence_min": null,
-        "confidence_max": null,
-        "confidence_avg": null,
-        "execution_time_ms": 1924.02,
-        "status": "success"
-      }
-    ]
-  }
-}
-```
+- **Status:** None
+- **Duration:** 5.006s
+- **Error:** HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)
 
 ## unknown
 
@@ -5879,7 +7462,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.006s
+- **Duration:** 0.0138s
 - **Payload:**
 ```json
 {
@@ -5911,7 +7494,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0076s
+- **Duration:** 0.0116s
 - **Payload:**
 ```json
 {
@@ -5929,7 +7512,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** PUT
 - **Status:** 404
-- **Duration:** 0.0064s
+- **Duration:** 0.0177s
 - **Payload:**
 ```json
 {
@@ -5947,7 +7530,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** POST
 - **Status:** 404
-- **Duration:** 0.0066s
+- **Duration:** 0.0068s
 - **Payload:**
 ```json
 {
@@ -5965,7 +7548,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** DELETE
 - **Status:** 404
-- **Duration:** 0.0062s
+- **Duration:** 0.0072s
 - **Payload:**
 ```json
 {
@@ -5983,7 +7566,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.3448s
+- **Duration:** 0.8197s
 - **Payload:**
 ```json
 {
@@ -6035,7 +7618,12 @@ bucket,node_id,metric,count,sum,min,max,avg,last
         "node_id": "ECE334219870",
         "module_id": "ee8831ff-c2dd-45c9-abb6-fb3def8fd513",
         "metrics": [
+          "connection_stats.mqtt_connected",
+          "connection_stats.uptime_s",
+          "device_info.cpu_freq_mhz",
+          "device_info.flash_size_mb",
           "device_info.free_heap_kb",
+          "device_info.uptime_s",
           "network.wifi_rssi",
           "telemetry.inputs.input1",
           "telemetry.inputs.input2",
@@ -6071,19 +7659,19 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0031s
+- **Duration:** 0.1514s
 - **Payload:**
 ```json
 {
   "data": {
-    "from": "2026-07-23T03:57:56Z",
+    "from": "2026-07-23T13:29:49Z",
     "metrics": [
       "temperature"
     ],
     "node_ids": [
-      "node-02"
+      "ECE334219870"
     ],
-    "to": "2026-07-24T03:57:56Z",
+    "to": "2026-07-24T13:29:49Z",
     "total": 0
   },
   "success": true
@@ -6096,7 +7684,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0026s
+- **Duration:** 0.0042s
 - **Payload:**
 ```json
 {
@@ -6234,7 +7822,7 @@ bucket,node_id,metric,count,sum,min,max,avg,last
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 200
-- **Duration:** 0.0037s
+- **Duration:** 0.0045s
 - **Payload:**
 ```
 time,node_id,module_id
@@ -6247,12 +7835,12 @@ time,node_id,module_id
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0017s
+- **Duration:** 0.0025s
 - **Payload:**
 ```json
 {
   "message": "no Route matched with those values",
-  "request_id": "3240073404298e3c67caaa594c767e1c"
+  "request_id": "a8f5561b9e384243d4d237750f6d4405"
 }
 ```
 
@@ -6262,12 +7850,12 @@ time,node_id,module_id
 - **Endpoint:** ``
 - **Method:** GET
 - **Status:** 404
-- **Duration:** 0.0023s
+- **Duration:** 0.0032s
 - **Payload:**
 ```json
 {
   "message": "no Route matched with those values",
-  "request_id": "b3bf2b4d0bf46d49db9f0b1c166e8d11"
+  "request_id": "a57710680b4d013bb5530462edf38c09"
 }
 ```
 

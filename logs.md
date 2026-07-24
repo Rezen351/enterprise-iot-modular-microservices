@@ -1591,3 +1591,37 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 | 8 | ✅ | **Test cleanup:** Snapshot/recording DB cleanup sudah ditambahkan ke `cleanup_test_data()` pada sesi sebelumnya. |
 
 **Keputusan Teknis:** Overlay "Stream unavailable" muncul karena chain HLS playback terputus: (1) RTSP source tanpa kredensial → MediaMTX 401, (2) Kong tidak punya route untuk MediaMTX cookie-check redirect ke `/<stream>/index.m3u8`, (3) nginx SPA fallback mengembalikan `index.html` untuk path HLS yang tidak dikenali. Fix dilakukan di 4 lapisan: DB credentials, Kong regex route + DNS, nginx `proxy_redirect`, dan dashboard rebuild. Stream kini menghasilkan H.264 compatible playback tanpa overlay error.
+
+---
+
+## 2026-07-24 — Node Configuration & Analytics Telemetry Synchronization
+
+### Perbaikan Sinkronisasi Tag Node Configuration dengan Analytics Telemetry di Dashboard (`Analytics.jsx`)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Analisis Akar Masalah:** Menemukan *race condition* di `Analytics.jsx` di mana `configuredMetrics` me-return `all` ketika `tags.length === 0` (sebelum API `getNodeTags` selesai di-fetch). Akibatnya seluruh metrik historis di DB sempat bocor dan dirender ke grafik pada awal muat. |
+| 2 | ✅ | **Penerapan Single Source of Truth (`tag_name`):** Mengubah `enabledKeys` dan `configuredMetrics` di frontend agar mencocokkan `tag_name` (DB Tag) secara eksklusif, sesuai dengan kontrak TimescaleDB (`metrics_rollup`) dan API `/analytics/metrics`. |
+| 3 | ✅ | **Penerapan Strict Opt-In:** Menghapus fallback liar `if (tags.length === 0) return all;`. Menambahkan state `tagsLoaded` sehingga data grafik baru diproses setelah status tag terkonfirmasi. Jika node tidak memiliki tag aktif, metrik mentah disembunyikan. |
+| 4 | ✅ | **Hierarki Display Legenda:** Menguatkan hirarki tampilan legenda grafik pada fungsi `displayName`: `t.label.trim()` (jika ada) ➔ `t.tag_name` (DB Tag) ➔ `metric`. |
+| 5 | ✅ | **Empty State Notice UI:** Menambahkan tampilan notice informatif saat `tagsLoaded === true` dan node tidak memiliki tag aktif, mengarahkan user untuk mengonfigurasi tag di halaman **Node Configuration**. |
+| 6 | ✅ | **Verifikasi Test Suite:** Menjalankan `python3 test/run_all_tests.py` untuk memastikan seluruh test suite tetap 100% PASS dan 4 grafik PNG visual di `test/results/` ter-update tanpa merusak kontrak backend. |
+| 7 | ✅ | **Pembersihan Otomatis Data Uji:** Menambahkan pembersihan tag node uji coba (`PUT /v1/nodes/{TEST_NODE_ID}/tags` dengan `[]`) ke fungsi `cleanup_test_data()` di [`test/unit_test.py`](file:///home/almuzky/TA/Microservices/test/unit_test.py#L328-L334) dan menghapus tag uji coba `sensor_1` dari database `module_db`. Skrip pengujian kini dijamin 100% steril & tidak menyisakan data uji di DB setelah selesai dijalankan. |
+
+**Keputusan Teknis:** `source_key` (MQTT Telemetry Key) hanya digunakan oleh Module Service pada tahap ingestion dari payload JSON MQTT. Begitu data tersimpan di TimescaleDB (`metrics_rollup`), identitas resmi metrik di seluruh sistem adalah `tag_name` (DB Tag). Frontend Analytics kini memfilter metrik menggunakan `tag_name` dan menampilkan `label` (bila dikonfigurasi) murni sebagai display overlay untuk legenda/tooltip. 100% konsisten dengan arsitektur DB-per-service. `cleanup_test_data()` di `test/unit_test.py` sekarang menjamin reset otomatis untuk tag node uji coba agar database tetap bersih setelah pengujian.
+
+---
+
+## 2026-07-24 — Stream Video Recording & Snapshot Quality Optimization
+
+### Perbaikan Kualitas Render Video MP4 Rekaman & Snapshot Frame di Stream Service (`services/stream`)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Optimasi Encoder FFmpeg (`StartRecording`):** Menghapus `-preset ultrafast -tune zerolatency` dan menggantinya dengan `-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -movflags +faststart` pada [`services/stream/internal/service/service.go`](file:///home/almuzky/TA/Microservices/services/stream/internal/service/service.go#L572-L580). Mengaktifkan kembali deblocking filter dan lookahead buffer H.264 untuk menghilangkan artefak garis-garis putus-putus/pecah. |
+| 2 | ✅ | **Analisis Header RTSP Stream:** Menambahkan parameter `-analyzeduration 2000000 -probesize 32M` sebelum input `-i` di `StartRecording` dan `ffmpegFrame` ([`client.go`](file:///home/almuzky/TA/Microservices/services/stream/internal/client/mediamtx/client.go#L289-L295)) agar FFmpeg membaca header I-Frame RTSP (SPS/PPS/IDR) secara utuh sebelum mengeksekusi rekaman dan snapshot. |
+| 3 | ✅ | **Perbaikan Bug Durasi Rekaman (`StopRecording`):** Memindahkan panggilan `probeDuration(job.outPath)` ke sebelum `os.Remove(job.outPath)` pada `StopRecording` agar durasi video terukur secara akurat sebelum file temp dihapus. |
+| 4 | ✅ | **Kualitas Frame AI Detection:** Optimasi `ffmpegFrame` secara otomatis meningkatkan kualitas gambar masukan inferensi AI YOLOv8 dan snapshot galeri tanpa artefak abu-abu/garis-garis. |
+| 5 | ✅ | **Rebuild & Verifikasi:** Kontainer `stream` di-rebuild (`docker compose up -d --build stream`) dan diverifikasi sehat. |
+
+**Keputusan Teknis:** `-tune zerolatency` mematikan B-frames dan deblocking filter sehingga menyebabkan artefak garis tersapu pada rekaman file MP4 statis saat terjadi latensi jaringan kecil dari kamera RTSP. Dengan menggantinya ke `-preset veryfast -crf 23 -movflags +faststart`, hasil video MP4 kini terenkode secara *web-optimized*, dapat di-stream langsung oleh pemutar HTML5 browser dengan visual yang jernih tanpa garis putus-putus.

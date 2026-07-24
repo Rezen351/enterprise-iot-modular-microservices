@@ -288,6 +288,7 @@ func (c *Client) ffmpegFrame(ctx context.Context, src string) ([]byte, error) {
 
 	args := []string{
 		"-hide_banner", "-loglevel", "error",
+		"-analyzeduration", "2000000", "-probesize", "32M",
 		"-rtsp_transport", "tcp",
 		"-i", src,
 		// Output seek (AFTER -i) re-decodes from the start of the

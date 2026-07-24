@@ -1,5 +1,0 @@
-requests==2.32.3
-minio==7.2.10
-redis==5.2.1
-Pillow==11.0.0
-croniter==2.0.3

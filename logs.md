@@ -9,6 +9,20 @@
 
 ---
 
+### Spray Automation Service — Python & RL Architecture Scaffolding (2026-07-24)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Python Scaffolding & Requirements ([services/ml-control/](file:///home/almuzky/TA/Microservices/services/ml-control/)):** Membuat struktur project Python (FastAPI) untuk Spray Automation Service di `services/ml-control/` lengkap dengan `requirements.txt` (FastAPI, uvicorn, nats-py, redis, numpy, prometheus-client) dan `.env.example`. |
+| 2 | ✅ | **Reinforcement Learning Agent & Safety Guardrail ([agent.py](file:///home/almuzky/TA/Microservices/services/ml-control/app/rl/agent.py)):** Mengimplementasikan `SprayRLAgent` untuk menentukan durasi dan jeda penyemprotan (`on_sec` & `off_sec`) secara dinamis berdasarkan input *State* (`root_length_cm` & `potato_condition`), disertai `SafetyGuardrail` ([safety.py](file:///home/almuzky/TA/Microservices/services/ml-control/app/rl/safety.py)) yang membatasi parameter dalam rentang toleransi fisik hardware. |
+| 3 | ✅ | **Control Service Client & NATS Subscriber ([control_client.py](file:///home/almuzky/TA/Microservices/services/ml-control/app/client/control_client.py)):** Membangun Async HTTP Client untuk update jadwal langsung ke `Control Service` (`PUT /control/schedules/{id}`) serta NATS Subscriber ([subscriber.py](file:///home/almuzky/TA/Microservices/services/ml-control/app/nats/subscriber.py)) untuk `telemetry.ingest` dan `detection.result`. |
+| 4 | ✅ | **FastAPI Server & REST Endpoints ([main.py](file:///home/almuzky/TA/Microservices/services/ml-control/app/main.py)):** Menyediakan REST API dengan format response JSON envelope standar (`/health`, `/spray/status`, `PUT /spray/ai/{node_id}`, `POST /spray/analyze/{node_id}`). |
+| 5 | ✅ | **Dockerfile & Unit Tests ([Dockerfile](file:///home/almuzky/TA/Microservices/services/ml-control/Dockerfile)):** Membuat Dockerfile multi-stage ber-layer caching optimal dan unit test suite ([test_rl_agent.py](file:///home/almuzky/TA/Microservices/services/ml-control/tests/test_rl_agent.py)) yang lulus 100% (pytest/unittest). |
+
+**Keputusan Teknis:** Spray Automation Service dibangun dalam bahasa Python dengan framework FastAPI untuk mendukung pengintegrasian model Reinforcement Learning (RL) di mana agen ML dapat mempelajari penyesuaian interval/durasi penyemprotan secara otonom. Logika dikelola dengan proteksi *Safety Guardrail* agar parameter aksi tidak melebihi batas fisik pompa atau toleransi kelembapan tanaman.
+
+---
+
 ### Live CCTV — HLS Player Fix & Nginx/Kong Route Stabilization (2026-07-24)
 
 | # | Status | Aktivitas |

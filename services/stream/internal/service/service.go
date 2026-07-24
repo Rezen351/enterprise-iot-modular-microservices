@@ -36,12 +36,12 @@ var (
 
 // StreamService coordinates DB metadata with MediaMTX path registration.
 type StreamService struct {
-	repo         *repository.Repository
-	media        *mediamtx.Client
-	minio        *miniosvc.Client
-	ml           *mlclient.Client
-	kongURL      string
-	cctvRTSP     string
+	repo     *repository.Repository
+	media    *mediamtx.Client
+	minio    *miniosvc.Client
+	ml       *mlclient.Client
+	kongURL  string
+	cctvRTSP string
 
 	// Active ffmpeg recordings, keyed by stream id. The Stream Service records
 	// directly via ffmpeg (not MediaMTX's disk recorder) so the resulting clip
@@ -60,7 +60,6 @@ type recJob struct {
 	done      chan struct{} // closed once ffmpeg is fully reaped by the reaper
 	startTime time.Time
 }
-
 
 func New(repo *repository.Repository, media *mediamtx.Client, minioClient *miniosvc.Client, mlClient *mlclient.Client, kongURL, cctvRTSP string) *StreamService {
 	return &StreamService{repo: repo, media: media, minio: minioClient, ml: mlClient, kongURL: kongURL, cctvRTSP: cctvRTSP, recJobs: make(map[string]*recJob)}
@@ -243,7 +242,6 @@ func (s *StreamService) toView(ctx context.Context, st *model.Stream) *model.Str
 	}
 }
 
-
 // ensurePath re-registers a stream's MediaMTX path config if it is missing.
 // API-added paths are ephemeral and lost on a MediaMTX restart, so we must
 // restore them; this is idempotent (AddPath overwrites) and only fires when
@@ -358,10 +356,10 @@ func (s *StreamService) ServeObject(w http.ResponseWriter, bucket, key string) e
 //   - detect=false (plain snapshot): the frame is uploaded to the MinIO stream
 //     bucket and a "snapshot" metadata row is stored — shown only in the
 //     gallery's SNAPSHOT tab. No ML is involved.
-  //   - detect=true (AI Detect): the frame is sent to the AI vision model and the
-  //     result (frame + detection JSON + annotated image) is written to the shared
-  //     ml bucket — shown in the gallery's AI DETECTION tab. Nothing is
-  //     written to the stream bucket or the stream-DB snapshots table.
+//   - detect=true (AI Detect): the frame is sent to the AI vision model and the
+//     result (frame + detection JSON + annotated image) is written to the shared
+//     ml bucket — shown in the gallery's AI DETECTION tab. Nothing is
+//     written to the stream bucket or the stream-DB snapshots table.
 func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect bool) (*model.SnapshotView, error) {
 	if s.minio == nil {
 		return nil, fmt.Errorf("%w: client not configured", ErrMinIO)
@@ -402,10 +400,10 @@ func (s *StreamService) CaptureSnapshot(ctx context.Context, id string, detect b
 		return toSnapshotView(snap), nil
 	}
 
-  // AI Detect: run the frame through the vision model and store the result in
-  // the shared ml bucket (gallery AI DETECTION tab). Nothing is written
-  // to the stream bucket or the stream-DB snapshots table — the authoritative
-  // copy lives in ml, same as the cron capture job.
+	// AI Detect: run the frame through the vision model and store the result in
+	// the shared ml bucket (gallery AI DETECTION tab). Nothing is written
+	// to the stream bucket or the stream-DB snapshots table — the authoritative
+	// copy lives in ml, same as the cron capture job.
 	if s.ml == nil {
 		return nil, fmt.Errorf("%w: AI vision client not configured", ErrMinIO)
 	}

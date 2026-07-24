@@ -103,14 +103,14 @@ type UpdateStreamRequest struct {
 
 // StreamView is what the dashboard receives: metadata + live status + playback URLs.
 type StreamView struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	DeviceLabel string    `json:"device_label"`
-	Location    string    `json:"location"`
-	SourceRTSP  string    `json:"source_rtsp"`
-	NodeID      string    `json:"node_id,omitempty"`
-	ModuleID    string    `json:"module_id,omitempty"`
-	Enabled     bool      `json:"enabled"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	DeviceLabel    string    `json:"device_label"`
+	Location       string    `json:"location"`
+	SourceRTSP     string    `json:"source_rtsp"`
+	NodeID         string    `json:"node_id,omitempty"`
+	ModuleID       string    `json:"module_id,omitempty"`
+	Enabled        bool      `json:"enabled"`
 	Status         string    `json:"status"` // MediaMTX source state: idle|waiting|running|ready|unknown
 	HlsURL         string    `json:"hls_url"`
 	WebRTCURL      string    `json:"webrtc_url"` // playback (WHEP) endpoint, host-direct
@@ -118,5 +118,4 @@ type StreamView struct {
 	RecordingStart int64     `json:"recording_start,omitempty"` // Unix timestamp in milliseconds
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
-
 }

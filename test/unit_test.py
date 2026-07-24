@@ -325,6 +325,22 @@ def cleanup_test_data():
         except Exception:
             pass
 
+    # Clean up any leftover snapshots/recordings so the gallery
+    # does not retain stale DB records pointing to missing MinIO objects.
+    try:
+        res = requests.get(f"{BASE_URL}/v1/snapshots", headers=headers, timeout=10)
+        if res.status_code == 200:
+            data = res.json().get("data") or {}
+            for snap in data.get("snapshots", []):
+                snap_id = snap.get("id")
+                if snap_id:
+                    try:
+                        requests.delete(f"{BASE_URL}/v1/snapshots/{snap_id}", headers=headers, timeout=5)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
 
 class ServiceTestCase(unittest.TestCase):
     _services_checked = False

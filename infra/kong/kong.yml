@@ -263,10 +263,19 @@ upstreams:
       - target: export-service:8080
         weight: 100
 
-  # MediaMTX HLS upstream — Kong strips /hls and forwards to mediamtx:8888.
-  # No active healthcheck: MediaMTX returns 404 on "/" which would otherwise
-  # mark the target unhealthy. Passive checks (default) still apply.
+  # MediaMTX HLS — proxied through Kong
+  # /hls is the dashboard-facing entrypoint; MediaMTX may redirect to
+  # /<stream>/index.m3u8?cookieCheck=1 during the HLS cookie check, so we
+  # also need a catch-all for stream-name-prefixed HLS paths.
   - name: mediamtx-hls-upstream
+    algorithm: round-robin
+    targets:
+      - target: mediamtx:8888
+        weight: 100
+
+  # MediaMTX HLS redirect paths — matches /<stream-name>/index.m3u8
+  # and /<stream-name>/index.m3u8?cookieCheck=1 after MediaMTX cookie check.
+  - name: mediamtx-hls-redirect-upstream
     algorithm: round-robin
     targets:
       - target: mediamtx:8888
@@ -923,6 +932,32 @@ services:
           - GET
           - OPTIONS
         strip_path: true
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 300
+              hour: 8000
+              policy: local
+              fault_tolerant: true
+
+  # MediaMTX HLS redirect — handles MediaMTX cookie-check redirects to
+  # /<stream-name>/index.m3u8?cookieCheck=1. The regex matches any
+  # single-segment stream path followed by /index.m3u8.
+  - name: mediamtx-hls-redirect-service
+    host: mediamtx-hls-redirect-upstream
+    port: 8888
+    protocol: http
+    connect_timeout: 5000
+    write_timeout: 10000
+    read_timeout: 10000
+    routes:
+      - name: stream-hls-redirect
+        paths:
+          - ~/[^/]+/index\.m3u8
+        methods:
+          - GET
+          - OPTIONS
+        strip_path: false
         plugins:
           - name: rate-limiting
             config:

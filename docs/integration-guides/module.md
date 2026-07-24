@@ -290,6 +290,39 @@ Replaces the complete set of sensor-kind tag mappings. Actuator tags are **not**
 }
 ```
 
+#### Telemetry Mapping UI Workflow (MQTT Key)
+
+The Dashboard exposes telemetry mapping in **Node Configuration** (`NodeConfigPage`). This section maps raw MQTT telemetry keys to database metrics.
+
+**MQTT Key Format:**
+
+- Use the full dot-path as it appears in the MQTT payload.
+- Examples: `telemetry.temp`, `telemetry.humidity`, `telemetry.modbus.cwt1.temp`.
+- The key must match the exact JSON field path in the incoming telemetry message.
+
+**Fields:**
+
+| Field | Description |
+|-------|-------------|
+| `source_key` | MQTT key path (e.g., `telemetry.temp`) |
+| `tag_name` | Database metric name (defaults to `source_key` if empty) |
+| `label` | Dashboard display label |
+| `unit` | Unit string (e.g., `°C`, `%`, `m/s`) |
+| `data_type` | One of: `float`, `int`, `bool` |
+| `enabled` | Toggle to enable/disable ingestion |
+
+**Detect Keys:**
+
+- Click **Detect keys** to open a 5-second WebSocket live stream (`/ws/nodes/{nodeId}/live`).
+- The UI walks every leaf value in the received JSON and extracts unique key paths.
+- Auto-detected keys are added as draft rows ready for review and save.
+
+**Key difference from Actuator Mapping:**
+
+- Telemetry `source_key` uses **full MQTT paths** (`telemetry.temp`).
+- Actuator `source_key` uses the **bare firmware output name** (`load1`, `pump`).
+- Actuator keys are normalized automatically and stored without the `outputs.` prefix.
+
 ### 2.5 Actuator Tags (Control Output Mapping)
 
 | Method | Path | Auth | Description |

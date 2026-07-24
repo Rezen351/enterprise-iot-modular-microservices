@@ -564,6 +564,7 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_LOG_LEVEL: info
+      KONG_DNS_NAMESERVER: "127.0.0.11"
     volumes:
       - ./infra/kong/kong.yml:/etc/kong/kong.yml:ro
     ports:

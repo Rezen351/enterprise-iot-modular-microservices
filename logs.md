@@ -7,7 +7,33 @@
 
 ---
 
+---
+
+### Live CCTV — HLS Player Fix & Nginx/Kong Route Stabilization (2026-07-24)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **LiveView `MtxPlayer` diganti dari iframe ke hls.js ([LiveView.jsx](file:///home/almuzky/TA/Microservices/dashboard/src/components/Dashboard/Pages/LiveView.jsx#L47-L145)):** MediaMTX v1.19+ tidak lagi menyediakan embedded player page di `/{name}/`. Iframe `src="/live/{name}/"` diganti dengan komponen `<video>` + `hls.js` (dynamic import) yang langsung memutar `/hls/{name}/index.m3u8` via Kong. Dilengkapi loading spinner dan error message. |
+| 2 | ✅ | **Nginx `/live/` block pakai `$mediamtx_upstream` ([nginx.conf](file:///home/almuzky/TA/Microservices/dashboard/nginx.conf#L39-L44)):** Sebelumnya hardcoded `http://mediamtx:8888` tanpa resolver → 502 saat mediamtx restart. Diganti dengan variabel `$mediamtx_upstream` agar Nginx re-resolve IP secara dinamis via Docker DNS. |
+| 3 | ✅ | **Kong `stream-hls` route `strip_path: false` ([kong.yml](file:///home/almuzky/TA/Microservices/infra/kong/kong.yml#L919-L932)):** Sebelumnya `strip_path: true` menyebabkan `/hls/a/index.m3u8` diteruskan ke MediaMTX sebagai `/a/index.m3u8` (404). Diubah ke `strip_path: false` agar path utuh diteruskan. |
+| 4 | ✅ | **Dashboard rebuilt & all containers healthy:** Seluruh perbaikan di-deploy dengan `docker compose up -d --build kong dashboard`. |
+
+**Keputusan Teknis:** Iframe ke MediaMTX embedded player tidak lagi berfungsi sejak MediaMTX v1.0 menghapus fitur tersebut. Solusi baru menggunakan `hls.js` secara langsung di React dengan dynamic import, cleanup otomatis via `useEffect`, dan fallback ke native HLS untuk Safari.
+
+---
+
+### Documentation — Telemetry Mapping MQTT Key Description (2026-07-24)
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Integration Guide Telemetry Mapping Section Updated ([module.md](file:///home/almuzky/TA/Microservices/docs/integration-guides/module.md#L293-L324)):** Menambahkan subbagian **Telemetry Mapping UI Workflow (MQTT Key)** yang menjelaskan cara mengisi `source_key` (MQTT key) di dashboard, format dot-path yang benar, field-field form, fitur **Detect keys**, dan perbedaan kunci dengan Actuator Mapping. |
+
+**Keputusan Teknis:** Dokumentasi integrasi sebelumnya hanya menjelaskan kontrak API telemetry mapping tanpa menjelaskan alur UI pengisian MQTT key di dashboard. Ditambahkan deskripsi UI workflow yang setara dengan penjelasan Actuator Mapping yang sudah ada, termasuk catatan perbedaan format `source_key` antara telemetry (full dot-path `telemetry.temp`) dan actuator (bare output name `load1`).
+
+---
+
 ### Dashboard UI — 10-Row Preview Grid & Unwrapped API Payload Resolution
+
 
 | # | Status | Aktivitas |
 |---|---|---|
@@ -1532,3 +1558,36 @@ Catatan: respon Alert Service sengaja TIDAK memakai wrapper standar `{success,da
 **Keputusan Teknis:** Service baru ini memenuhi prinsip Database-per-Service dengan database MariaDB mandiri (`mariadb-spray`) dan Redis logical DB4. Mengadopsi polaTransactional Outbox (ADR-007) untuk event publishing. Integrasi dengan service yang sudah ada (Module, Control, Stream, ML) dilakukan via NATS (event-driven) dan REST (command/query) tanpa memodifikasi service yang sudah berjalan. AI decision engine menggunakan skor berbobot (root length 60% + potato condition 40%) untuk menentukan penyesuaian misting.
 
 ---
+
+## 2026-07-24 — Stream Storage 404 Debug & Fix
+
+### investigasi 404 pada endpoint `/v1/storage/stream/snapshots/...` dan `/v1/storage/stream/recordings/...`
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Trace request flow:** Browser → nginx (port 5173) → Kong (port 8000) → stream service (port 8080) → MinIO. Semua lapisan routing berfungsi dengan benar; request sampai ke handler `GetObject`. |
+| 2 | ✅ | **Verifikasi JWT & handler:** Token valid diterima, middleware `JWTAuth` lolos, `GetObject` mengurai `bucket=stream`, `key=snapshots/a/<uuid>.jpg` dengan benar, lalu memanggil `ServeObject`. |
+| 3 | ✅ | **Cek MinIO:** Bucket `stream` kosong (`0B`). Semua 7 record snapshot/recording di tabel `stream_db.snapshots` menunjuk ke objek yang tidak ada di MinIO. |
+| 4 | ✅ | **Cleanup stale records:** Menghapus 7 record DB yang objek MinIONya hilang (`DELETE FROM snapshots WHERE id IN (...)`). Gallery kini tidak menampilkan item yang 404. |
+| 5 | ✅ | **Test cleanup:** Menambahkan bulk cleanup snapshot/recording ke `cleanup_test_data()` di `test/unit_test.py` agar test run berikutnya tidak menumpuk stale records. |
+
+**Keputusan Teknis:** 404 bukan disebabkan oleh bug routing atau auth, melainkan inkonsistensi data: MariaDB menyimpan record snapshot/recording, sedangkan objek MinIO tidak ada (bucket `stream` kosong). Penyebabnya kemungkinan volume MinIO yang pernah di-reset atau objek yang terhapus tanpa pembersihan DB. Sebagai mitigasi: (1) record stale dibersihkan manual, (2) test suite sekarang otomatis membersihkan snapshot/recording setelah test run, (3) disarankan memastikan volume `./volumes/minio` tidak dihapus saat `docker compose down`.
+
+---
+
+## 2026-07-24 — Live Stream RTSP Fix & HLS Playback Restoration
+
+### Perbaikan live stream CCTV dan penghilangan overlay "Stream unavailable"
+
+| # | Status | Aktivitas |
+|---|---|---|
+| 1 | ✅ | **Update RTSP credentials di database:** Stream `b` dan `cctv-1` sebelumnya menyimpan `source_rtsp` tanpa kredensial (`rtsp://192.168.1.110:554/...`). Diperbarui ke `rtsp://admin:Admin_TF24!@192.168.1.110:554/Streaming/Channels/101` agar MediaMTX bisa autentikasi ke kamera. |
+| 2 | ✅ | **Verifikasi koneksi kamera:** `ffmpeg` dari container stream service berhasil terkoneksi ke RTSP source dan membaca stream H.264 (`avc1.640028`, 1920x1080, 30fps). Kamera reachable dari Docker network. |
+| 3 | ✅ | **Re-register MediaMTX paths:** Path lama di MediaMTX dihapus (`DELETE /v3/config/paths/delete/{name}`) dan stream service meregister ulang 2 path dengan source URL baru. reconcile: re-registered 2 path(s). |
+| 4 | ✅ | **Kong HLS redirect route:** Menambahkan `mediamtx-hls-redirect-upstream` + `mediamtx-hls-redirect-service` dengan regex route `~/ [^/]+/index\.m3u8` untuk menangani MediaMTX cookie-check redirect (`/<stream>/index.m3u8?cookieCheck=1`) yang sebelumnya 404 di Kong. |
+| 5 | ✅ | **Kong DNS nameserver:** Menambahkan `KONG_DNS_NAMESERVER=127.0.0.11` ke `docker-compose.yml` agar resolver Lua Kong menggunakan Docker embedded DNS (mengatasi NXDOMAIN untuk host `mediamtx`). |
+| 6 | ✅ | **Nginx HLS proxy_redirect:** Menambahkan `location ~ ^/hls/` terdedikasi di `dashboard/nginx.conf` dengan `proxy_redirect ~^/([^/]+/.*)$ /hls/$1` agar browser tetap di origin `localhost:5173` saat MediaMTX melakukan cookie-check redirect. |
+| 7 | ✅ | **Dashboard rebuild:** Rebuild dashboard container dengan nginx.conf baru dan verifikasi HLS manifest + segment terakses via `localhost:5173/hls/{name}/index.m3u8`. |
+| 8 | ✅ | **Test cleanup:** Snapshot/recording DB cleanup sudah ditambahkan ke `cleanup_test_data()` pada sesi sebelumnya. |
+
+**Keputusan Teknis:** Overlay "Stream unavailable" muncul karena chain HLS playback terputus: (1) RTSP source tanpa kredensial → MediaMTX 401, (2) Kong tidak punya route untuk MediaMTX cookie-check redirect ke `/<stream>/index.m3u8`, (3) nginx SPA fallback mengembalikan `index.html` untuk path HLS yang tidak dikenali. Fix dilakukan di 4 lapisan: DB credentials, Kong regex route + DNS, nginx `proxy_redirect`, dan dashboard rebuild. Stream kini menghasilkan H.264 compatible playback tanpa overlay error.

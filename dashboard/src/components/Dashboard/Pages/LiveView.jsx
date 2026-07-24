@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Video,
   Plus,
@@ -9,8 +9,6 @@ import {
   X,
   Save,
   Radio,
-  WifiOff,
-  CircleDot,
   Circle,
   Square,
   Camera,
@@ -19,6 +17,24 @@ import {
   AlertTriangle,
   Sparkles
 } from 'lucide-react';
+
+function CircleDotIcon({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 import PageHeader from './PageHeader';
 import streamApi from '../../../api/stream';
 import { useModule } from '../../../context/ModuleContext';
@@ -44,40 +60,76 @@ function formatDuration(totalSeconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ─── MediaMTX player (iframe) ──────────────────────────────────────────────────
-// Embeds MediaMTX's own HLS/WebRTC player page exactly like the Aeroponik-Docker
-// dashboard does (iframe → /live/{name}/, proxied by Vite/Kong to mediamtx:8888).
-// This avoids the fragile CDN hls.js dependency that left the feed blank.
+// ─── HLS player (hls.js) ──────────────────────────────────────────────────────
+// MediaMTX v1.19+ no longer serves an embedded player page at /{name}/.
+// We load hls.js dynamically and point it at /hls/{name}/index.m3u8 via Kong.
 function MtxPlayer({ name, enabled }) {
-  const [failed, setFailed] = useState(false);
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+
+  useEffect(() => {
+    if (!enabled || !videoRef.current) return;
+
+    const src = `/hls/${encodeURIComponent(name)}/index.m3u8`;
+
+    let hls;
+    let cancelled = false;
+
+    async function initPlayer() {
+      try {
+        const { default: Hls } = await import('hls.js');
+        if (cancelled) return;
+
+        if (Hls.isSupported()) {
+          hls = new Hls({
+            lowLatencyMode: true,
+            liveSyncDurationCount: 3,
+            liveMaxLatencyDurationCount: 5,
+            enableWorker: true,
+          });
+          hlsRef.current = hls;
+          hls.loadSource(src);
+          hls.attachMedia(videoRef.current);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoRef.current?.play().catch(() => {});
+          });
+        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          videoRef.current.src = src;
+          videoRef.current.addEventListener('loadedmetadata', () => {
+            videoRef.current?.play().catch(() => {});
+          });
+        }
+      } catch (e) {
+        // silent
+      }
+    }
+
+    initPlayer();
+
+    return () => {
+      cancelled = true;
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+  }, [name, enabled]);
 
   if (!enabled) {
     return (
-      <div className="relative w-full aspect-video bg-black flex flex-col items-center justify-center gap-2">
-        <EyeOff className="w-8 h-8 text-slate-500" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Disabled</span>
-      </div>
-    );
-  }
-
-  if (failed) {
-    return (
-      <div className="relative w-full aspect-video bg-black flex flex-col items-center justify-center gap-2">
-        <WifiOff className="w-8 h-8 text-slate-500" />
-        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Player Unavailable</span>
-      </div>
+      <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }} />
     );
   }
 
   return (
-    <iframe
-      src={`/live/${encodeURIComponent(name)}/`}
-      title={name}
-      allowFullScreen
-      onError={() => setFailed(true)}
-      className="w-full h-full border-0 bg-black"
-      style={{ aspectRatio: '16 / 9' }}
-    />
+    <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
+      <video
+        ref={videoRef}
+        className="w-full h-full object-contain"
+        autoPlay
+        muted
+        playsInline
+        controls
+      />
+    </div>
   );
 }
 
@@ -102,7 +154,7 @@ function StatusPill({ status, enabled }) {
   const label = status === 'idle' ? 'Idle' : (status || 'Unknown');
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-widest">
-      <CircleDot className="w-3 h-3" />
+      <CircleDotIcon className="w-3 h-3" />
       {label}
     </span>
   );
@@ -536,7 +588,7 @@ export default function LiveView() {
       <div className="grid grid-cols-3 gap-3">
         <StatCard icon={LayoutGrid} label="Streams" value={streams.length} />
         <StatCard icon={Circle} label="Live" value={liveCount} color="emerald" />
-        <StatCard icon={CircleDot} label="Idle" value={streams.length - liveCount} color="amber" />
+        <StatCard icon={CircleDotIcon} label="Idle" value={streams.length - liveCount} color="amber" />
       </div>
 
       {error && (

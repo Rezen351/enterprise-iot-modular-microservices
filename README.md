@@ -1,6 +1,6 @@
 <div align="center">
 
-# Enterprise IoT Modular Microservices
+# enyx-enterprise
 
 ### *High-Performance, Event-Driven Environment Monitoring & Industrial IoT Architecture*
 
@@ -31,7 +31,7 @@
 
 ## 📌 Overview
 
-**Enterprise IoT Modular Microservices** is a production-grade, event-driven environment monitoring and control platform designed for high throughput, strict service isolation, and horizontal scalability. 
+**enyx-enterprise** is a production-grade, event-driven environment monitoring and control platform designed for high throughput, strict service isolation, and horizontal scalability. 
 
 Built with a **database-per-service pattern**, it ingests telemetry from IoT sensor nodes via MQTT, evaluates threshold alerts in real-time, stores time-series data using TimescaleDB, and streams live telemetry to a React Vite dashboard over WebSocket.
 
@@ -169,38 +169,30 @@ All charts are saved in [`test/results/`](./test/results):
 | `04_overall_system_dashboard.png` | Unified master test dashboard overview |
 | `04_overall_system_dashboard_detailed.png` | Detailed master test dashboard |
 
-> These charts are **test-generated artifacts**, not screenshots of the live dashboard.
+#### Test Results Preview
 
----
+![Unit Test Summary](test/results/01_unit_test_summary.png)
 
-## 🧪 Testing
+![Unit Test Detailed](test/results/01_unit_test_detailed.png)
 
-The project includes a comprehensive Master Integrated Test Suite executed via:
+![Stress Test Throughput](test/results/02_stress_test_throughput.png)
 
-```bash
-python3 test/run_all_tests.py
-```
+![Stress Test Detailed](test/results/02_stress_test_detailed.png)
 
-### Generated Test Artifacts
+![Resilience Chaos Audit](test/results/03_resilience_chaos_audit.png)
 
-All charts are saved in [`test/results/`](./test/results):
+![Resilience Detailed](test/results/03_resilience_detailed.png)
 
-| Artifact | Description |
-|---|---|
-| `01_unit_test_summary.png` | Overall unit test pass/fail summary |
-| `01_unit_test_detailed.png` | Detailed breakdown per microservice |
-| `02_stress_test_throughput.png` | Throughput vs latency under load |
-| `02_stress_test_detailed.png` | Detailed stress test metrics |
-| `03_resilience_chaos_audit.png` | Chaos engineering audit results |
-| `03_resilience_detailed.png` | Detailed resilience metrics |
-| `04_overall_system_dashboard.png` | Unified master test dashboard overview |
-| `04_overall_system_dashboard_detailed.png` | Detailed master test dashboard |
+![Overall System Dashboard](test/results/04_overall_system_dashboard.png)
+
+![Overall System Dashboard Detailed](test/results/04_overall_system_dashboard_detailed.png)
 
 > These charts are **test-generated artifacts**, not screenshots of the live dashboard.
 
 ---
 
 ## 🔧 Troubleshooting
+
 
 | Issue | Solution |
 |---|---|
